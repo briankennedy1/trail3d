@@ -38,6 +38,17 @@ const M_PER_DEG_LON = 111320 * Math.cos((LAT0 * Math.PI) / 180);
 const WIDTH_M = (BBOX.east - BBOX.west) * M_PER_DEG_LON;
 const HEIGHT_M = (BBOX.north - BBOX.south) * M_PER_DEG_LAT;
 
+// Hand edits, for things the source data gets wrong or leaves out
+const EXCLUDED_TRAILS = new Map([
+  // A USFS inventory line that duplicates Incense Cedar (same route, same endpoints)
+  ['Twisted Cedar Trail', 'duplicate of Incense Cedar'],
+]);
+// Roads drawn for context (not counted or listed as trails), by their OpenStreetMap name
+const CONTEXT_ROADS = [
+  'Fountain Place Road', // paved, up Trout Creek to Fountain Place, past the top of Corral
+  'Powerline Road', // dirt, from the bottom of Corral Trail toward Meyers
+];
+
 // Local planar coordinates in meters: x east from west edge, y north from south edge
 const project = (lon, lat) => [(lon - BBOX.west) * M_PER_DEG_LON, (lat - BBOX.south) * M_PER_DEG_LAT];
 
@@ -672,6 +683,12 @@ for (const [key, segs] of byName) {
     });
   }
 }
+for (let i = trails.length - 1; i >= 0; i--) {
+  if (EXCLUDED_TRAILS.has(trails[i].name)) {
+    console.log(`  dropping ${trails[i].name} (${EXCLUDED_TRAILS.get(trails[i].name)})`);
+    trails.splice(i, 1);
+  }
+}
 trails.sort((a, b) => a.name.localeCompare(b.name) || b.lengthMi - a.lengthMi);
 // Disambiguate duplicate names with a location hint
 const nameCount = new Map();
@@ -776,7 +793,44 @@ console.log(
 );
 
 // ---------------------------------------------------------------------------
-// 6. Write
+// 6. Context roads: a few named roads that matter for getting to trails
+
+console.log('Context roads');
+const roadNames = CONTEXT_ROADS.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+const osmRoads = JSON.parse(
+  await cached('roads.json', () =>
+    overpass(`[out:json][timeout:60];
+way["highway"]["name"~"^(${roadNames})$"](${ctxBox});
+out tags geom;`),
+  ),
+);
+const roads = [];
+for (const name of CONTEXT_ROADS) {
+  const ways = osmRoads.elements.filter((w) => w.tags.name === name);
+  if (!ways.length) {
+    console.warn(`  warning: no road named ${name} in OpenStreetMap`);
+    continue;
+  }
+  const { outLines, length, gain, loss, lo, hi } = measure(chain(ways.map((w) => ({ pts: w.geometry.map((p) => project(p.lon, p.lat)) }))));
+  const longest = outLines.reduce((a, b) => (b.length > a.length ? b : a));
+  const mid = Math.floor(longest.length / 6) * 3;
+  const paved = ways.some((w) => /asphalt|paved|concrete/.test(w.tags.surface ?? ''));
+  roads.push({
+    name,
+    surface: paved ? 'paved' : 'dirt',
+    lengthMi: Math.round((length / 1609.34) * 10) / 10,
+    gainFt: Math.round(gain * 3.28084),
+    lossFt: Math.round(loss * 3.28084),
+    minFt: Math.round(lo * 3.28084),
+    maxFt: Math.round(hi * 3.28084),
+    lines: outLines,
+  });
+  labels.push({ kind: 'road', name, x: longest[mid], y: longest[mid + 1] });
+  console.log(`  ${name}: ${roads.at(-1).lengthMi} mi, ${roads.at(-1).surface}`);
+}
+
+// ---------------------------------------------------------------------------
+// 7. Write
 
 const map = {
   bbox: BBOX,
@@ -787,6 +841,7 @@ const map = {
   basin: simplify(basinRing, 25).map(([x, y]) => [Math.round(x), Math.round(y)]),
   lakes,
   wilderness,
+  roads,
   labels,
   attribution: [
     'Trails © OpenStreetMap contributors (ODbL)',

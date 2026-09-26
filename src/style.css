@@ -91,6 +91,14 @@ button {
   font-weight: 500;
   color: #4a3f48;
 }
+.label-road {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 13px;
+  color: #6b5646;
+  letter-spacing: 0.03em;
+}
 .label-peak {
   font-size: 17px;
   font-weight: 700;

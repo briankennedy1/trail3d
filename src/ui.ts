@@ -114,7 +114,7 @@ export class UI {
     $('#btn-in').addEventListener('click', () => this.h.onZoom(1.6));
     $('#btn-out').addEventListener('click', () => this.h.onZoom(1 / 1.6));
 
-    const existing = trails.filter((t) => !t.plan);
+    const existing = trails.filter((t) => !t.plan && !t.road);
     const miles = existing.reduce((a, t) => a + t.lengthMi, 0);
     $('#stats').textContent = `${existing.length} trails · ${Math.round(miles).toLocaleString()} miles`;
     this.render();
@@ -138,7 +138,7 @@ export class UI {
   private render() {
     const q = norm(this.query);
     const words = q.split(' ').filter(Boolean);
-    let results = this.trails.filter((t) => this.h.matches(t));
+    let results = this.trails.filter((t) => !t.road && this.h.matches(t));
     if (words.length) {
       results = results
         .map((t) => {

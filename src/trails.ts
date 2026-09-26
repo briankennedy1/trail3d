@@ -29,6 +29,8 @@ interface Style {
   color: THREE.Color;
   width: number;
   dashed: boolean;
+  /** a darker, wider line underneath, like the edges of a road on a paper map */
+  casing?: THREE.Color;
   /** a wide translucent wash under the line, like a highlighter stroke of paint */
   wash: boolean;
   renderOrder: number;
@@ -41,6 +43,7 @@ export function planGroup(t: Trail): PlanGroup | null {
 }
 
 function styleKey(t: Trail): string {
+  if (t.road) return 'road';
   if (!t.plan) return t.bike ? 'bike' : 'hike';
   const group = planGroup(t)!;
   if (group !== 'new') return group === 'designate' && t.plan.mode === 'moto' ? 'moto-designate' : group;
@@ -48,6 +51,7 @@ function styleKey(t: Trail): string {
 }
 
 const STYLES: Record<string, Style> = {
+  road: { color: new THREE.Color('#f4ead6'), casing: new THREE.Color('#7c6858'), width: 2, dashed: false, wash: false, renderOrder: 0.5 },
   bike: { color: COLORS.bike, width: 2, dashed: false, wash: false, renderOrder: 1 },
   hike: { color: COLORS.hike, width: 2, dashed: true, wash: false, renderOrder: 1 },
   ebike: { color: new THREE.Color(PLAN_COLORS.ebike), width: 3.2, dashed: true, wash: true, renderOrder: 3 },
@@ -65,7 +69,7 @@ export function trailColor(t: Trail): THREE.Color {
 export class TrailLayer {
   readonly group = new THREE.Group();
   private world: Float32Array[][] = []; // per trail, per line: flat xyz
-  private base = new Map<string, { line: LineSegments2; wash?: LineSegments2 }>();
+  private base = new Map<string, { line: LineSegments2; wash?: LineSegments2; casing?: LineSegments2 }>();
   private hover: { halo: LineSegments2; line: LineSegments2 };
   private selected: { halo: LineSegments2; line: LineSegments2 };
   private materials: LineMaterial[] = [];
@@ -109,7 +113,13 @@ export class TrailLayer {
         wash.material.transparent = true;
         wash.material.depthWrite = false;
       }
-      this.base.set(key, { line, wash });
+      const casing = st.casing ? this.makeLines(this.material(st.casing, st.width + 2.4, 1), st.renderOrder - 0.1) : undefined;
+      if (casing) {
+        Object.assign(line.material, { transparent: false, opacity: 1 });
+        // The casing mustn't occlude the fill where neighboring segments meet at slightly different depths
+        casing.material.depthWrite = false;
+      }
+      this.base.set(key, { line, wash, casing });
     }
     this.hover = {
       halo: this.makeLines(this.material(COLORS.halo, 9, 0.85), 5),
@@ -191,6 +201,7 @@ export class TrailLayer {
   }
 
   matches(t: Trail) {
+    if (t.road) return true; // context roads show under every filter
     const group = planGroup(t);
     if (group && !this.plans.has(group)) return false;
     // decommissioned trails aren't open to anyone, but they belong in every view of the plan
@@ -208,10 +219,11 @@ export class TrailLayer {
       if (!byStyle.has(key)) byStyle.set(key, []);
       byStyle.get(key)!.push(t.id);
     }
-    for (const [key, { line, wash }] of this.base) {
+    for (const [key, { line, wash, casing }] of this.base) {
       const ids = byStyle.get(key) ?? [];
       this.setLines(line, ids);
       if (wash) this.setLines(wash, ids);
+      if (casing) this.setLines(casing, ids);
     }
     // Existing trails step back while the plan overlay is up
     const dim = this.plans.size > 0;
@@ -299,7 +311,7 @@ export class TrailLayer {
     const m = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     const e = m.elements;
     for (const t of this.trails) {
-      if (!this.matches(t)) continue;
+      if (t.road || !this.matches(t)) continue; // roads aren't clickable
       for (const line of this.world[t.id]) {
         const out = new Float32Array((line.length / 3) * 2);
         for (let i = 0, j = 0; i < line.length; i += 3, j += 2) {

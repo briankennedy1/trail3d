@@ -67,6 +67,7 @@ export class Labels {
       if (label.kind === 'lake') priority = label.name === 'Lake Tahoe' ? 200 : 20 + Math.log10(label.area ?? 1) * 8;
       if (label.kind === 'peak') priority = (FAMOUS.has(label.name) ? 70 : 0) + ((label.ele ?? 2000) - 2000) / 40;
       if (label.kind === 'trailhead') priority = 300;
+      if (label.kind === 'road') priority = 45;
       this.items.push({ label, el, world: new THREE.Vector3(x, y, z), priority, w: 0, h: 0 });
     }
     this.items.sort((a, b) => b.priority - a.priority);
@@ -96,7 +97,7 @@ export class Labels {
       const y0 = it.label.kind === 'peak' ? sy - h + 4 : it.label.kind === 'trailhead' ? sy - 10 : sy - h / 2;
       const rect: [number, number, number, number] = [x0 - 4, y0 - 2, x0 + w + 4, y0 + h + 2];
       const onScreen = rect[2] > 0 && rect[0] < width && rect[3] > 0 && rect[1] < height;
-      const minor = it.label.kind === 'peak' && it.priority < 70 && camera.zoom < 1.6;
+      const minor = (it.label.kind === 'peak' && it.priority < 70 && camera.zoom < 1.6) || (it.label.kind === 'road' && camera.zoom < 3);
       const hidden = it.label.kind === 'trailhead' && !this.showTrailheads;
       const fits = onScreen && !hidden && shown < budget && !minor && !placed.some((r) => r[0] < rect[2] && r[2] > rect[0] && r[1] < rect[3] && r[3] > rect[1]);
       if (fits) {

@@ -11,7 +11,7 @@ export interface Lake {
 }
 
 export interface Label {
-  kind: 'peak' | 'town' | 'village' | 'lake' | 'trailhead';
+  kind: 'peak' | 'town' | 'village' | 'lake' | 'trailhead' | 'road';
   name: string;
   x: number;
   y: number;
@@ -28,6 +28,8 @@ export interface MapData {
   basin: XY[];
   lakes: Lake[];
   wilderness: { name: string; rings: XY[][] }[];
+  /** A few named roads drawn for context; not trails */
+  roads: (Pick<Trail, 'name' | 'lengthMi' | 'gainFt' | 'lossFt' | 'minFt' | 'maxFt' | 'lines'> & { surface: string })[];
   labels: Label[];
   attribution: string[];
 }
@@ -62,6 +64,8 @@ export interface Trail {
   id: number;
   /** Set for planned (not yet built or re-designated) trails */
   plan?: Plan;
+  /** A context road: drawn on the map, but not listed, counted, or clickable */
+  road?: boolean;
   name: string;
   area?: string;
   hike: boolean;
@@ -222,6 +226,31 @@ export async function loadData() {
       minFt: p.minFt,
       maxFt: p.maxFt,
       lines: p.lines,
+    });
+  }
+  for (const r of map.roads) {
+    trails.push({
+      id: trails.length,
+      name: r.name,
+      road: true,
+      hike: false,
+      bike: false,
+      bikePartial: false,
+      bikeInferred: false,
+      difficulty: null,
+      mtbScale: null,
+      hikeDifficulty: null,
+      surface: r.surface,
+      operator: null,
+      official: false,
+      sources: ['osm'],
+      wilderness: false,
+      lengthMi: r.lengthMi,
+      gainFt: r.gainFt,
+      lossFt: r.lossFt,
+      minFt: r.minFt,
+      maxFt: r.maxFt,
+      lines: r.lines,
     });
   }
   return { map, trails, trailheads: future.trailheads, terrain: new Terrain(map, new Uint16Array(terrainBuf)) };
