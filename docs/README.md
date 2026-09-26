@@ -6,5 +6,6 @@ Tahoe Trails is an interactive, hand-painted-looking model of the Lake Tahoe Bas
 - **[Using the map](using-the-map.md)**: moving around, finding trails, and reading a trail card
 - **[The 2026 trail plan](trail-plan.md)**: the overlay of trails the Forest Service has approved to build
 - **[Where the data comes from](data.md)**: sources, what counts as a trail, and the limits
+- **[Films](films.md)**: rendering 4K movies of the map for presentations, and making new ones
 
 To run it locally, see the [project README](../README.md).

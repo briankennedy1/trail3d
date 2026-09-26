@@ -25,33 +25,14 @@ It's a static site. `npm run build` writes everything to `dist/`. [`render.yaml`
 
 ## Movies
 
-The map can render short movies frame by frame, for presentations. Each movie is a timeline in `scripts/films/`:
-
-- **`keys-to-stanford-rock`** opens on the whole basin, drops into the Tahoe Keys, follows a wooden runabout up the west shore to Obexer's, and then paints on the Stanford Rock Trail.
-- **`fountain-place-corral`** faces east from Trimmer Peak. A mountain biker climbs Fountain Place Road to the top of Corral, then rides Corral down to Powerline Road.
-- **`armstrong-sidewinder`** climbs Fountain Place Road to its top, then descends Armstrong Connector, Sidewinder, and Incense Cedar, and crosses Powerline Road to the bottom of Corral.
-- **`armstrong-pass-star-lake`** climbs Fountain Place and Armstrong Pass, follows the Tahoe Rim Trail to Star Lake, then descends Star Lake, Cold Creek, and Lower Cold Creek, and takes Railroad Grade to the bottom of Corral.
-
-Ride films share a timeline in `scripts/films/lib/ride.mjs`. A new one is mostly a list of legs (trail or road names with where to join and leave them) and optional stops. The rider climbs slower than it descends, and wherever two legs don't touch, a straight gold connector bridges the gap.
-
-A scene can pose the camera from any direction, move the boat along lon/lat waypoints, or build a route from pieces of named trails and roads (`setRoute`) with a rider drawing it on.
+The map can render smooth 4K movies for presentations: a boat crossing the lake, or a mountain biker riding a route while it draws on in gold. With `npm run dev` running:
 
 ```
-npm run dev                                          # in another terminal
-npm run film -- keys-to-stanford-rock --draft        # 1080p / 15 fps preview, under a minute
-npm run film -- keys-to-stanford-rock                # 3840×2160 / 30 fps H.264 → renders/
-npm run film -- keys-to-stanford-rock --still 12.5   # a single frame as PNG
+npm run film -- armstrong-sidewinder --draft   # 1080p preview, under a minute
+npm run film -- armstrong-sidewinder           # 3840×2160 / 30 fps → renders/
 ```
 
-Options:
-
-- `--no-captions` leaves off the place-name titles.
-- `--fps 60` renders smoother motion.
-- `--out file.mp4` writes somewhere else.
-
-To re-pace a movie, edit the `SHOTS` timings at the top of its file. Rendering uses your installed Chrome (`CHROME_PATH`) and needs `ffmpeg`.
-
-Under the hood, `?film` puts the app into a frame-by-frame mode (`src/film.ts`) with no interface. The script poses the camera, the boat (`src/boat.ts`), and the trail highlight for each frame, captures it, and streams it into ffmpeg.
+See [docs/films.md](docs/films.md) for the movies so far, the options, and how to make a new ride.
 
 ## Data
 
