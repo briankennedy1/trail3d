@@ -25,7 +25,12 @@ It's a static site. `npm run build` writes everything to `dist/`. [`render.yaml`
 
 ## Movies
 
-The map can render short movies frame by frame, for presentations. Each movie is a timeline in `scripts/films/`. For example, `keys-to-stanford-rock.mjs` opens on the whole basin, drops into the Tahoe Keys, follows a wooden runabout up the west shore to Obexer's, and then paints on the Stanford Rock Trail.
+The map can render short movies frame by frame, for presentations. Each movie is a timeline in `scripts/films/`:
+
+- **`keys-to-stanford-rock`** opens on the whole basin, drops into the Tahoe Keys, follows a wooden runabout up the west shore to Obexer's, and then paints on the Stanford Rock Trail.
+- **`fountain-place-corral`** faces east from Trimmer Peak. A mountain biker climbs Fountain Place Road to the top of Corral, then rides Corral down to Powerline Road.
+
+A scene can pose the camera from any direction, move the boat along lon/lat waypoints, or build a route from pieces of named trails and roads (`setRoute`) with a rider drawing it on.
 
 ```
 npm run dev                                          # in another terminal

@@ -399,7 +399,8 @@ async function main() {
       landscape,
       placeCamera,
       homeView: () => computeView(basinPoints, { left: 60, right: 60, top: 40, bottom: 40 }, HOME_AZIMUTH, POLAR),
-      trailView: (id, pad) => computeView(trailLayer.bounds(id), pad, HOME_AZIMUTH, POLAR),
+      trailView: (id, pad, azimuth = HOME_AZIMUTH) => computeView(trailLayer.bounds(id), pad, azimuth, POLAR),
+      fitView: (points, pad, azimuth = HOME_AZIMUTH) => computeView(points, pad, azimuth, POLAR),
       render() {
         trailLayer.setPixelsPerUnit((height / VIEW_HEIGHT) * camera.zoom);
         renderer.setRenderTarget(target);

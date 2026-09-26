@@ -5,6 +5,16 @@ import { LIGHT_DIR } from './terrain';
 // A little mahogany runabout (a nod to Obexer's wooden boats) that follows a route across
 // the water, trailing a painted white wake. Used by film mode.
 
+/** A flat-colored material with the map's watercolor lighting, for small props */
+export function paintedMaterial(hex: string, side: THREE.Side = THREE.FrontSide) {
+  return new THREE.ShaderMaterial({
+    vertexShader: PAINTED_VERT,
+    fragmentShader: PAINTED_FRAG,
+    uniforms: { uColor: { value: new THREE.Color(hex) }, uLightDir: { value: LIGHT_DIR } },
+    side,
+  });
+}
+
 const PAINTED_VERT = /* glsl */ `
 varying vec3 vNormal;
 varying vec3 vWorld;
@@ -72,12 +82,7 @@ export class Boat {
   private routeLength = 1;
 
   constructor() {
-    const mat = (hex: string) =>
-      new THREE.ShaderMaterial({
-        vertexShader: PAINTED_VERT,
-        fragmentShader: PAINTED_FRAG,
-        uniforms: { uColor: { value: new THREE.Color(hex) }, uLightDir: { value: LIGHT_DIR } },
-      });
+    const mat = (hex: string) => paintedMaterial(hex);
 
     // Top-down outline: square stern at -x, pointed bow at +x, length 1
     const outline = (k: number) => {
