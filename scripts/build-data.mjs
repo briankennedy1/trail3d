@@ -476,7 +476,32 @@ const titleCase = (s) =>
     .replace(/\bTra$/, 'Trail');
 const isOn = (v) => v != null && v !== 'N/A' && String(v).trim() !== '';
 
+// Names are compared loosely: "CORRAL TRAIL" and "Corral Trail" are the same trail, and every
+// piece of the Tahoe Rim / Pacific Crest / Tahoe–Yosemite trails belongs to the whole.
+const LONG_DISTANCE = /tahoe rim trail|pacific crest trail|tahoe yosemite trail/i;
+const normName = (n) => {
+  const base = n.replace(/\s*\(.*?\)\s*/g, ' ').trim();
+  if (LONG_DISTANCE.test(base)) return base.match(LONG_DISTANCE)[0].toLowerCase();
+  return base
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\b(trail|trails|tr)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+// OSM trail vertices by trail name, for spotting USFS lines that duplicate a mapped trail
+const osmByName = new Map();
+for (const s of segments) {
+  const k = normName(s.name);
+  if (!osmByName.has(k)) osmByName.set(k, []);
+  osmByName.get(k).push(...densify(s.pts, 40));
+}
+const SAME_TRAIL_RADIUS = 200; // m: a same-named USFS line this close is the same trail, drawn differently
+const MAX_STRAY = 600; // m: …unless it wanders off for longer than this, which means it's trail OSM lacks
+
 let usfsAdded = 0;
+const usfsDuplicates = [];
 for (const f of usfs.features) {
   const p = f.properties;
   if (p.trail_type !== 'TERRA' || !p.trail_name || MOTORIZED.test(p.trail_name)) continue;
@@ -491,6 +516,26 @@ for (const f of usfs.features) {
     // Mark matching OSM segments as confirmed by the official inventory
     for (const m of matches) if (m) m.official = true;
     if (covered > 0.6) continue;
+    // The USFS and OSM lines for the same trail can run tens of meters apart. If OSM has a
+    // trail by this name and this line follows it closely, never straying more than a few
+    // hundred meters, it's the same trail drawn differently and OSM's version wins. A longer
+    // stray stretch is trail OSM doesn't have (a gap in the Rim Trail, say), so it's kept.
+    const sameName = osmByName.get(normName(titleCase(p.trail_name.trim())));
+    if (sameName) {
+      let stray = 0;
+      let longestStray = 0;
+      let near = 0;
+      for (const [x, y] of dense) {
+        const close = sameName.some(([ox, oy]) => Math.hypot(ox - x, oy - y) < SAME_TRAIL_RADIUS);
+        if (close) near++;
+        stray = close ? 0 : stray + 25;
+        longestStray = Math.max(longestStray, stray);
+      }
+      if (near / dense.length > 0.6 && longestStray < MAX_STRAY) {
+        usfsDuplicates.push(titleCase(p.trail_name.trim()));
+        continue;
+      }
+    }
     const mid = pts[Math.floor(pts.length / 2)];
     const wild = inWilderness(mid[0], mid[1]);
     let bike = null;
@@ -517,19 +562,9 @@ for (const f of usfs.features) {
   }
 }
 console.log(`  ${usfsAdded} USFS segments added where OSM lacks coverage`);
+console.log(`  skipped USFS lines that duplicate OSM trails: ${[...new Set(usfsDuplicates)].sort().join(', ')}`);
 
 // Group segments into named trails (same name + spatially connected)
-const LONG_DISTANCE = /tahoe rim trail|pacific crest trail|tahoe yosemite trail/i;
-const normName = (n) => {
-  const base = n.replace(/\s*\(.*?\)\s*/g, ' ').trim();
-  if (LONG_DISTANCE.test(base)) return base.match(LONG_DISTANCE)[0].toLowerCase();
-  return base
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, '')
-    .replace(/\b(trail|trails|tr)\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-};
 const byName = new Map();
 for (const s of segments) {
   const k = normName(s.name);
