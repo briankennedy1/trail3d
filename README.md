@@ -29,6 +29,10 @@ The map can render short movies frame by frame, for presentations. Each movie is
 
 - **`keys-to-stanford-rock`** opens on the whole basin, drops into the Tahoe Keys, follows a wooden runabout up the west shore to Obexer's, and then paints on the Stanford Rock Trail.
 - **`fountain-place-corral`** faces east from Trimmer Peak. A mountain biker climbs Fountain Place Road to the top of Corral, then rides Corral down to Powerline Road.
+- **`armstrong-sidewinder`** climbs Fountain Place Road to its top, then descends Armstrong Connector, Sidewinder, and Incense Cedar, and crosses Powerline Road to the bottom of Corral.
+- **`armstrong-pass-star-lake`** climbs Fountain Place and Armstrong Pass, follows the Tahoe Rim Trail to Star Lake, then descends Star Lake, Cold Creek, and Lower Cold Creek, and takes Railroad Grade to the bottom of Corral.
+
+Ride films share a timeline in `scripts/films/lib/ride.mjs`. A new one is mostly a list of legs (trail or road names with where to join and leave them) and optional stops. The rider climbs slower than it descends, and wherever two legs don't touch, a straight gold connector bridges the gap.
 
 A scene can pose the camera from any direction, move the boat along lon/lat waypoints, or build a route from pieces of named trails and roads (`setRoute`) with a rider drawing it on.
 

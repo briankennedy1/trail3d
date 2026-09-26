@@ -60,9 +60,110 @@ const toJSON = (v: View): ViewJSON => ({ target: v.target.toArray(), zoom: v.zoo
 type LonLat = [number, number];
 /** One leg of a route: part of a named trail or road, between the points nearest `from` and `to` */
 interface RoutePart {
-  name: string;
-  from: LonLat;
+  /** the trail or road to follow; omit for a straight connector to `to` */
+  name?: string;
+  /** where to join the trail; defaults to wherever the previous leg ended */
+  from?: LonLat;
   to: LonLat;
+}
+
+type XYE = [number, number, number]; // local meters + elevation
+
+const JUNCTION = 40; // m: pieces of the same trail this close together connect
+const GAP = 15; // m: a bigger jump between legs gets a straight connector
+
+/** Shortest path along a trail's lines (which may be several pieces) between the vertices
+ * nearest two points. Pieces connect wherever one's end comes within JUNCTION of another. */
+function pathAlong(lines: number[][], from: [number, number], to: [number, number]): XYE[] {
+  const nodes: XYE[] = [];
+  const edges: [number, number][][] = [];
+  const link = (a: number, b: number) => {
+    const w = Math.hypot(nodes[a][0] - nodes[b][0], nodes[a][1] - nodes[b][1]);
+    edges[a].push([b, w]);
+    edges[b].push([a, w]);
+  };
+  const ranges: [number, number][] = [];
+  for (const line of lines) {
+    const base = nodes.length;
+    for (let k = 0; k < line.length; k += 3) {
+      nodes.push([line[k], line[k + 1], line[k + 2]]);
+      edges.push([]);
+      if (k) link(nodes.length - 2, nodes.length - 1);
+    }
+    ranges.push([base, nodes.length - 1]);
+  }
+  ranges.forEach(([a0, a1], ai) => {
+    for (const end of [a0, a1]) {
+      ranges.forEach(([b0, b1], bi) => {
+        if (ai === bi) return;
+        let best = -1;
+        let bd = JUNCTION;
+        for (let n = b0; n <= b1; n++) {
+          const d = Math.hypot(nodes[n][0] - nodes[end][0], nodes[n][1] - nodes[end][1]);
+          if (d < bd) [bd, best] = [d, n];
+        }
+        if (best >= 0) link(end, best);
+      });
+    }
+  });
+  const nearest = ([x, y]: [number, number]) => {
+    let best = 0;
+    let bd = Infinity;
+    nodes.forEach((n, i) => {
+      const d = Math.hypot(n[0] - x, n[1] - y);
+      if (d < bd) [bd, best] = [d, i];
+    });
+    return best;
+  };
+  const start = nearest(from);
+  const goal = nearest(to);
+  // Dijkstra with a small binary heap
+  const dist = new Float64Array(nodes.length).fill(Infinity);
+  const prev = new Int32Array(nodes.length).fill(-1);
+  const heap: [number, number][] = [[0, start]];
+  dist[start] = 0;
+  const push = (item: [number, number]) => {
+    heap.push(item);
+    for (let i = heap.length - 1; i > 0; ) {
+      const p = (i - 1) >> 1;
+      if (heap[p][0] <= heap[i][0]) break;
+      [heap[p], heap[i]] = [heap[i], heap[p]];
+      i = p;
+    }
+  };
+  const pop = () => {
+    const top = heap[0];
+    const last = heap.pop()!;
+    if (heap.length) {
+      heap[0] = last;
+      for (let i = 0; ; ) {
+        const l = i * 2 + 1;
+        const r = l + 1;
+        let m = i;
+        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+        if (m === i) break;
+        [heap[m], heap[i]] = [heap[i], heap[m]];
+        i = m;
+      }
+    }
+    return top;
+  };
+  while (heap.length) {
+    const [d, n] = pop();
+    if (n === goal) break;
+    if (d > dist[n]) continue;
+    for (const [m, w] of edges[n]) {
+      if (d + w < dist[m]) {
+        dist[m] = d + w;
+        prev[m] = n;
+        push([d + w, m]);
+      }
+    }
+  }
+  const path: XYE[] = [];
+  for (let n = goal; n !== -1; n = prev[n]) path.unshift(nodes[n]);
+  return path;
 }
 
 const LIFT = 0.12; // same as trails, so the route sits on top of the trail it follows
@@ -84,7 +185,7 @@ export function installFilm(ctx: FilmContext) {
   ctx.scene.add(rider.group);
 
   // The route: world points, and cumulative horizontal distance along it for timing
-  let route: { pts: THREE.Vector3[]; dist: number[] } | null = null;
+  let route: { pts: THREE.Vector3[]; dist: number[]; eles: number[] } | null = null;
   const routeLines = {
     preview: new LineSegments2(new LineSegmentsGeometry(), lineMaterial('#fffaf0', 3, 1, true)),
     halo: new LineSegments2(new LineSegmentsGeometry(), lineMaterial('#fffaf0', 11, 0.95)),
@@ -153,70 +254,90 @@ export function installFilm(ctx: FilmContext) {
       return { target: p.toArray(), zoom, azimuth: az, polar: home.polar };
     },
 
-    /** Build a route from legs of named trails and roads. Returns its stats, and where each leg ends (u). */
+    /** Build a route from legs of named trails and roads, in order. Where one leg ends away
+     * from where the next begins, a straight connector bridges the gap. Returns overall stats,
+     * each named leg's stats and span (u, 0–1 along the route), and the connectors' spans. */
     setRoute: (parts: RoutePart[]) => {
-      const pts: THREE.Vector3[] = [];
-      const eles: number[] = [];
-      const legs: { name: string; uEnd: number; miles: number; gainFt: number; lossFt: number; endFt: number }[] = [];
-      const legEnds: number[] = [];
+      const path: XYE[] = [];
+      const spans: { name: string | null; from: number; to: number }[] = []; // vertex index ranges
+      const append = (pts: XYE[], name: string | null) => {
+        const from = Math.max(0, path.length - 1);
+        for (const p of pts) {
+          const last = path[path.length - 1];
+          if (last && Math.hypot(p[0] - last[0], p[1] - last[1]) < 0.5) continue;
+          path.push(p);
+        }
+        spans.push({ name, from, to: path.length - 1 });
+      };
       for (const part of parts) {
-        const [fx, fy] = local(...part.from);
+        const last = path[path.length - 1];
+        const from: [number, number] = part.from ? local(...part.from) : [last[0], last[1]];
         const [tx, ty] = local(...part.to);
-        // the line of this trail that passes closest to both ends, and the vertices nearest them
-        let best: { line: number[]; i: number; j: number; score: number } | null = null;
-        for (const line of trailByName(part.name).lines) {
-          let i = 0;
-          let j = 0;
-          let di = Infinity;
-          let dj = Infinity;
-          for (let k = 0; k < line.length; k += 3) {
-            const a = Math.hypot(line[k] - fx, line[k + 1] - fy);
-            const b = Math.hypot(line[k] - tx, line[k + 1] - ty);
-            if (a < di) [di, i] = [a, k];
-            if (b < dj) [dj, j] = [b, k];
+        const legPts: XYE[] = part.name ? pathAlong(trailByName(part.name).lines, from, [tx, ty]) : [[tx, ty, terrain.heightAt(tx, ty)]];
+        const gap = last ? Math.hypot(legPts[0][0] - last[0], legPts[0][1] - last[1]) : 0;
+        if (gap > GAP || (!part.name && gap > 0.5)) {
+          // bridge the gap with a straight line, draped on the terrain every 20 m
+          const [x0, y0] = last;
+          const [x1, y1] = legPts[0];
+          const n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 20);
+          const bridge: XYE[] = [];
+          for (let k = 1; k < n; k++) {
+            const x = x0 + ((x1 - x0) * k) / n;
+            const y = y0 + ((y1 - y0) * k) / n;
+            bridge.push([x, y, terrain.heightAt(x, y)]);
           }
-          if (!best || di + dj < best.score) best = { line, i, j, score: di + dj };
+          // a connector-only part is just the bridge, ending at its target
+          append(part.name ? bridge : [...bridge, ...legPts], null);
         }
-        const { line, i, j } = best!;
-        const step = i <= j ? 3 : -3;
-        for (let k = i; step > 0 ? k <= j : k >= j; k += step) {
-          if (pts.length && k === i) continue; // shared junction point
-          const [x, y] = [line[k], line[k + 1]];
-          const [wx, wy, wz] = toWorld(map, x, y, terrain.heightAt(x, y));
-          pts.push(new THREE.Vector3(wx, wy + LIFT, wz));
-          eles.push(line[k + 2]);
-        }
-        legEnds.push(pts.length - 1);
-        legs.push({ name: part.name, uEnd: 0, miles: 0, gainFt: 0, lossFt: 0, endFt: Math.round(eles[eles.length - 1] * 3.28084) });
+        if (part.name) append(legPts, part.name);
       }
+
+      const pts = path.map(([x, y]) => {
+        const [wx, wy, wz] = toWorld(map, x, y, terrain.heightAt(x, y));
+        return new THREE.Vector3(wx, wy + LIFT, wz);
+      });
+      const eles = path.map((p) => p[2]);
       // distances (horizontal meters) and climbing, with the same 4 m hysteresis as the trail stats
       const dist = [0];
-      for (let k = 1; k < pts.length; k++) dist.push(dist[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].z - pts[k - 1].z) * 100);
+      for (let k = 1; k < path.length; k++) dist.push(dist[k - 1] + Math.hypot(path[k][0] - path[k - 1][0], path[k][1] - path[k - 1][1]));
       const total = dist[dist.length - 1];
-      let start = 0;
-      legs.forEach((leg, n) => {
-        const end = legEnds[n];
-        let ref = eles[start];
-        for (let k = start; k <= end; k++) {
-          if (eles[k] - ref > 4) [leg.gainFt, ref] = [leg.gainFt + (eles[k] - ref) * 3.28084, eles[k]];
-          else if (ref - eles[k] > 4) [leg.lossFt, ref] = [leg.lossFt + (ref - eles[k]) * 3.28084, eles[k]];
+      const measure = (a: number, b: number) => {
+        let gain = 0;
+        let loss = 0;
+        let ref = eles[a];
+        for (let k = a; k <= b; k++) {
+          if (eles[k] - ref > 4) [gain, ref] = [gain + eles[k] - ref, eles[k]];
+          else if (ref - eles[k] > 4) [loss, ref] = [loss + ref - eles[k], eles[k]];
         }
-        leg.gainFt = Math.round(leg.gainFt);
-        leg.lossFt = Math.round(leg.lossFt);
-        leg.miles = Math.round(((dist[end] - dist[start]) / 1609.34) * 10) / 10;
-        leg.uEnd = dist[end] / total;
-        start = end;
-      });
-      route = { pts, dist };
+        return {
+          uStart: dist[a] / total,
+          uEnd: dist[b] / total,
+          miles: Math.round(((dist[b] - dist[a]) / 1609.34) * 10) / 10,
+          gainFt: Math.round(gain * 3.28084),
+          lossFt: Math.round(loss * 3.28084),
+          endFt: Math.round(eles[b] * 3.28084),
+        };
+      };
+      route = { pts, dist, eles };
       setSegments(routeLines.preview, pts);
+      const whole = measure(0, path.length - 1);
       return {
-        miles: Math.round((total / 1609.34) * 10) / 10,
-        gainFt: legs.reduce((a, l) => a + l.gainFt, 0),
-        lossFt: legs.reduce((a, l) => a + l.lossFt, 0),
+        miles: whole.miles,
+        gainFt: whole.gainFt,
+        lossFt: whole.lossFt,
         topFt: Math.round(Math.max(...eles) * 3.28084),
-        legs,
+        legs: spans.filter((s) => s.name).map((s) => ({ name: s.name!, ...measure(s.from, s.to) })),
+        connectors: spans.filter((s) => !s.name).map((s) => measure(s.from, s.to)),
       };
     },
+    /** Elevation (m) along the route at n+1 evenly spaced points, for pacing climbs and descents */
+    routeProfile: (n: number) =>
+      Array.from({ length: n + 1 }, (_, i) => {
+        const { i: k, p } = routeAt(i / n);
+        const { eles, pts } = route!;
+        const t = pts[k].distanceTo(pts[k - 1]) ? p.distanceTo(pts[k - 1]) / pts[k].distanceTo(pts[k - 1]) : 0;
+        return eles[k - 1] + (eles[k] - eles[k - 1]) * t;
+      }),
     /** Where the route is at `u`, as a ground-plane camera target */
     routeTarget: (u: number): [number, number, number] => routeAt(u).p.toArray(),
     /** A view that fits the whole route */
