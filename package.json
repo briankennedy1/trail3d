@@ -11,7 +11,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "data": "node scripts/build-data.mjs",
-    "social": "node scripts/social-images.mjs"
+    "social": "node scripts/social-images.mjs",
+    "film": "node scripts/film.mjs"
   },
   "dependencies": {
     "three": "^0.186.0"

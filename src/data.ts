@@ -20,6 +20,7 @@ export interface Label {
 }
 
 export interface MapData {
+  bbox: { west: number; east: number; south: number; north: number };
   widthM: number;
   heightM: number;
   grid: { width: number; height: number; spacing: number; scale: number };

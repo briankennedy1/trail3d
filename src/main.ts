@@ -13,6 +13,14 @@ const VIEW_HEIGHT = 330; // world units visible vertically at zoom 1
 const POLAR = 0.98; // camera tilt from vertical (radians) — close to true isometric
 const HOME_AZIMUTH = 1.2; // looking west across the lake from the Nevada side
 
+type Padding = { left: number; right: number; top: number; bottom: number };
+export interface View {
+  target: THREE.Vector3;
+  zoom: number;
+  azimuth: number;
+  polar: number;
+}
+
 async function main() {
   const canvas = document.getElementById('scene') as HTMLCanvasElement;
   const loading = document.getElementById('loading')!;
@@ -138,13 +146,8 @@ async function main() {
     dirty = true;
   }
 
-  // Fit a box into the part of the screen not covered by panels.
-  function frameBox(
-    box: THREE.Box3 | THREE.Vector3[],
-    pad = { left: 380, right: 400, top: 80, bottom: 90 },
-    az = flight ? flight.to.azimuth : controls.getAzimuthalAngle(),
-    polar = flight ? flight.to.polar : controls.getPolarAngle(),
-  ) {
+  // The camera view that fits a box (or points) into the part of the screen not covered by panels.
+  function computeView(box: THREE.Box3 | THREE.Vector3[], pad: Padding, az: number, polar: number, maxZoom = 14): View {
     // camera basis for the destination orientation
     const tmp = new THREE.PerspectiveCamera();
     tmp.position.set(Math.sin(polar) * Math.sin(az), Math.cos(polar), Math.sin(polar) * Math.cos(az));
@@ -175,7 +178,7 @@ async function main() {
     const zoom = THREE.MathUtils.clamp(
       Math.min(availW / ((maxR - minR) / unitsPerPx0), availH / ((maxU - minU) / unitsPerPx0)) * 0.9,
       0.3,
-      14,
+      maxZoom,
     );
     const unitsPerPx = unitsPerPx0 / zoom;
     // center of the box, then shift so it sits in the middle of the free area
@@ -189,14 +192,24 @@ async function main() {
     // move the target onto the ground plane along the view direction so orbiting feels right
     const viewDir = tmp.position.clone().normalize();
     tgt.addScaledVector(viewDir, -tgt.y / viewDir.y);
-    flyTo({ target: tgt, zoom, azimuth: az, polar });
+    return { target: tgt, zoom, azimuth: az, polar };
+  }
+
+  function frameBox(
+    box: THREE.Box3 | THREE.Vector3[],
+    pad: Padding = { left: 380, right: 400, top: 80, bottom: 90 },
+    az = flight ? flight.to.azimuth : controls.getAzimuthalAngle(),
+    polar = flight ? flight.to.polar : controls.getPolarAngle(),
+  ) {
+    flyTo(computeView(box, pad, az, polar));
   }
 
   // The basin outline, as a world-space box, is what "home" frames.
   const basinPoints = map.basin.map(([x, y]) => new THREE.Vector3(...toWorld(map, x, y, terrain.heightAt(x, y))));
 
+  const HOME_PAD: Padding = { left: 370, right: 100, top: 40, bottom: 60 };
   function home() {
-    frameBox(basinPoints, { left: 370, right: 100, top: 40, bottom: 60 }, HOME_AZIMUTH, POLAR);
+    frameBox(basinPoints, HOME_PAD, HOME_AZIMUTH, POLAR);
   }
 
   function rotate(dir: number) {
@@ -370,6 +383,37 @@ async function main() {
 
   window.addEventListener('resize', resize);
   resize();
+
+  // ?film: a frame-by-frame mode for rendering movies (see scripts/film.mjs). No interface,
+  // no render loop; the film script sets up each frame and asks for it to be drawn.
+  if (new URLSearchParams(location.search).has('film')) {
+    document.body.classList.add('clean', 'film');
+    const { installFilm } = await import('./film');
+    installFilm({
+      scene,
+      camera,
+      map,
+      terrain,
+      trails,
+      trailLayer,
+      landscape,
+      placeCamera,
+      homeView: () => computeView(basinPoints, { left: 60, right: 60, top: 40, bottom: 40 }, HOME_AZIMUTH, POLAR),
+      trailView: (id, pad) => computeView(trailLayer.bounds(id), pad, HOME_AZIMUTH, POLAR),
+      render() {
+        trailLayer.setPixelsPerUnit((height / VIEW_HEIGHT) * camera.zoom);
+        renderer.setRenderTarget(target);
+        renderer.render(scene, camera);
+        renderer.setRenderTarget(null);
+        renderer.render(postScene, postCamera);
+        labels.update(camera, width, height);
+      },
+      pixelsPerUnit: () => (height / VIEW_HEIGHT) * camera.zoom,
+    });
+    loading.classList.add('done');
+    return;
+  }
+
   camera.zoom = 0.7;
   camera.updateProjectionMatrix();
   placeCamera(HOME_AZIMUTH + 0.5, POLAR - 0.1, new THREE.Vector3(0, 0, 0));

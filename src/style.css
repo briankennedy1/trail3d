@@ -1046,3 +1046,41 @@ body.clean :is(#panel, #builders, #card, #legend, #legend-plan, #controls, #hint
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+/* ---------- film mode (?film): frame-by-frame rendering for movies */
+body.film .label {
+  transition: none; /* each frame is posed exactly; nothing should animate on its own */
+}
+#film-caption {
+  position: fixed;
+  left: 64px;
+  bottom: 56px;
+  max-width: 900px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+#film-caption h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'SOFT' 100, 'WONK' 1;
+  color: #23405e;
+  text-shadow:
+    0 0 12px var(--paper-2),
+    0 0 24px var(--paper-2),
+    0 0 40px rgba(251, 247, 238, 0.9);
+}
+#film-caption p {
+  margin: 10px 0 0;
+  font-family: var(--hand);
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--ink);
+  text-shadow:
+    0 0 10px var(--paper-2),
+    0 0 20px var(--paper-2);
+}

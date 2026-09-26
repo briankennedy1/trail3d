@@ -152,26 +152,36 @@ export class TrailLayer {
     return l;
   }
 
-  private segmentsFor(ids: number[]) {
-    let count = 0;
-    for (const id of ids) for (const line of this.world[id]) count += line.length / 3 - 1;
-    const arr = new Float32Array(count * 6);
-    let n = 0;
+  /** Line segments for these trails. `reveal` < 1 keeps only that fraction of each trail, measured
+   * along its length from the start (or from the end, with `reverse`), for "drawing on" a trail. */
+  private segmentsFor(ids: number[], reveal = 1, reverse = false) {
+    const out: number[] = [];
     for (const id of ids) {
-      for (const line of this.world[id]) {
-        for (let i = 0; i < line.length - 3; i += 3) {
-          arr.set(line.subarray(i, i + 6), n);
-          n += 6;
+      const lines = reverse ? [...this.world[id]].reverse() : this.world[id];
+      let total = 0;
+      for (const line of lines) for (let i = 0; i < line.length - 3; i += 3) total += segLength(line, i);
+      let budget = total * reveal;
+      for (const line of lines) {
+        const idx = Array.from({ length: line.length / 3 - 1 }, (_, k) => k * 3);
+        if (reverse) idx.reverse();
+        for (const i of idx) {
+          if (budget <= 0) break;
+          const len = segLength(line, i);
+          const [a, b] = reverse ? [i + 3, i] : [i, i + 3];
+          const t = Math.min(1, budget / len);
+          out.push(line[a], line[a + 1], line[a + 2]);
+          for (let k = 0; k < 3; k++) out.push(line[a + k] + (line[b + k] - line[a + k]) * t);
+          budget -= len;
         }
       }
     }
-    return arr;
+    return new Float32Array(out);
   }
 
-  private setLines(l: LineSegments2, ids: number[]) {
+  private setLines(l: LineSegments2, ids: number[], reveal = 1, reverse = false) {
     l.geometry.dispose();
     const g = new LineSegmentsGeometry();
-    const segs = this.segmentsFor(ids);
+    const segs = this.segmentsFor(ids, reveal, reverse);
     if (segs.length) {
       g.setPositions(segs);
       l.geometry = g;
@@ -219,13 +229,19 @@ export class TrailLayer {
     this.setLines(this.hover.line, [id]);
   }
 
-  setSelected(id: number | null) {
-    if (id === null) {
+  setSelected(id: number | null, reveal = 1, reverse = false) {
+    if (id === null || reveal <= 0) {
       this.selected.halo.visible = this.selected.line.visible = false;
       return;
     }
-    this.setLines(this.selected.halo, [id]);
-    this.setLines(this.selected.line, [id]);
+    this.setLines(this.selected.halo, [id], reveal, reverse);
+    this.setLines(this.selected.line, [id], reveal, reverse);
+  }
+
+  /** Fade the everyday trail lines (0 = normal, 1 = nearly gone), for spotlighting one trail */
+  setBaseFade(f: number) {
+    const base = this.plans.size > 0 ? 0.4 : 0.95;
+    for (const key of ['bike', 'hike']) this.base.get(key)!.line.material.opacity = base * (1 - 0.75 * f);
   }
 
   /** Keep dashes a constant on-screen size as the camera zooms */
@@ -304,4 +320,8 @@ export class TrailLayer {
       }
     }
   }
+}
+
+function segLength(line: Float32Array, i: number) {
+  return Math.hypot(line[i + 3] - line[i], line[i + 4] - line[i + 1], line[i + 5] - line[i + 2]);
 }
