@@ -273,6 +273,12 @@ async function main() {
     applyHome(defaultHome);
     status('Default home restored');
   });
+  const rotateStep = THREE.MathUtils.degToRad(18);
+  const tiltStep = THREE.MathUtils.degToRad(10);
+  $('rotate-left').addEventListener('click', () => controls.rotateLeft(rotateStep));
+  $('rotate-right').addEventListener('click', () => controls.rotateLeft(-rotateStep));
+  $('tilt-up').addEventListener('click', () => controls.rotateUp(tiltStep));
+  $('tilt-down').addEventListener('click', () => controls.rotateUp(-tiltStep));
   $('north').addEventListener('click', () => {
     setSettingsOpen(false);
     const radius = camera.position.clone().sub(controls.target).length();

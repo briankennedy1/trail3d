@@ -22,6 +22,10 @@
     <a class="source" href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">View original ride on Trailforks ↗</a>
   </section>
   <nav class="map-controls" aria-label="Map controls">
+    <div class="view-controls" role="group" aria-label="3D view controls">
+      <div class="view-control-row"><span>Rotate</span><button id="rotate-left" type="button" aria-label="Rotate view left" title="Rotate view left">↶</button><button id="rotate-right" type="button" aria-label="Rotate view right" title="Rotate view right">↷</button></div>
+      <div class="view-control-row"><span>Tilt</span><button id="tilt-up" type="button" aria-label="Tilt view up" title="Tilt view up">↑</button><button id="tilt-down" type="button" aria-label="Tilt view down" title="Tilt view down">↓</button></div>
+    </div>
     <button id="north" type="button" title="Face north">N ↑</button>
     <button id="home" type="button" title="Go to home view" aria-label="Go to home view">⌂</button>
     <button id="settings" type="button" title="Map settings" aria-label="Map settings" aria-expanded="false" aria-controls="view-settings">⚙︎</button>
@@ -32,7 +36,7 @@
     </div>
     <span id="home-status" role="status" aria-live="polite" hidden></span>
   </nav>
-  <p class="map-hint">Hover a flag for its name · Drag to pan · Scroll to zoom · Right drag to rotate</p>
+  <p class="map-hint">Hover a flag for its name · Drag to pan · Scroll to zoom · Use the 3D controls to rotate and tilt</p>
   <footer>Source ride: <a href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">Trailforks</a> · Terrain: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS Terrain Tiles</a> · Inspired by <a href="https://github.com/kneath/tahoe-trails" target="_blank" rel="noopener">Tahoe Trails</a></footer>
   <div id="loading" role="status">Painting the mountains…</div>
   <script type="module" src="/src/beckwourth.ts"></script>
