@@ -14,8 +14,8 @@ const map = JSON.parse(fs.readFileSync(path.join(root, 'public/beckwourth/map.js
 const ride = JSON.parse(fs.readFileSync(path.join(root, 'public/beckwourth/ride.json'), 'utf8'));
 const terrain = fs.readFileSync(path.join(root, 'public/beckwourth/terrain.bin')).toString('base64');
 const data = JSON.stringify({ map, ride, terrain }).replaceAll('<', '\\u003c');
-html = html.replace(stylesheet[0], `<style>${css}</style>`);
-html = html.replace(script[0], `<script>window.__BECKWOURTH__=${data}</script><script type="module">${js}</script>`);
+html = html.replace(stylesheet[0], () => `<style>${css}</style>`);
+html = html.replace(script[0], () => `<script>window.__BECKWOURTH__=${data}</script><script type="module">${js}</script>`);
 // Bundled shader strings contain incidental trailing indentation; keep the
 // generated source friendly to Git without changing their GLSL tokens.
 html = html.split('\n').map(line => line.replace(/^ +(?=\t)/, '').replace(/[ \t]+$/, '')).join('\n');
