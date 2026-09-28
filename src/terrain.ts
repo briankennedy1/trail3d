@@ -10,7 +10,7 @@ export interface Landscape {
   focusUniform: { value: number };
 }
 
-export function buildLandscape(terrain: Terrain): Landscape {
+export function buildLandscape(terrain: Terrain, { trees = true }: { trees?: boolean } = {}): Landscape {
   const group = new THREE.Group();
   const focusUniform = { value: 0 };
   const mask = buildMaskTexture(terrain);
@@ -30,14 +30,16 @@ export function buildLandscape(terrain: Terrain): Landscape {
   });
   group.add(new THREE.Mesh(buildSides(terrain, base), sideMat));
 
-  const treeMat = new THREE.ShaderMaterial({
-    vertexShader: TREE_VERT,
-    fragmentShader: TREE_FRAG,
-    uniforms: { uLightDir: { value: LIGHT_DIR }, uFocus: focusUniform },
-  });
-  const trees = new THREE.Mesh(buildTrees(terrain), treeMat);
-  trees.frustumCulled = false;
-  group.add(trees);
+  if (trees) {
+    const treeMat = new THREE.ShaderMaterial({
+      vertexShader: TREE_VERT,
+      fragmentShader: TREE_FRAG,
+      uniforms: { uLightDir: { value: LIGHT_DIR }, uFocus: focusUniform },
+    });
+    const treeMesh = new THREE.Mesh(buildTrees(terrain), treeMat);
+    treeMesh.frustumCulled = false;
+    group.add(treeMesh);
+  }
 
   return { group, focusUniform };
 }

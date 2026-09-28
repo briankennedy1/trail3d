@@ -28,7 +28,7 @@ async function main() {
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#f6efe0');
-  scene.add(buildLandscape(terrain).group);
+  scene.add(buildLandscape(terrain, { trees: false }).group);
 
   const points = ride.points.map(([x, y]) => new THREE.Vector3(...toWorld(map, x, y, terrain.heightAt(x, y) + 5)));
   const distances = [0];
