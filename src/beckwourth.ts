@@ -100,6 +100,7 @@ async function main() {
   const play = $<HTMLButtonElement>('play');
   const followButton = $<HTMLButtonElement>('follow');
   const compassNeedle = $<SVGSVGElement>('compass-needle');
+  const compassCenter = $<HTMLButtonElement>('north');
   const chart = $<HTMLDivElement>('elevation-chart');
   const chartSvg = $<SVGSVGElement>('elevation-svg');
   const elevationReadout = $<HTMLOutputElement>('elevation-readout');
@@ -614,9 +615,18 @@ async function main() {
   }
   window.addEventListener('blur', () => stopViewMotion());
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopViewMotion(); });
-  $('north').addEventListener('click', () => {
+  function compassPointsNorth() {
+    const destination = cameraTransition && !cameraTransition.trackFollow ? cameraTransition.to : null;
+    const offset = (destination?.position ?? camera.position).clone().sub(destination?.target ?? controls.target);
+    return Math.abs(Math.atan2(offset.x, offset.z)) < THREE.MathUtils.degToRad(1);
+  }
+  compassCenter.addEventListener('click', () => {
+    const returnHome = compassPointsNorth();
     setFollowing(false);
-
+    if (returnHome) {
+      home();
+      return;
+    }
     const radius = camera.position.clone().sub(controls.target).length();
     startCameraTransition({
       position: controls.target.clone().add(new THREE.Vector3(0, radius * 0.7, radius * 0.7)),
@@ -712,6 +722,11 @@ async function main() {
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     const screenUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
     compassNeedle.style.transform = `rotate(${Math.atan2(-screenRight.z, -screenUp.z)}rad)`;
+    const compassAction = compassPointsNorth() ? 'Go to home view' : 'Face north';
+    if (compassCenter.title !== compassAction) {
+      compassCenter.title = compassAction;
+      compassCenter.setAttribute('aria-label', compassAction);
+    }
     for (let i = 0; i < pois.flags.length; i++) {
       const { pole, pennant, label, isPeak } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i;
