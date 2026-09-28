@@ -7,6 +7,7 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { Terrain, toWorld, type MapData } from './data';
 import { buildLandscape } from './terrain';
+import { buildPOIs } from './pois';
 import { POST_FRAG, POST_VERT } from './shaders';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
@@ -31,6 +32,8 @@ async function main() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#f6efe0');
   scene.add(buildLandscape(terrain, { trees: false }).group);
+  const pois = buildPOIs(map, terrain);
+  scene.add(pois.group);
 
   const points = ride.points.map(([x, y]) => new THREE.Vector3(...toWorld(map, x, y, terrain.heightAt(x, y) + 5)));
   const distances = [0];
@@ -268,6 +271,14 @@ async function main() {
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
     controls.update();
+    // Keep the diorama names readable without letting them fill the screen when zoomed in.
+    const labelScale = Math.min(1, 1.8 / camera.zoom);
+    const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    for (const label of pois.billboards) {
+      label.scale.set(10.5 * labelScale, 1.97 * labelScale, 1);
+      label.position.copy(screenRight).multiplyScalar((label.userData.isPeak ? (innerWidth < 700 ? 14 : 7) : 6) * labelScale);
+      label.position.y += 2.65;
+    }
     renderer.setRenderTarget(target); renderer.render(scene, camera);
     renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
     requestAnimationFrame(frame);
