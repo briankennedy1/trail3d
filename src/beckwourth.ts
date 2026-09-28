@@ -393,17 +393,22 @@ async function main() {
     const labelScale = Math.min(1, 1.8 / camera.zoom);
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     for (let i = 0; i < pois.flags.length; i++) {
-      const { pole, cap, label, isPeak } = pois.flags[i];
+      const { pole, pennant, cap, label, isPeak } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i;
       revealProgress[i] = reducedMotion ? Number(active) : THREE.MathUtils.clamp(
         revealProgress[i] + (active ? 1 : -1) * dt / 0.85, 0, 1,
       );
-      const raised = 1 - (1 - THREE.MathUtils.clamp(revealProgress[i] / 0.45, 0, 1)) ** 3;
-      const poleHeight = 0.85 + 2.35 * raised;
+      const retired = THREE.MathUtils.clamp(revealProgress[i] / 0.23, 0, 1);
+      pennant.visible = retired < 1;
+      (pennant.material as THREE.MeshBasicMaterial).opacity = 1 - retired;
+      const raised = 1 - (1 - THREE.MathUtils.clamp((revealProgress[i] - 0.16) / 0.34, 0, 1)) ** 3;
+      const poleHeight = 1.75 + 1.45 * raised;
       pole.scale.y = poleHeight;
       pole.position.y = poleHeight / 2;
       cap.position.y = poleHeight;
-      const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.32) / 0.68, 0, 1);
+      cap.visible = retired > 0;
+      (cap.material as THREE.MeshBasicMaterial).opacity = retired;
+      const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.38) / 0.62, 0, 1);
       const reveal = 1 - (1 - unfurl) ** 3;
       const width = 10.5 * labelScale;
       label.visible = reveal > 0.001;

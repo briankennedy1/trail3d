@@ -55,7 +55,7 @@ function labelTexture(name: string, color: string, elevationFt?: number) {
 
 export function buildPOIs(map: MapData, terrain: Terrain) {
   const group = new THREE.Group();
-  const flags: { marker: THREE.Group; pole: THREE.Mesh; cap: THREE.Mesh; label: THREE.Sprite; isPeak: boolean }[] = [];
+  const flags: { marker: THREE.Group; pole: THREE.Mesh; pennant: THREE.Mesh; cap: THREE.Mesh; label: THREE.Sprite; isPeak: boolean }[] = [];
   const metersLon = 111320 * Math.cos((map.bbox.south + map.bbox.north) * Math.PI / 360);
   for (const place of places) {
     const x = (place.longitude - map.bbox.west) * metersLon;
@@ -64,18 +64,27 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     marker.position.set(...toWorld(map, x, y, terrain.heightAt(x, y) + 1));
 
     const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.045, 0.065, 1, 8),
+      new THREE.CylinderGeometry(0.045, 0.055, 1, 8),
       new THREE.MeshBasicMaterial({ color: '#463e34', depthTest: true }),
     );
-    pole.scale.y = 0.85;
-    pole.position.y = 0.425;
+    pole.scale.y = 1.75;
+    pole.position.y = 0.875;
     marker.add(pole);
+
+    const pennant = new THREE.Mesh(
+      new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([
+        0, 1.75, 0, 1.12, 1.47, 0, 0, 1.19, 0,
+      ], 3)),
+      new THREE.MeshBasicMaterial({ color: place.color, side: THREE.DoubleSide, depthTest: true, transparent: true }),
+    );
+    marker.add(pennant);
 
     const cap = new THREE.Mesh(
       new THREE.SphereGeometry(0.18, 12, 8),
-      new THREE.MeshBasicMaterial({ color: place.color, depthTest: true }),
+      new THREE.MeshBasicMaterial({ color: place.color, depthTest: true, transparent: true }),
     );
-    cap.position.y = 0.85;
+    cap.position.y = 1.75;
+    cap.visible = false;
     marker.add(cap);
 
     const label = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -86,7 +95,7 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     label.scale.set(10.5, 1.97, 1);
     label.visible = false;
     marker.add(label);
-    flags.push({ marker, pole, cap, label, isPeak: place.name === 'Beckwourth Peak' });
+    flags.push({ marker, pole, pennant, cap, label, isPeak: place.name === 'Beckwourth Peak' });
     group.add(marker);
   }
   return { group, flags };
