@@ -119,8 +119,9 @@ async function main() {
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   let playing = false, progress = 1, last = performance.now();
   let following = false;
-  let orbitAngle = 0, orbitHeight = 95, orbitZoom = 1;
-  const orbitRadius = 70;
+  let orbitAngle = 0, desiredOrbitAngle = 0, orbitHeight = 34, orbitZoom = 1;
+  let viewSearchTime = 0;
+  const orbitRadius = 90;
   const orbitCenter = new THREE.Vector3();
 
   function sampleAt(value: number) {
@@ -131,6 +132,14 @@ async function main() {
     const t = THREE.MathUtils.clamp((distance - distances[i - 1]) / Math.max(1, distances[i] - distances[i - 1]), 0, 1);
     return { i, t, elevation: THREE.MathUtils.lerp(elevations[i - 1], elevations[i], t) };
   }
+  function routePoint(distance: number) {
+    const { i, t } = sampleAt(distance / total);
+    return points[i - 1].clone().lerp(points[i], t);
+  }
+  function followFocus() {
+    // Show where the ride is going without steering the camera through every GPS bend.
+    return rider.position.clone().lerp(routePoint(progress * total + 1100), 0.35);
+  }
   const feet = (meters: number) => `${Math.round(meters * 3.28084).toLocaleString()} ft`;
   const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * totalMiles).toFixed(1)} mi`;
   function clearSightHeight(marker: THREE.Vector3, cameraX: number, cameraZ: number) {
@@ -138,7 +147,7 @@ async function main() {
     const distance = Math.hypot(dx, dz);
     let required = 0;
     // Follow the sightline across the height field, including ridges near the rider.
-    for (let along = 0.75; along < distance; along += 0.75) {
+    for (let along = 1.25; along < distance; along += 1.25) {
       const x = marker.x + dx * along / distance;
       const z = marker.z + dz * along / distance;
       const mapX = x * WORLD_SCALE + map.widthM / 2;
@@ -148,6 +157,26 @@ async function main() {
       required = Math.max(required, (groundY + 0.12 - marker.y) * distance / along);
     }
     return required;
+  }
+  function viewHeight(center: THREE.Vector3, angle: number) {
+    const x = center.x + Math.sin(angle) * orbitRadius;
+    const z = center.z + Math.cos(angle) * orbitRadius;
+    // Clear the rider and the next stretch of trail, not just the camera target.
+    const subjects = [rider.position, routePoint(progress * total + 550), routePoint(progress * total + 1100)];
+    return Math.max(center.y + 34, ...subjects.map(p => p.y + clearSightHeight(p, x, z) + 2.5));
+  }
+  function chooseViewAngle() {
+    const center = followFocus();
+    let bestAngle = desiredOrbitAngle;
+    let bestScore = Infinity;
+    // Look for a clear oblique sightline without whipping around the diorama.
+    for (const turn of [-1.15, -0.75, -0.38, 0, 0.38, 0.75, 1.15]) {
+      const angle = orbitAngle + turn;
+      const height = viewHeight(center, angle);
+      const score = Math.max(0, height - center.y - 34) + Math.abs(turn) * 7;
+      if (score < bestScore) { bestScore = score; bestAngle = angle; }
+    }
+    desiredOrbitAngle = bestAngle;
   }
   function frameRiderForMobile() {
     if (innerWidth > 700) {
@@ -161,13 +190,14 @@ async function main() {
     camera.setViewOffset(innerWidth, innerHeight, 0, Math.max(0, innerHeight / 2 - riderY), innerWidth, innerHeight);
   }
   function updateFollowCamera(dt: number) {
-    if (playing) orbitAngle += dt * 0.028;
-    // A single fast damper removes GPS wiggle without letting the rider outrun the shot.
-    orbitCenter.lerp(rider.position, 1 - Math.exp(-8 * dt));
+    viewSearchTime -= dt;
+    if (viewSearchTime <= 0) { chooseViewAngle(); viewSearchTime = 1.5; }
+    orbitAngle = THREE.MathUtils.damp(orbitAngle, desiredOrbitAngle, 0.65, dt) + dt * 0.012;
+    orbitCenter.lerp(followFocus(), 1 - Math.exp(-1.7 * dt));
     const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
     const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
-    const minHeight = Math.max(95, rider.position.y + clearSightHeight(rider.position, x, z) + 2 - orbitCenter.y);
-    orbitHeight = Math.max(minHeight, THREE.MathUtils.damp(orbitHeight, minHeight, 0.8, dt));
+    const minHeight = viewHeight(orbitCenter, orbitAngle) - orbitCenter.y;
+    orbitHeight = Math.max(minHeight, THREE.MathUtils.damp(orbitHeight, minHeight, 1.4, dt));
     controls.target.copy(orbitCenter);
     camera.position.set(x, orbitCenter.y + orbitHeight, z);
     camera.zoom = THREE.MathUtils.damp(camera.zoom, orbitZoom, 3, dt);
@@ -176,10 +206,13 @@ async function main() {
     frameRiderForMobile();
   }
   function positionFollowCamera() {
-    orbitCenter.copy(rider.position);
+    orbitCenter.copy(followFocus());
+    chooseViewAngle();
+    orbitAngle = desiredOrbitAngle;
+    viewSearchTime = 1.5;
     const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
     const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
-    orbitHeight = Math.max(95, clearSightHeight(rider.position, x, z) + 2);
+    orbitHeight = viewHeight(orbitCenter, orbitAngle) - orbitCenter.y;
     controls.target.copy(orbitCenter);
     camera.position.set(x, orbitCenter.y + orbitHeight, z);
     camera.zoom = orbitZoom;
@@ -193,7 +226,7 @@ async function main() {
     if (enabled) {
       rider.visible = true;
       orbitAngle = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
-      orbitZoom = 1.15;
+      orbitZoom = 0.95;
       positionFollowCamera();
     } else if (camera.view?.enabled) {
       camera.clearViewOffset();
