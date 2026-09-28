@@ -1,0 +1,36 @@
+:root { font-family: 'DM Sans', system-ui, sans-serif; color: #2e3536; background: #f6efe0; font-synthesis: none; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; }
+a { color: inherit; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+.masthead { position: fixed; z-index: 2; top: 30px; left: 38px; text-shadow: 0 2px 12px #f6efe0; }
+.eyebrow, .kicker { text-transform: uppercase; letter-spacing: .2em; font-size: 10px; font-weight: 700; color: #8c6a45; }
+h1, h2 { font-family: Fraunces, Georgia, serif; }
+h1 { font-size: clamp(30px, 3.7vw, 56px); line-height: 1.02; margin: 8px 0 7px; color: #314f53; letter-spacing: -.035em; }
+h1 em { color: #b95a37; font-weight: 600; }
+.masthead p { margin: 0; font-size: 14px; font-weight: 600; color: #5e6865; }
+.ride-card { position: fixed; z-index: 2; top: 50%; right: 30px; transform: translateY(-50%); width: 330px; padding: 24px; background: rgba(255,250,239,.93); border: 1px solid rgba(113,93,66,.16); border-radius: 18px; box-shadow: 0 14px 42px rgba(48,54,41,.16); backdrop-filter: blur(9px); }
+.card-top, .playback-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.badge { padding: 5px 8px; border-radius: 99px; background: #e7eee8; color: #386054; font-size: 10px; font-weight: 700; white-space: nowrap; }
+h2 { font-size: 30px; line-height: 1.1; margin: 18px 0 8px; color: #29464b; }
+.description { font-size: 13px; line-height: 1.5; color: #68716c; margin: 0 0 20px; }
+.stats { display: flex; border-top: 1px solid #e6dfce; border-bottom: 1px solid #e6dfce; padding: 16px 0; gap: 10px; }
+.stats div { flex: 1; min-width: 0; }
+.stats strong { display: block; font-family: Fraunces, Georgia, serif; font-size: 24px; line-height: 1; color: #b95a37; }
+.stats span { display: block; font-size: 10px; margin-top: 5px; font-weight: 700; color: #68716c; text-transform: uppercase; letter-spacing: .06em; }
+.playback { margin: 20px 0 17px; }
+.playback-head { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; color: #52645e; }
+#mile { color: #ab5b34; font-variant-numeric: tabular-nums; }
+#progress { width: 100%; accent-color: #c06836; margin: 15px 0; }
+#play { border: 0; border-radius: 9px; background: #315653; color: white; padding: 11px 16px; width: 100%; font-size: 13px; font-weight: 700; }
+#play:hover { background: #244540; }
+.source { display: block; text-decoration: none; font-size: 12px; font-weight: 700; color: #9b5a37; }
+.source:hover { text-decoration: underline; }
+.map-controls { position: fixed; right: 30px; bottom: 82px; z-index: 2; display: flex; gap: 7px; }
+.map-controls button { border: 1px solid #e1d5bc; background: rgba(255,250,239,.95); border-radius: 9px; box-shadow: 0 5px 20px #554a3529; min-width: 42px; height: 42px; font-weight: 700; color: #315653; }
+.map-hint { position: fixed; left: 38px; bottom: 56px; z-index: 2; font-size: 11px; font-weight: 700; color: #66716a; text-shadow: 0 1px 4px #fff9; }
+footer { position: fixed; left: 38px; bottom: 24px; z-index: 2; font-size: 10px; color: #777a6d; }
+#loading { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; background: #f6efe0; color: #315653; font-family: Fraunces, Georgia, serif; font-size: 22px; }
+@media (max-width: 700px) { .masthead { top: 19px; left: 19px; } .masthead p { font-size: 11px; } .ride-card { top: auto; bottom: 12px; right: 12px; left: 12px; transform: none; width: auto; padding: 16px; } h2 { font-size: 23px; margin: 8px 0 3px; } .description { display: none; } .stats { padding: 10px 0; } .stats strong { font-size: 20px; } .playback { margin: 10px 0 8px; } .source { font-size: 11px; } .map-controls { right: 15px; bottom: 290px; } .map-hint, footer { display: none; } }
