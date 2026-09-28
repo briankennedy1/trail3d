@@ -123,6 +123,7 @@ async function main() {
   let following = false;
   const orbitRadius = 90;
   const flightSteps = 192;
+  const followDuration = 45;
   const introEnd = 0.25;
   type Shot = { center: THREE.Vector3; angle: number; height: number };
   type CameraPose = { position: THREE.Vector3; target: THREE.Vector3; zoom: number; offsetX: number; offsetY: number };
@@ -269,8 +270,11 @@ async function main() {
         distance += motion[j] * weight;
         weightSum += weight;
       }
-      flightTimes.push(flightTimes[i] + distance / weightSum / 5.5);
+      flightTimes.push(flightTimes[i] + distance / weightSum);
     }
+    // Preserve the relative pacing while fitting the complete flight into 45 seconds.
+    const totalMotion = flightTimes[flightSteps];
+    flightTimes = flightTimes.map(time => time / totalMotion * followDuration);
   }
   function timeAtProgress(value: number) {
     if (!flightPath) buildFlightPath();
