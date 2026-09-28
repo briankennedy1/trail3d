@@ -42,6 +42,9 @@ async function main() {
     distances.push(distances.at(-1)! + Math.hypot(a[0] - b[0], a[1] - b[1]));
   }
   const total = distances.at(-1)!;
+  const totalMiles = total / 1609.344;
+  $<HTMLElement>('ride-distance').textContent = totalMiles.toFixed(1);
+  $<HTMLElement>('profile-end').textContent = `${totalMiles.toFixed(1)} mi`;
   const mat = (color: string, width: number, opacity = 1) => new LineMaterial({
     color: new THREE.Color(color).getHex(), linewidth: width, transparent: opacity < 1, opacity,
     depthTest: true, depthWrite: false,
@@ -120,7 +123,7 @@ async function main() {
     return { i, t, elevation: THREE.MathUtils.lerp(elevations[i - 1], elevations[i], t) };
   }
   const feet = (meters: number) => `${Math.round(meters * 3.28084).toLocaleString()} ft`;
-  const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * 15).toFixed(1)} mi`;
+  const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * totalMiles).toFixed(1)} mi`;
   function setProgress(value: number) {
     progress = THREE.MathUtils.clamp(value, 0, 1);
     const distance = progress * total;

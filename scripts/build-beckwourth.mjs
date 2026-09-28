@@ -31,6 +31,26 @@ function decode(s) {
 
 const coords = decode(encoded);
 if (coords.length < 100) throw new Error('Ride polyline appears incomplete');
+// The phone started recording partway up the shared stem. The return trace
+// covers the missing City Park section; the recorded outbound trace is the
+// canonical stem for both directions. Indices refer to ride.polyline.
+const recordedStartOnReturn = 1474;
+const outboundJunction = 386;
+const returnJunction = 1170;
+const gap = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) * 111320;
+if (gap(coords[0], coords[recordedStartOnReturn]) > 20 ||
+    gap(coords[outboundJunction], coords[returnJunction]) > 20) {
+  throw new Error('Lollipop splice points no longer match the source trace');
+}
+const stem = [
+  ...coords.slice(recordedStartOnReturn).reverse(),
+  ...coords.slice(0, outboundJunction + 1),
+];
+const cleanedCoords = [
+  ...stem,
+  ...coords.slice(outboundJunction + 1, returnJunction),
+  ...stem.slice().reverse(),
+];
 const lons = coords.map(p => p[0]), lats = coords.map(p => p[1]);
 const pad = 0.009;
 const bbox = {
@@ -86,7 +106,7 @@ for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
   min = Math.min(min, z); max = Math.max(max, z);
   grid[j * w + i] = Math.round(z * 4);
 }
-const ride = coords.map(p => {
+const ride = cleanedCoords.map(p => {
   const [x, y] = toXY(p);
   return [Math.round(x), Math.round(y), Math.round(elevation(...p) * 10) / 10];
 });
@@ -102,4 +122,4 @@ const map = {
 fs.writeFileSync(path.join(out, 'terrain.bin'), Buffer.from(grid.buffer));
 fs.writeFileSync(path.join(out, 'map.json'), JSON.stringify(map));
 fs.writeFileSync(path.join(out, 'ride.json'), JSON.stringify({ id: 124349783, date: '2026-09-25', points: ride }));
-console.log(`${coords.length} ride points; ${w}x${h} terrain; ${min.toFixed(0)}–${max.toFixed(0)} m`);
+console.log(`${ride.length} cleaned ride points from ${coords.length} recorded points; ${w}x${h} terrain; ${min.toFixed(0)}–${max.toFixed(0)} m`);
