@@ -59,7 +59,7 @@ async function main() {
   const activeHalo = routeLine(mat('#fff9df', 6.75, 0.99), 22);
   const active = routeLine(mat('#edaa29', 3.375, 0.99), 23);
   const rider = new THREE.Group();
-  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), new THREE.MeshBasicMaterial({ color: '#0ba86b', depthTest: true }));
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), new THREE.MeshBasicMaterial({ color: '#0ba86b', depthTest: true }));
   rider.add(dot);
   rider.renderOrder = 24;
   scene.add(rider);
