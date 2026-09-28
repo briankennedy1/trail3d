@@ -49,6 +49,13 @@ async function main() {
     const a = ride.points[i - 1], b = ride.points[i];
     distances.push(distances.at(-1)! + Math.hypot(a[0] - b[0], a[1] - b[1]));
   }
+  let sharedStickPoints = 0;
+  while (sharedStickPoints < Math.floor(ride.points.length / 2)) {
+    const a = ride.points[sharedStickPoints], b = ride.points[ride.points.length - 1 - sharedStickPoints];
+    if (a[0] !== b[0] || a[1] !== b[1]) break;
+    sharedStickPoints++;
+  }
+  const returnStart = ride.points.length - sharedStickPoints;
   const total = distances.at(-1)!;
   const totalMiles = total / 1609.344;
   $<HTMLElement>('ride-distance').textContent = totalMiles.toFixed(1);
@@ -72,10 +79,12 @@ async function main() {
   // growing gold line above the full, muted preview.
   const activeHalo = routeLine(mat('#fff9df', 6.75, 0.99), 22);
   const active = routeLine(mat('#edaa29', 3.375, 0.99), 23);
+  const overlap = routeLine(mat('#c58820', 3.375, 0.99), 24);
+  overlap.visible = false;
   const rider = new THREE.Group();
   const dot = new THREE.Mesh(new THREE.SphereGeometry(0.196, 16, 12), new THREE.MeshBasicMaterial({ color: '#0ba86b', depthTest: true }));
   rider.add(dot);
-  rider.renderOrder = 24;
+  rider.renderOrder = 25;
   scene.add(rider);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 3000);
@@ -142,6 +151,10 @@ async function main() {
     const visible = path.length >= 6;
     active.visible = activeHalo.visible = visible;
     if (visible) { active.geometry.setPositions(path); activeHalo.geometry.setPositions(path); }
+    overlap.visible = sharedStickPoints > 1 && i > returnStart;
+    if (overlap.visible) {
+      overlap.geometry.setPositions(points.slice(returnStart, i).concat(position).flatMap(p => [p.x, p.y, p.z]));
+    }
     const x = chartX(distance).toFixed(2);
     progressLine.setAttribute('x1', x); progressLine.setAttribute('x2', x);
     progressDot.setAttribute('cx', x); progressDot.setAttribute('cy', chartY(elevation).toFixed(2));
@@ -183,7 +196,7 @@ async function main() {
     post.uniforms.uResolution.value.set(target.width, target.height);
     camera.left = -58 * aspect / 2; camera.right = 58 * aspect / 2;
     camera.top = 29; camera.bottom = -29; camera.updateProjectionMatrix();
-    for (const line of [preview, previewCore, active, activeHalo]) line.material.resolution.set(target.width, target.height);
+    for (const line of [preview, previewCore, active, activeHalo, overlap]) line.material.resolution.set(target.width, target.height);
   }
   addEventListener('resize', resize);
   resize();
