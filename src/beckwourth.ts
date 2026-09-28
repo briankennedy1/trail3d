@@ -122,6 +122,7 @@ async function main() {
   const orbitRadius = 90;
   const flightSteps = 96;
   const angleSteps = 36;
+  const introEnd = 0.25;
   type Shot = { center: THREE.Vector3; angle: number; height: number };
   let flightPath: Shot[] | null = null;
 
@@ -253,9 +254,10 @@ async function main() {
     };
   }
   function frameRiderForMobile() {
+    const intro = THREE.MathUtils.smoothstep(progress, 0, introEnd);
     if (innerWidth > 700) {
       const cardLeft = $<HTMLElement>('ride-card').getBoundingClientRect().left;
-      const sideOffset = (innerWidth - cardLeft) * (1 - progress) / 2;
+      const sideOffset = (innerWidth - cardLeft) * (1 - progress) * intro / 2;
       camera.setViewOffset(innerWidth, innerHeight, sideOffset, 0, innerWidth, innerHeight);
       return;
     }
@@ -263,14 +265,17 @@ async function main() {
       $<HTMLElement>('ride-card').getBoundingClientRect().top);
     const clearTop = $<HTMLElement>('masthead').getBoundingClientRect().bottom;
     const riderY = Math.min(innerHeight / 2, Math.max(clearTop + 24, (clearTop + clearBottom) / 2));
-    camera.setViewOffset(innerWidth, innerHeight, 0, Math.max(0, innerHeight / 2 - riderY), innerWidth, innerHeight);
+    camera.setViewOffset(innerWidth, innerHeight, 0, Math.max(0, innerHeight / 2 - riderY) * intro, innerWidth, innerHeight);
   }
   function positionFollowCamera() {
     const shot = flightShot(progress);
-    controls.target.copy(shot.center);
-    camera.position.set(shot.center.x + Math.sin(shot.angle) * orbitRadius,
-      shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius);
-    camera.zoom = 0.95;
+    const view = savedHome ?? defaultHome;
+    const intro = THREE.MathUtils.smoothstep(progress, 0, introEnd);
+    controls.target.fromArray(view.target).lerp(shot.center, intro);
+    camera.position.fromArray(view.position).lerp(new THREE.Vector3(
+      shot.center.x + Math.sin(shot.angle) * orbitRadius,
+      shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius), intro);
+    camera.zoom = THREE.MathUtils.lerp(view.zoom, 0.95, intro);
     camera.updateProjectionMatrix();
     controls.update();
     frameRiderForMobile();
@@ -280,7 +285,7 @@ async function main() {
     following = enabled;
     followButton.setAttribute('aria-pressed', String(enabled));
     if (enabled) {
-      rider.visible = true;
+      setProgress(0);
       positionFollowCamera();
     } else if (camera.view?.enabled) {
       camera.clearViewOffset();
