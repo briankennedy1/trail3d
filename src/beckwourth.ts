@@ -378,6 +378,23 @@ async function main() {
   const revealProgress = pois.flags.map(() => 0);
   let hoveredFlag = -1;
   let selectedFlag = -1;
+  const flagRaycaster = new THREE.Raycaster();
+  const flagPointer = new THREE.Vector2();
+  function labelAt(clientX: number, clientY: number) {
+    const bounds = renderer.domElement.getBoundingClientRect();
+    flagPointer.set(2 * (clientX - bounds.left) / bounds.width - 1, 1 - 2 * (clientY - bounds.top) / bounds.height);
+    flagRaycaster.setFromCamera(flagPointer, camera);
+    for (let i = 0; i < pois.flags.length; i++) {
+      const { label } = pois.flags[i];
+      if (!label.visible) continue;
+      const hit = flagRaycaster.intersectObject(label)[0];
+      if (!hit) continue;
+      // The flag can be hidden by the terrain even while its mesh is visible.
+      const terrainHit = flagRaycaster.intersectObject(landscape.group.children[0])[0];
+      if (!terrainHit || terrainHit.distance >= hit.distance) return i;
+    }
+    return -1;
+  }
   function flagAt(clientX: number, clientY: number) {
     const bounds = renderer.domElement.getBoundingClientRect();
     const x = clientX - bounds.left, y = clientY - bounds.top;
@@ -391,18 +408,40 @@ async function main() {
   }
   renderer.domElement.addEventListener('pointermove', event => {
     if (event.pointerType === 'touch') return;
-    const index = flagAt(event.clientX, event.clientY);
+    const labelIndex = labelAt(event.clientX, event.clientY);
+    const index = labelIndex >= 0 ? labelIndex : flagAt(event.clientX, event.clientY);
     hoveredFlag = index;
-    renderer.domElement.style.cursor = index >= 0 ? 'pointer' : '';
+    renderer.domElement.style.cursor = labelIndex >= 0
+      ? (revealProgress[labelIndex] >= 0.98 && pois.flags[labelIndex].url ? 'pointer' : '')
+      : (index >= 0 ? 'pointer' : '');
   });
   renderer.domElement.addEventListener('pointerleave', () => {
     hoveredFlag = -1;
     renderer.domElement.style.cursor = '';
   });
+  let pressedLabel = -1;
+  let pressedX = 0, pressedY = 0;
   renderer.domElement.addEventListener('pointerdown', event => {
+    const labelIndex = labelAt(event.clientX, event.clientY);
+    if (labelIndex >= 0) {
+      if (revealProgress[labelIndex] >= 0.98 && pois.flags[labelIndex].url) {
+        pressedLabel = labelIndex;
+        pressedX = event.clientX;
+        pressedY = event.clientY;
+      }
+      return;
+    }
     const index = flagAt(event.clientX, event.clientY);
     if (event.pointerType !== 'mouse') selectedFlag = index === selectedFlag ? -1 : index;
   });
+  renderer.domElement.addEventListener('pointerup', event => {
+    if (pressedLabel >= 0 && Math.hypot(event.clientX - pressedX, event.clientY - pressedY) < 8
+      && labelAt(event.clientX, event.clientY) === pressedLabel) {
+      window.open(pois.flags[pressedLabel].url!, '_blank', 'noopener,noreferrer');
+    }
+    pressedLabel = -1;
+  });
+  renderer.domElement.addEventListener('pointercancel', () => { pressedLabel = -1; });
   $('loading').remove();
   function frame(now: number) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;

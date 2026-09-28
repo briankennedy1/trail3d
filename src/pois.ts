@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { Terrain, toWorld, type MapData } from './data';
 
-type POI = { name: string; latitude: number; longitude: number; color: string; elevationFt?: number };
+type POI = { name: string; latitude: number; longitude: number; color: string; elevationFt?: number; url?: string };
 
 // Summit: lidar-based high point, which is southwest of the older GNIS waypoint.
 // https://www.peakbagger.com/peak.aspx?pid=2554
 // Park: Sierra Trails trail plan.
 // https://sierratrails.org/wp-content/uploads/2024/05/TMP-DRAFT-V3-052223.pdf
 const places: POI[] = [
-  { name: 'Beckwourth Peak', latitude: 39.7725, longitude: -120.43315, elevationFt: 7267, color: '#c8613d' },
-  { name: 'Portola City Park', latitude: 39.80559, longitude: -120.46534, color: '#34877b' },
+  { name: 'Beckwourth Peak', latitude: 39.7725, longitude: -120.43315, elevationFt: 7267, color: '#c8613d', url: 'https://www.peakbagger.com/peak.aspx?pid=2554' },
+  { name: 'Portola City Park', latitude: 39.80559, longitude: -120.46534, color: '#34877b', url: 'https://maps.app.goo.gl/hbWBTh69hicjwSwB6' },
 ];
 
 function labelTexture(name: string, color: string, elevationFt?: number) {
@@ -52,7 +52,7 @@ function labelTexture(name: string, color: string, elevationFt?: number) {
 
 export function buildPOIs(map: MapData, terrain: Terrain) {
   const group = new THREE.Group();
-  const flags: { marker: THREE.Group; pole: THREE.Mesh; pennant: THREE.Mesh; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; isPeak: boolean }[] = [];
+  const flags: { marker: THREE.Group; pole: THREE.Mesh; pennant: THREE.Mesh; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; isPeak: boolean; url?: string }[] = [];
   const metersLon = 111320 * Math.cos((map.bbox.south + map.bbox.north) * Math.PI / 360);
   for (const place of places) {
     const x = (place.longitude - map.bbox.west) * metersLon;
@@ -84,7 +84,7 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     label.scale.set(10.5, 1.97, 1);
     label.visible = false;
     marker.add(label);
-    flags.push({ marker, pole, pennant, label, isPeak: place.name === 'Beckwourth Peak' });
+    flags.push({ marker, pole, pennant, label, isPeak: place.name === 'Beckwourth Peak', url: place.url });
     group.add(marker);
   }
   return { group, flags };
