@@ -79,6 +79,8 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     const y = (place.latitude - map.bbox.south) * 111320;
     const marker = new THREE.Group();
     marker.position.set(...toWorld(map, x, y, terrain.heightAt(x, y) + 1));
+    // All flags share a fixed wind direction, facing right from the home view.
+    marker.rotation.y = THREE.MathUtils.degToRad(-155);
 
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.045, 0.055, 1, 8),

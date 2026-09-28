@@ -716,8 +716,6 @@ async function main() {
       if (heldMotion) moveView(heldMotion, dt);
       controls.update();
     }
-    // Keep the diorama names readable without letting them fill the screen when zoomed in.
-    const labelScale = Math.min(1, 1.8 / camera.zoom);
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     const screenUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
     compassNeedle.style.transform = `rotate(${Math.atan2(-screenRight.z, -screenUp.z)}rad)`;
@@ -736,9 +734,7 @@ async function main() {
       const detached = 1 - (1 - THREE.MathUtils.clamp(revealProgress[i] / 0.35, 0, 1)) ** 2;
       const smallFlagReveal = 1 - detached;
       pennant.visible = smallFlagReveal > 0.001;
-      pennant.quaternion.copy(camera.quaternion);
-      pennant.position.copy(screenRight).multiplyScalar(2.1 * detached).addScaledVector(screenUp, 1.0 * detached);
-      pennant.position.y += 1.75;
+      pennant.position.set(2.1 * detached, 1.75 + detached, 0);
       pennant.scale.x = smallFlagReveal;
       (pennant.material as THREE.MeshBasicMaterial).opacity = smallFlagReveal;
       const raised = 1 - (1 - THREE.MathUtils.clamp((revealProgress[i] - 0.35) / 0.27, 0, 1)) ** 3;
@@ -747,16 +743,14 @@ async function main() {
       pole.position.y = poleHeight / 2;
       const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.64) / 0.36, 0, 1);
       const reveal = 1 - (1 - unfurl) ** 3;
-      const width = (isPeak ? 11.6 : 10.5) * labelScale;
-      const height = 1.97 * labelScale;
+      const width = isPeak ? 11.6 : 10.5;
+      const height = 1.97;
       label.visible = reveal > 0.001;
-      label.quaternion.copy(camera.quaternion);
       // Grow the new banner from its hoist edge at the raised pole.
       label.material.map!.repeat.x = reveal;
       label.material.map!.updateMatrix();
       label.scale.set(width * reveal, height, 1);
-      label.position.copy(screenRight).multiplyScalar(0.12 + width * reveal / 2).addScaledVector(screenUp, -height / 2);
-      label.position.y += poleHeight;
+      label.position.set(0.12 + width * reveal / 2, poleHeight - height / 2, 0);
     }
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
