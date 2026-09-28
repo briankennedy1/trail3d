@@ -31,9 +31,17 @@ async function main() {
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#f6efe0');
-  scene.add(buildLandscape(terrain, { trees: false }).group);
+  const landscape = buildLandscape(terrain, { trees: false });
+  scene.add(landscape.group);
   const pois = buildPOIs(map, terrain);
-  scene.add(pois.group);
+  // Render POIs after the watercolor pass so their type and edges stay crisp.
+  // Reuse the terrain geometry as depth-only occluders in that final pass.
+  const poiScene = new THREE.Scene();
+  const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true });
+  for (const mesh of landscape.group.children as THREE.Mesh[]) {
+    poiScene.add(new THREE.Mesh(mesh.geometry, depthOnly));
+  }
+  poiScene.add(pois.group);
 
   const points = ride.points.map(([x, y]) => new THREE.Vector3(...toWorld(map, x, y, terrain.heightAt(x, y) + 5)));
   const distances = [0];
@@ -284,6 +292,10 @@ async function main() {
     }
     renderer.setRenderTarget(target); renderer.render(scene, camera);
     renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+    renderer.autoClear = false;
+    renderer.clearDepth();
+    renderer.render(poiScene, camera);
+    renderer.autoClear = true;
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
