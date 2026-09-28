@@ -11,6 +11,8 @@ import { POST_FRAG, POST_VERT } from './shaders';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
 type EmbeddedRide = { map: MapData; ride: Ride; terrain: string };
+type HomeView = { position: [number, number, number]; target: [number, number, number]; zoom: number };
+const HOME_KEY = 'beckwourth-home-view-v1';
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 async function main() {
@@ -116,7 +118,38 @@ async function main() {
   }
   addEventListener('resize', resize);
   resize();
-  function home() { controls.target.set(0, -2, 0); camera.position.set(100, 105, 100); camera.zoom = 1.17; camera.updateProjectionMatrix(); controls.update(); }
+  const defaultHome: HomeView = { position: [100, 105, 100], target: [0, -2, 0], zoom: 1.17 };
+  function readHome(): HomeView | null {
+    try {
+      const value = JSON.parse(localStorage.getItem(HOME_KEY) || 'null') as HomeView | null;
+      if (!value || !Array.isArray(value.position) || !Array.isArray(value.target)) return null;
+      if (value.position.length !== 3 || value.target.length !== 3 ||
+          ![...value.position, ...value.target, value.zoom].every(Number.isFinite) ||
+          value.zoom < controls.minZoom || value.zoom > controls.maxZoom) return null;
+      return value;
+    } catch { return null; }
+  }
+  let savedHome = readHome();
+  const clearHomeButton = $<HTMLButtonElement>('clear-home');
+  const homeStatus = $<HTMLSpanElement>('home-status');
+  let statusTimer = 0;
+  function status(message: string) {
+    homeStatus.textContent = message;
+    homeStatus.hidden = false;
+    clearTimeout(statusTimer);
+    statusTimer = window.setTimeout(() => { homeStatus.hidden = true; }, 2200);
+  }
+  function applyHome(view: HomeView) {
+    controls.enableDamping = false;
+    controls.target.fromArray(view.target);
+    camera.position.fromArray(view.position);
+    camera.zoom = view.zoom;
+    camera.updateProjectionMatrix();
+    controls.update();
+    controls.enableDamping = true;
+  }
+  function home() { applyHome(savedHome ?? defaultHome); }
+  clearHomeButton.hidden = !savedHome;
   home();
   setProgress(1);
   slider.addEventListener('input', () => { playing = false; play.textContent = '▶ Play ride'; setProgress(Number(slider.value) / 1000); });
@@ -126,6 +159,23 @@ async function main() {
     play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
   });
   $('home').addEventListener('click', home);
+  $('set-home').addEventListener('click', () => {
+    savedHome = {
+      position: camera.position.toArray() as HomeView['position'],
+      target: controls.target.toArray() as HomeView['target'],
+      zoom: camera.zoom,
+    };
+    try { localStorage.setItem(HOME_KEY, JSON.stringify(savedHome)); status('Home view saved'); }
+    catch { status('Home saved for this session'); }
+    clearHomeButton.hidden = false;
+  });
+  clearHomeButton.addEventListener('click', () => {
+    savedHome = null;
+    try { localStorage.removeItem(HOME_KEY); } catch { /* session-only home */ }
+    clearHomeButton.hidden = true;
+    applyHome(defaultHome);
+    status('Original home restored');
+  });
   $('north').addEventListener('click', () => {
     const radius = camera.position.clone().sub(controls.target).length();
     camera.position.copy(controls.target).add(new THREE.Vector3(0, radius * 0.7, radius * 0.7));

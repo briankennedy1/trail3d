@@ -20,7 +20,13 @@
     <div class="playback"><div class="playback-head"><span>Follow the ride</span><output id="mile">15.0 / 15.0 mi</output></div><input id="progress" type="range" min="0" max="1000" value="1000" aria-label="Ride progress" /><button id="play" type="button">▶ Play ride</button></div>
     <a class="source" href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">View original ride on Trailforks ↗</a>
   </section>
-  <nav class="map-controls" aria-label="Map controls"><button id="north" type="button" title="Face north">N ↑</button><button id="home" type="button" title="Reset map view">⌂</button></nav>
+  <nav class="map-controls" aria-label="Map controls">
+    <button id="north" type="button" title="Face north">N ↑</button>
+    <button id="home" type="button" title="Go to home view" aria-label="Go to home view">⌂</button>
+    <button id="set-home" type="button" title="Save current angle, position, and zoom as home">Set home</button>
+    <button id="clear-home" type="button" title="Restore original home view" hidden>Default</button>
+    <span id="home-status" role="status" aria-live="polite" hidden></span>
+  </nav>
   <p class="map-hint">Drag to pan · Scroll to zoom · Right drag to rotate</p>
   <footer>Ride path and stats: <a href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">Trailforks</a> · Terrain: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS Terrain Tiles</a> · Inspired by <a href="https://github.com/kneath/tahoe-trails" target="_blank" rel="noopener">Tahoe Trails</a></footer>
   <div id="loading" role="status">Painting the mountains…</div>

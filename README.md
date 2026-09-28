@@ -4,6 +4,8 @@ A watercolor terrain map of [BKXC's September 25, 2026 ride](https://www.trailfo
 
 **To view it:** double-click `index.html`. It is a self-contained page with the styles, app, ride path, and terrain embedded, so it also works from a `file://` URL. A network connection is useful for the optional Google fonts only.
 
+Pan, rotate, and zoom to frame the map, then select **Set home**. The ⌂ button returns to that saved view. **Default** clears it and restores the original view. The saved home view persists in the same browser via local storage.
+
 ## Run
 
 Requires Node 22.12 or newer.
