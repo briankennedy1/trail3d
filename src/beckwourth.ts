@@ -109,6 +109,12 @@ async function main() {
   const postScene = new THREE.Scene();
   postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
   const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  const watercolorButton = $<HTMLButtonElement>('watercolor');
+  let watercolorEnabled = true;
+  watercolorButton.addEventListener('click', () => {
+    watercolorEnabled = !watercolorEnabled;
+    watercolorButton.setAttribute('aria-pressed', String(watercolorEnabled));
+  });
   const play = $<HTMLButtonElement>('play');
   const chart = $<HTMLDivElement>('elevation-chart');
   const chartSvg = $<SVGSVGElement>('elevation-svg');
@@ -354,8 +360,12 @@ async function main() {
       label.position.copy(screenRight).multiplyScalar(0.22 + width * reveal / 2);
       label.position.y += isPeak && innerWidth < 700 ? 0.3 : poleHeight + 0.18;
     }
-    renderer.setRenderTarget(target); renderer.render(scene, camera);
-    renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+    if (watercolorEnabled) {
+      renderer.setRenderTarget(target); renderer.render(scene, camera);
+      renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
+    } else {
+      renderer.setRenderTarget(null); renderer.render(scene, camera);
+    }
     renderer.autoClear = false;
     renderer.clearDepth();
     renderer.render(poiScene, camera);
