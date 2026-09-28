@@ -36,8 +36,9 @@ h2 { font-size: 30px; line-height: 1.1; margin: 0 0 8px; color: #29464b; }
 .view-controls { display: grid; gap: 4px; padding: 6px; border: 1px solid #e1d5bc; border-radius: 11px; background: rgba(255,250,239,.95); box-shadow: 0 5px 20px #554a3529; }
 .view-control-row { display: grid; grid-template-columns: 43px 38px 38px; align-items: center; gap: 3px; }
 .view-control-row span { color: #52645e; font-size: 11px; font-weight: 700; }
-.map-controls .view-control-row button { min-width: 0; width: 38px; height: 36px; box-shadow: none; background: #f6f1e6; font-size: 19px; line-height: 1; }
+.map-controls .view-control-row button { min-width: 0; width: 38px; height: 36px; box-shadow: none; background: #f6f1e6; font-size: 19px; line-height: 1; touch-action: none; user-select: none; }
 .map-controls .view-control-row button:hover, .map-controls .view-control-row button:focus-visible { background: #e7eee8; }
+.map-controls .view-control-row button.is-pressed { background: #315653; color: #fffaf0; }
 #settings { font-family: Arial, sans-serif; font-size: 22px; line-height: 1; }
 .settings-menu { position: absolute; right: 0; bottom: 49px; width: 164px; padding: 7px; display: flex; flex-direction: column; gap: 2px; background: rgba(255,250,239,.97); border: 1px solid #e1d5bc; border-radius: 10px; box-shadow: 0 8px 24px #554a3533; }
 .settings-menu[hidden] { display: none; }

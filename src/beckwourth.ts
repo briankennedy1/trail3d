@@ -273,12 +273,67 @@ async function main() {
     applyHome(defaultHome);
     status('Default home restored');
   });
-  const rotateStep = THREE.MathUtils.degToRad(18);
-  const tiltStep = THREE.MathUtils.degToRad(10);
-  $('rotate-left').addEventListener('click', () => controls.rotateLeft(rotateStep));
-  $('rotate-right').addEventListener('click', () => controls.rotateLeft(-rotateStep));
-  $('tilt-up').addEventListener('click', () => controls.rotateUp(tiltStep));
-  $('tilt-down').addEventListener('click', () => controls.rotateUp(-tiltStep));
+  type ViewMotion = 'left' | 'right' | 'up' | 'down';
+  let heldMotion: ViewMotion | null = null;
+  let heldButton: HTMLButtonElement | null = null;
+  let heldPointerId: number | null = null;
+  function stopViewMotion(button?: HTMLButtonElement) {
+    if (button && heldButton !== button) return;
+    heldButton?.classList.remove('is-pressed');
+    heldButton = null;
+    heldMotion = null;
+    heldPointerId = null;
+  }
+  function startViewMotion(button: HTMLButtonElement, motion: ViewMotion) {
+    stopViewMotion();
+    heldButton = button;
+    heldMotion = motion;
+    button.classList.add('is-pressed');
+  }
+  function moveView(motion: ViewMotion, seconds: number) {
+    const angle = THREE.MathUtils.degToRad((motion === 'left' || motion === 'right' ? 65 : 40) * seconds);
+    if (motion === 'left') controls.rotateLeft(angle);
+    else if (motion === 'right') controls.rotateLeft(-angle);
+    else if (motion === 'up') controls.rotateUp(angle);
+    else controls.rotateUp(-angle);
+  }
+  for (const [id, motion] of [
+    ['rotate-left', 'left'], ['rotate-right', 'right'], ['tilt-up', 'up'], ['tilt-down', 'down'],
+  ] as const) {
+    const button = $<HTMLButtonElement>(id);
+    let lastKeyboardRelease = -Infinity;
+    button.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      event.preventDefault();
+      button.setPointerCapture(event.pointerId);
+      startViewMotion(button, motion);
+      heldPointerId = event.pointerId;
+    });
+    button.addEventListener('pointerup', event => {
+      if (heldPointerId === event.pointerId) stopViewMotion(button);
+    });
+    button.addEventListener('pointercancel', () => stopViewMotion(button));
+    button.addEventListener('lostpointercapture', () => stopViewMotion(button));
+    button.addEventListener('keydown', event => {
+      if (event.key !== ' ' && event.key !== 'Enter') return;
+      event.preventDefault();
+      if (!event.repeat) startViewMotion(button, motion);
+    });
+    button.addEventListener('keyup', event => {
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        lastKeyboardRelease = performance.now();
+        stopViewMotion(button);
+      }
+    });
+    button.addEventListener('blur', () => stopViewMotion(button));
+    // Assistive technology can activate a button without a held pointer or key.
+    button.addEventListener('click', event => {
+      if (event.detail === 0 && performance.now() - lastKeyboardRelease > 250) moveView(motion, 0.25);
+    });
+  }
+  window.addEventListener('blur', () => stopViewMotion());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopViewMotion(); });
   $('north').addEventListener('click', () => {
     setSettingsOpen(false);
     const radius = camera.position.clone().sub(controls.target).length();
@@ -321,7 +376,8 @@ async function main() {
       setProgress(progress + dt / 38);
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
-    controls.update();
+    if (heldMotion) moveView(heldMotion, dt);
+    else controls.update();
     // Keep the diorama names readable without letting them fill the screen when zoomed in.
     const labelScale = Math.min(1, 1.8 / camera.zoom);
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
