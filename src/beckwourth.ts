@@ -57,10 +57,8 @@ async function main() {
   const activeHalo = routeLine(mat('#fff9df', 6.75, 0.99), 22);
   const active = routeLine(mat('#edaa29', 3.375, 0.99), 23);
   const rider = new THREE.Group();
-  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 8), new THREE.MeshBasicMaterial({ color: '#cf532e', depthTest: true }));
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.65, 0.9, 32), new THREE.MeshBasicMaterial({ color: '#fff8e4', side: THREE.DoubleSide, depthTest: true }));
-  ring.rotation.x = -Math.PI / 2;
-  rider.add(dot, ring);
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 12), new THREE.MeshBasicMaterial({ color: '#0ba86b', depthTest: true }));
+  rider.add(dot);
   rider.renderOrder = 24;
   scene.add(rider);
 
