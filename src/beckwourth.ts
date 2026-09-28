@@ -107,8 +107,6 @@ async function main() {
   svg('path', { d: profile, fill: 'none', stroke: '#477365', 'stroke-width': '2', 'vector-effect': 'non-scaling-stroke' });
   const progressLine = svg('line', { y1: '0', y2: '96', stroke: '#b55d35', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
-  const hoverLine = svg('line', { y1: '0', y2: '96', stroke: '#315653', 'stroke-width': '1', 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke', visibility: 'hidden' });
-  const hoverDot = svg('circle', { r: '4', fill: '#315653', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke', visibility: 'hidden' });
   let playing = false, progress = 1, last = performance.now();
 
   function sampleAt(value: number) {
@@ -121,7 +119,6 @@ async function main() {
   }
   const feet = (meters: number) => `${Math.round(meters * 3.28084).toLocaleString()} ft`;
   const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * 15).toFixed(1)} mi`;
-  let hovering = false;
   function setProgress(value: number) {
     progress = THREE.MathUtils.clamp(value, 0, 1);
     const distance = progress * total;
@@ -139,41 +136,23 @@ async function main() {
     progressDot.setAttribute('cx', x); progressDot.setAttribute('cy', chartY(elevation).toFixed(2));
     chart.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
     chart.setAttribute('aria-valuetext', readout(progress, elevation));
-    if (!hovering) elevationReadout.textContent = readout(progress, elevation);
+    elevationReadout.textContent = readout(progress, elevation);
   }
 
   function valueAtPointer(event: PointerEvent) {
     const bounds = chart.getBoundingClientRect();
     return THREE.MathUtils.clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
   }
-  let scrubbing = false;
   chart.addEventListener('pointermove', event => {
-    const value = valueAtPointer(event);
-    if (scrubbing) { setProgress(value); }
-    const elevation = sampleAt(value).elevation;
-    const x = chartX(value * total).toFixed(2);
-    hoverLine.setAttribute('x1', x); hoverLine.setAttribute('x2', x);
-    hoverDot.setAttribute('cx', x); hoverDot.setAttribute('cy', chartY(elevation).toFixed(2));
-    hoverLine.setAttribute('visibility', 'visible'); hoverDot.setAttribute('visibility', 'visible');
-    hovering = true;
-    elevationReadout.textContent = readout(value, elevation);
+    playing = false; play.textContent = '▶ Play ride';
+    setProgress(valueAtPointer(event));
   });
   chart.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     event.preventDefault();
     chart.setPointerCapture(event.pointerId);
-    scrubbing = true;
     playing = false; play.textContent = '▶ Play ride';
     setProgress(valueAtPointer(event));
-  });
-  function endScrub() { scrubbing = false; }
-  chart.addEventListener('pointerup', endScrub);
-  chart.addEventListener('pointercancel', endScrub);
-  chart.addEventListener('pointerleave', () => {
-    if (scrubbing) return;
-    hovering = false;
-    hoverLine.setAttribute('visibility', 'hidden'); hoverDot.setAttribute('visibility', 'hidden');
-    elevationReadout.textContent = readout(progress, sampleAt(progress).elevation);
   });
   chart.addEventListener('keydown', event => {
     const step = event.shiftKey ? 0.05 : 0.01;
