@@ -526,34 +526,7 @@ async function main() {
       return value;
     } catch { return null; }
   }
-  let savedHome = readHome();
-  const settingsButton = $<HTMLButtonElement>('settings');
-  const settingsMenu = $<HTMLDivElement>('view-settings');
-  const setHomeButton = $<HTMLButtonElement>('set-home');
-  const clearHomeButton = $<HTMLButtonElement>('clear-home');
-  const homeStatus = $<HTMLSpanElement>('home-status');
-  function setSettingsOpen(open: boolean) {
-    settingsMenu.hidden = !open;
-    settingsButton.setAttribute('aria-expanded', String(open));
-    if (open) homeStatus.hidden = true;
-  }
-  settingsButton.addEventListener('click', () => setSettingsOpen(settingsMenu.hasAttribute('hidden')));
-  document.addEventListener('pointerdown', event => {
-    if (!settingsMenu.hidden && !settingsButton.closest('.map-controls')?.contains(event.target as Node)) setSettingsOpen(false);
-  });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !settingsMenu.hidden) {
-      setSettingsOpen(false);
-      settingsButton.focus();
-    }
-  });
-  let statusTimer = 0;
-  function status(message: string) {
-    homeStatus.textContent = message;
-    homeStatus.hidden = false;
-    clearTimeout(statusTimer);
-    statusTimer = window.setTimeout(() => { homeStatus.hidden = true; }, 2200);
-  }
+  const savedHome = readHome();
   function applyHome(view: HomeView, animate = true) {
     const pose: CameraPose = {
       position: new THREE.Vector3(...view.position), target: new THREE.Vector3(...view.target),
@@ -563,7 +536,6 @@ async function main() {
     else applyCameraPose(pose);
   }
   function home() { applyHome(savedHome ?? defaultHome); }
-  clearHomeButton.hidden = !savedHome;
   applyHome(savedHome ?? defaultHome, false);
   setProgress(1, false);
   followButton.addEventListener('click', () => setFollowing(!following));
@@ -579,28 +551,7 @@ async function main() {
     playing = !playing;
     play.textContent = playing ? cameraTransition ? 'Ⅱ Positioning…' : 'Ⅱ Pause' : '▶ Play ride';
   });
-  $('home').addEventListener('click', () => { setFollowing(false); setSettingsOpen(false); home(); });
-  setHomeButton.addEventListener('click', () => {
-    setFollowing(false);
-    savedHome = {
-      position: camera.position.toArray() as HomeView['position'],
-      target: controls.target.toArray() as HomeView['target'],
-      zoom: camera.zoom,
-    };
-    setSettingsOpen(false);
-    try { localStorage.setItem(HOME_KEY, JSON.stringify(savedHome)); status('Home view saved'); }
-    catch { status('Home saved for this session'); }
-    clearHomeButton.hidden = false;
-  });
-  clearHomeButton.addEventListener('click', () => {
-    setFollowing(false);
-    savedHome = null;
-    setSettingsOpen(false);
-    try { localStorage.removeItem(HOME_KEY); } catch { /* session-only home */ }
-    clearHomeButton.hidden = true;
-    applyHome(defaultHome);
-    status('Default home restored');
-  });
+  $('home').addEventListener('click', () => { setFollowing(false); home(); });
   type ViewMotion = 'left' | 'right' | 'up' | 'down';
   let heldMotion: ViewMotion | null = null;
   let heldButton: HTMLButtonElement | null = null;
@@ -665,7 +616,7 @@ async function main() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopViewMotion(); });
   $('north').addEventListener('click', () => {
     setFollowing(false);
-    setSettingsOpen(false);
+
     const radius = camera.position.clone().sub(controls.target).length();
     startCameraTransition({
       position: controls.target.clone().add(new THREE.Vector3(0, radius * 0.7, radius * 0.7)),
