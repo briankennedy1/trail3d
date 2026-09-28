@@ -121,10 +121,11 @@ async function main() {
   let following = false;
   const orbitRadius = 90;
   const flightSteps = 96;
-  const angleSteps = 36;
   const introEnd = 0.25;
   type Shot = { center: THREE.Vector3; angle: number; height: number };
   let flightPath: Shot[] | null = null;
+  let flightTimes: number[] = [];
+  let playbackTime = 0;
 
   function sampleAt(value: number) {
     const distance = THREE.MathUtils.clamp(value, 0, 1) * total;
@@ -173,63 +174,95 @@ async function main() {
     const subjects = [routePoint(distance), routePoint(distance + 500)];
     return Math.max(center.y + 34, ...subjects.map(p => p.y + clearSightHeight(p, x, z) + 2.5));
   }
+  function plannedAngle(value: number) {
+    // One continuous clockwise helicopter orbit. These beats keep the rider on
+    // the visible side of the summit without searching for a new view in flight.
+    const beats = [[0, -155.6], [0.44, -20], [0.54, 0], [0.60, 75],
+      [0.72, 120], [0.85, 170], [1, 170]];
+    for (let i = 1; i < beats.length; i++) {
+      const [end, endAngle] = beats[i];
+      if (value > end) continue;
+      const [start, startAngle] = beats[i - 1];
+      const t = THREE.MathUtils.smoothstep(value, start, end);
+      return THREE.MathUtils.degToRad(THREE.MathUtils.lerp(startAngle, endAngle, t));
+    }
+    return THREE.MathUtils.degToRad(170);
+  }
   function buildFlightPath() {
     const centers = Array.from({ length: flightSteps + 1 }, (_, i) => followFocus(total * i / flightSteps));
-    const step = 2 * Math.PI / angleSteps;
-    const costs = centers.map((center, i) => Array.from({ length: angleSteps }, (_, j) => {
-      const rise = viewHeight(center, j * step, total * i / flightSteps) - center.y - 34;
-      return rise * rise * 0.1;
-    }));
-    const previous: number[][] = Array.from({ length: flightSteps + 1 }, () => Array(angleSteps).fill(0));
-    let scores = costs[0].map((cost, j) => cost + 4 * (1 - Math.cos(j * step + 2.72)));
-    // Plan the entire ride at once. Changing sides has a cost, so a coming
-    // ridge starts a gradual turn well before it would hide the rider.
-    for (let i = 1; i <= flightSteps; i++) {
-      const next = Array(angleSteps).fill(Infinity);
-      for (let j = 0; j < angleSteps; j++) {
-        for (const change of [-1, 0, 1]) {
-          const prior = (j + change + angleSteps) % angleSteps;
-          const score = scores[prior] + costs[i][j] + (change ? 150 : 0);
-          if (score < next[j]) { next[j] = score; previous[i][j] = prior; }
-        }
-      }
-      scores = next;
-    }
-    const chosen = Array<number>(flightSteps + 1);
-    chosen[flightSteps] = scores.indexOf(Math.min(...scores));
-    for (let i = flightSteps; i > 0; i--) chosen[i - 1] = previous[i][chosen[i]];
-    const angles = [chosen[0] * step];
-    for (let i = 1; i <= flightSteps; i++) {
-      const difference = Math.atan2(Math.sin((chosen[i] - chosen[i - 1]) * step),
-        Math.cos((chosen[i] - chosen[i - 1]) * step));
-      angles.push(angles[i - 1] + difference);
-    }
-    const plannedAngles = angles.map((_, i) => {
-      let sum = 0, weight = 0;
-      for (let k = -10; k <= 10; k++) {
-        const w = 11 - Math.abs(k);
-        sum += angles[THREE.MathUtils.clamp(i + k, 0, flightSteps)] * w;
-        weight += w;
-      }
-      return sum / weight;
-    });
-    // Keep the orbit below about eight degrees per second. The reverse pass
-    // moves necessary turns earlier instead of rushing through them on arrival.
-    const maxTurnPerStep = 0.055;
-    for (let i = flightSteps - 1; i >= 0; i--) {
-      plannedAngles[i] = THREE.MathUtils.clamp(plannedAngles[i],
-        plannedAngles[i + 1] - maxTurnPerStep, plannedAngles[i + 1] + maxTurnPerStep);
-    }
-    for (let i = 1; i <= flightSteps; i++) {
-      plannedAngles[i] = THREE.MathUtils.clamp(plannedAngles[i],
-        plannedAngles[i - 1] - maxTurnPerStep, plannedAngles[i - 1] + maxTurnPerStep);
-    }
+    const plannedAngles = centers.map((_, i) => plannedAngle(i / flightSteps));
     const required = centers.map((center, i) => viewHeight(center, plannedAngles[i], total * i / flightSteps));
     // Raise and lower at a controlled rate, planning high ground far in advance.
     const heights = required.slice();
     for (let i = flightSteps - 1; i >= 0; i--) heights[i] = Math.max(heights[i], heights[i + 1] - 1.5);
     for (let i = 1; i <= flightSteps; i++) heights[i] = Math.max(heights[i], heights[i - 1] - 1.5);
     flightPath = centers.map((center, i) => ({ center, angle: plannedAngles[i], height: heights[i] + 2 }));
+    buildFlightTimes();
+  }
+  function buildFlightTimes() {
+    const view = savedHome ?? defaultHome;
+    const homePosition = new THREE.Vector3(...view.position);
+    const homeTarget = new THREE.Vector3(...view.target);
+    const cameraPose = (i: number) => {
+      const progress = i / flightSteps;
+      const shot = flightPath![i];
+      const intro = THREE.MathUtils.smoothstep(progress, 0, introEnd);
+      const target = homeTarget.clone().lerp(shot.center, intro);
+      const position = homePosition.clone().lerp(new THREE.Vector3(
+        shot.center.x + Math.sin(shot.angle) * orbitRadius,
+        shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius), intro);
+      return { position, target, direction: position.clone().sub(target).normalize() };
+    };
+    flightTimes = [0];
+    let previous = cameraPose(0);
+    for (let i = 1; i <= flightSteps; i++) {
+      const next = cameraPose(i);
+      const turn = Math.acos(THREE.MathUtils.clamp(previous.direction.dot(next.direction), -1, 1));
+      const seconds = Math.max(38 / flightSteps, turn / 0.11,
+        previous.position.distanceTo(next.position) / 8,
+        previous.target.distanceTo(next.target) / 5);
+      flightTimes.push(flightTimes[i - 1] + seconds);
+      previous = next;
+    }
+  }
+  function timeAtProgress(value: number) {
+    if (!flightPath) buildFlightPath();
+    if (value <= 0) return 0;
+    if (value >= 1) return flightTimes[flightSteps];
+    const at = THREE.MathUtils.clamp(value, 0, 1) * flightSteps;
+    const i = Math.min(flightSteps - 1, Math.floor(at));
+    let lo = flightTimes[i], hi = flightTimes[i + 1];
+    for (let step = 0; step < 12; step++) {
+      const mid = (lo + hi) / 2;
+      if (progressAtTime(mid) < value) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  function progressAtTime(seconds: number) {
+    if (seconds <= 0) return 0;
+    if (seconds >= flightTimes[flightSteps]) return 1;
+    let lo = 0, hi = flightSteps;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (flightTimes[mid] < seconds) lo = mid + 1;
+      else hi = mid;
+    }
+    const i = Math.max(1, lo);
+    const span = flightTimes[i] - flightTimes[i - 1];
+    const u = (seconds - flightTimes[i - 1]) / span;
+    const rate = (j: number) => 1 / (flightSteps * (flightTimes[j + 1] - flightTimes[j]));
+    const slope = (j: number) => {
+      if (j === 0) return rate(0);
+      if (j === flightSteps) return rate(flightSteps - 1);
+      const before = rate(j - 1), after = rate(j);
+      return 2 * before * after / (before + after);
+    };
+    const u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * ((i - 1) / flightSteps)
+      + (u3 - 2 * u2 + u) * span * slope(i - 1)
+      + (-2 * u3 + 3 * u2) * (i / flightSteps)
+      + (u3 - u2) * span * slope(i);
   }
   function flightShot(value: number) {
     if (!flightPath) buildFlightPath();
@@ -285,10 +318,19 @@ async function main() {
     following = enabled;
     followButton.setAttribute('aria-pressed', String(enabled));
     if (enabled) {
+      flightPath = null;
       setProgress(0);
+      playbackTime = 0;
       positionFollowCamera();
     } else if (camera.view?.enabled) {
+      // Bake the follow composition into the camera before removing the view
+      // offset, so switching Follow off leaves the exact same pixels in place.
+      camera.updateMatrixWorld();
+      const before = new THREE.Vector3().unproject(camera);
       camera.clearViewOffset();
+      const shift = before.sub(new THREE.Vector3().unproject(camera));
+      camera.position.add(shift);
+      controls.target.add(shift);
     }
     // Clear any remaining orbit inertia before the camera takes over.
     controls.enableDamping = !enabled;
@@ -417,7 +459,10 @@ async function main() {
   play.addEventListener('click', () => {
     if (!playing) {
       if (progress >= 1) setProgress(0);
-      if (following) positionFollowCamera();
+      if (following) {
+        playbackTime = timeAtProgress(progress);
+        positionFollowCamera();
+      }
     }
     playing = !playing;
     play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
@@ -583,7 +628,10 @@ async function main() {
   function frame(now: number) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     if (playing) {
-      setProgress(progress + dt / 38);
+      if (following) {
+        playbackTime += dt;
+        setProgress(progressAtTime(playbackTime));
+      } else setProgress(progress + dt / 38);
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
     if (following && playing) positionFollowCamera();
