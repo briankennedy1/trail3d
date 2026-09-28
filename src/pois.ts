@@ -17,35 +17,32 @@ function labelTexture(name: string, color: string, elevationFt?: number) {
   canvas.width = 768;
   canvas.height = 144;
   const ctx = canvas.getContext('2d')!;
-  ctx.shadowColor = 'rgba(48, 38, 30, .24)';
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetY = 7;
-  ctx.fillStyle = '#fff8e9';
-  ctx.beginPath();
-  ctx.roundRect(12, 11, 744, 119, 24);
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = 'rgba(92, 72, 54, .28)';
-  ctx.stroke();
+  // A straight-edged fabric banner with a forked fly end, not a text card.
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(67, 70, 15, 0, Math.PI * 2);
+  ctx.moveTo(0, 8);
+  ctx.lineTo(756, 8);
+  ctx.lineTo(712, 72);
+  ctx.lineTo(756, 136);
+  ctx.lineTo(0, 136);
+  ctx.closePath();
   ctx.fill();
+  ctx.fillStyle = 'rgba(0, 0, 0, .17)';
+  ctx.fillRect(0, 8, 17, 128);
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#302f29';
+  ctx.fillStyle = '#fffaf0';
   if (elevationFt) {
     const elevation = `${elevationFt.toLocaleString()} ft`;
-    ctx.font = '700 39px system-ui, sans-serif';
+    ctx.font = '700 38px system-ui, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(elevation, 720, 72);
-    const nameWidth = 720 - ctx.measureText(elevation).width - 25 - 105;
-    ctx.font = '600 51px system-ui, sans-serif';
+    ctx.fillText(elevation, 674, 72);
+    const nameWidth = 674 - ctx.measureText(elevation).width - 30 - 36;
+    ctx.font = '700 49px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(name, 105, 72, nameWidth);
+    ctx.fillText(name, 36, 72, nameWidth);
   } else {
-    ctx.font = '600 55px system-ui, sans-serif';
-    ctx.fillText(name, 105, 72);
+    ctx.font = '700 53px system-ui, sans-serif';
+    ctx.fillText(name, 36, 72, 640);
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -55,7 +52,7 @@ function labelTexture(name: string, color: string, elevationFt?: number) {
 
 export function buildPOIs(map: MapData, terrain: Terrain) {
   const group = new THREE.Group();
-  const flags: { marker: THREE.Group; pole: THREE.Mesh; pennant: THREE.Mesh; cap: THREE.Mesh; label: THREE.Sprite; isPeak: boolean }[] = [];
+  const flags: { marker: THREE.Group; pole: THREE.Mesh; pennant: THREE.Mesh; cap: THREE.Mesh; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; isPeak: boolean }[] = [];
   const metersLon = 111320 * Math.cos((map.bbox.south + map.bbox.north) * Math.PI / 360);
   for (const place of places) {
     const x = (place.longitude - map.bbox.west) * metersLon;
@@ -73,10 +70,11 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
 
     const pennant = new THREE.Mesh(
       new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute([
-        0, 1.75, 0, 1.12, 1.47, 0, 0, 1.19, 0,
+        0, 0, 0, 1.12, -0.28, 0, 0, -0.56, 0,
       ], 3)),
       new THREE.MeshBasicMaterial({ color: place.color, side: THREE.DoubleSide, depthTest: true, transparent: true }),
     );
+    pennant.position.y = 1.75;
     marker.add(pennant);
 
     const cap = new THREE.Mesh(
@@ -87,11 +85,10 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     cap.visible = false;
     marker.add(cap);
 
-    const label = new THREE.Sprite(new THREE.SpriteMaterial({
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({
       map: labelTexture(place.name, place.color, place.elevationFt), transparent: true,
-      depthTest: true, depthWrite: false,
+      side: THREE.DoubleSide, depthTest: true, depthWrite: false,
     }));
-    label.position.set(0, 0.85, 0);
     label.scale.set(10.5, 1.97, 1);
     label.visible = false;
     marker.add(label);

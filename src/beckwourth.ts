@@ -417,32 +417,39 @@ async function main() {
     // Keep the diorama names readable without letting them fill the screen when zoomed in.
     const labelScale = Math.min(1, 1.8 / camera.zoom);
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+    const screenUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
     for (let i = 0; i < pois.flags.length; i++) {
       const { pole, pennant, cap, label, isPeak } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i;
       revealProgress[i] = reducedMotion ? Number(active) : THREE.MathUtils.clamp(
-        revealProgress[i] + (active ? 1 : -1) * dt / 0.85, 0, 1,
+        revealProgress[i] + (active ? 1 : -1) * dt / 1.25, 0, 1,
       );
-      const retired = THREE.MathUtils.clamp(revealProgress[i] / 0.23, 0, 1);
-      pennant.visible = retired < 1;
-      (pennant.material as THREE.MeshBasicMaterial).opacity = 1 - retired;
-      const raised = 1 - (1 - THREE.MathUtils.clamp((revealProgress[i] - 0.16) / 0.34, 0, 1)) ** 3;
+      const detached = 1 - (1 - THREE.MathUtils.clamp(revealProgress[i] / 0.42, 0, 1)) ** 2;
+      const oldOpacity = 1 - THREE.MathUtils.clamp((revealProgress[i] - 0.14) / 0.28, 0, 1);
+      pennant.visible = oldOpacity > 0.001;
+      pennant.quaternion.copy(camera.quaternion);
+      pennant.position.copy(screenRight).multiplyScalar(2.1 * detached).addScaledVector(screenUp, 1.0 * detached);
+      pennant.position.y += 1.75;
+      (pennant.material as THREE.MeshBasicMaterial).opacity = oldOpacity;
+      const raised = 1 - (1 - THREE.MathUtils.clamp((revealProgress[i] - 0.35) / 0.27, 0, 1)) ** 3;
       const poleHeight = 1.75 + 1.45 * raised;
       pole.scale.y = poleHeight;
       pole.position.y = poleHeight / 2;
       cap.position.y = poleHeight;
-      cap.visible = retired > 0;
-      (cap.material as THREE.MeshBasicMaterial).opacity = retired;
-      const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.38) / 0.62, 0, 1);
+      cap.visible = raised > 0;
+      (cap.material as THREE.MeshBasicMaterial).opacity = raised;
+      const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.64) / 0.36, 0, 1);
       const reveal = 1 - (1 - unfurl) ** 3;
-      const width = 10.5 * labelScale;
+      const width = (isPeak ? 11.6 : 10.5) * labelScale;
+      const height = 1.97 * labelScale;
       label.visible = reveal > 0.001;
-      // The strip extends from the pole while its UV range uncovers the text.
+      label.quaternion.copy(camera.quaternion);
+      // Grow the new banner from its hoist edge at the raised pole.
       label.material.map!.repeat.x = reveal;
       label.material.map!.updateMatrix();
-      label.scale.set(width * reveal, 1.97 * labelScale, 1);
-      label.position.copy(screenRight).multiplyScalar(0.22 + width * reveal / 2);
-      label.position.y += isPeak && innerWidth < 700 ? 0.3 : poleHeight + 0.18;
+      label.scale.set(width * reveal, height, 1);
+      label.position.copy(screenRight).multiplyScalar(0.12 + width * reveal / 2).addScaledVector(screenUp, -height / 2);
+      label.position.y += poleHeight;
     }
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
