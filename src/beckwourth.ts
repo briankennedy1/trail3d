@@ -10,14 +10,18 @@ import { buildLandscape } from './terrain';
 import { POST_FRAG, POST_VERT } from './shaders';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
+type EmbeddedRide = { map: MapData; ride: Ride; terrain: string };
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 async function main() {
-  const [map, ride, heights] = await Promise.all([
-    fetch('beckwourth/map.json').then(r => r.json() as Promise<MapData>),
-    fetch('beckwourth/ride.json').then(r => r.json() as Promise<Ride>),
-    fetch('beckwourth/terrain.bin').then(r => r.arrayBuffer()),
-  ]);
+  const embedded = (window as Window & { __BECKWOURTH__?: EmbeddedRide }).__BECKWOURTH__;
+  const [map, ride, heights] = embedded
+    ? [embedded.map, embedded.ride, Uint8Array.from(atob(embedded.terrain), c => c.charCodeAt(0)).buffer]
+    : await Promise.all([
+        fetch('beckwourth/map.json').then(r => r.json() as Promise<MapData>),
+        fetch('beckwourth/ride.json').then(r => r.json() as Promise<Ride>),
+        fetch('beckwourth/terrain.bin').then(r => r.arrayBuffer()),
+      ]);
   const terrain = new Terrain(map, new Uint16Array(heights));
   const renderer = new THREE.WebGLRenderer({ canvas: $<HTMLCanvasElement>('scene'), antialias: false });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));

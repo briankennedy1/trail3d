@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
 const PORT = 5317;
@@ -52,7 +53,7 @@ function tailnetShare(port: number): Plugin {
 
 export default defineConfig({
   base: './',
-  build: { chunkSizeWarningLimit: 800 }, // three.js is most of it
+  build: { chunkSizeWarningLimit: 800, rollupOptions: { input: resolve(import.meta.dirname, 'app.html') } }, // three.js is most of it
   // strictPort: the tailnet share points at this exact port
   server: { port: PORT, strictPort: true, allowedHosts: ['.ts.net'] },
   preview: { port: PORT, strictPort: true, allowedHosts: ['.ts.net'] },

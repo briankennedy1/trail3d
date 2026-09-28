@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f6efe0" />
+  <meta name="description" content="Explore BKXC's September 25, 2026 Beckwourth Peak ride on a watercolor 3D terrain map." />
+  <title>Beckwourth Peak Ride · 3D Trail Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <canvas id="scene" aria-label="3D terrain map of the Beckwourth Peak ride"></canvas>
+  <header class="masthead"><span class="eyebrow">A ride through the Sierra</span><h1>Beckwourth <em>Peak</em></h1><p>September 25, 2026 · Portola, California</p></header>
+  <section class="ride-card" aria-label="Ride details">
+    <div class="card-top"><span class="kicker">BKXC ride log #124349783</span><span class="badge">Mountain bike</span></div>
+    <h2>The full loop</h2><p class="description">A climb around Beckwourth Peak and a long descent through fall color.</p>
+    <div class="stats"><div><strong>15.0</strong><span>miles</span></div><div><strong>2,083</strong><span>ft climbing</span></div><div><strong>2:01</strong><span>moving time</span></div></div>
+    <div class="playback"><div class="playback-head"><span>Follow the ride</span><output id="mile">15.0 / 15.0 mi</output></div><input id="progress" type="range" min="0" max="1000" value="1000" aria-label="Ride progress" /><button id="play" type="button">▶ Play ride</button></div>
+    <a class="source" href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">View original ride on Trailforks ↗</a>
+  </section>
+  <nav class="map-controls" aria-label="Map controls"><button id="north" type="button" title="Face north">N ↑</button><button id="home" type="button" title="Reset map view">⌂</button></nav>
+  <p class="map-hint">Drag to pan · Scroll to zoom · Right drag to rotate</p>
+  <footer>Ride path and stats: <a href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">Trailforks</a> · Terrain: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS Terrain Tiles</a> · Inspired by <a href="https://github.com/kneath/tahoe-trails" target="_blank" rel="noopener">Tahoe Trails</a></footer>
+  <div id="loading" role="status">Painting the mountains…</div>
+  <script type="module" src="/src/beckwourth.ts"></script>
+</body>
+</html>

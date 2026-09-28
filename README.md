@@ -2,6 +2,8 @@
 
 A watercolor terrain map of [BKXC's September 25, 2026 ride](https://www.trailforks.com/ridelog/view/124349783/) at Beckwourth Peak Trails near Portola, California. It traces the actual public ridelog path, rather than the similar Park to Peak 2024 route. The page includes a route scrubber and a short playback.
 
+**To view it:** double-click `index.html`. It is a self-contained page with the styles, app, ride path, and terrain embedded, so it also works from a `file://` URL. A network connection is useful for the optional Google fonts only.
+
 ## Run
 
 Requires Node 22.12 or newer.
@@ -11,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-`npm run build` creates the static site in `dist/`. The checked-in data under `public/beckwourth/` makes the site work without Trailforks or elevation API requests at runtime.
+For development, open `/app.html` on the Vite server. `npm run build` regenerates the standalone root `index.html` and creates the static site in `dist/`. The checked-in data under `public/beckwourth/` makes the site work without Trailforks or elevation API requests at runtime.
 
 ## Data and attribution
 
