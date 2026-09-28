@@ -82,9 +82,9 @@ async function main() {
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 3000);
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  // Manual input should settle quickly; Follow uses its own smooth flight path.
-  controls.dampingFactor = 0.25;
+  // Manual navigation tracks input directly; scripted camera moves ease separately.
+  controls.enableDamping = false;
+  controls.panSpeed = 1.6;
   controls.zoomSpeed = 1.4;
   controls.screenSpacePanning = false;
   controls.zoomToCursor = true;
@@ -375,7 +375,7 @@ async function main() {
       && Math.abs(from.zoom - to.zoom) < 1e-6
       && Math.hypot(from.offsetX - to.offsetX, from.offsetY - to.offsetY) < 1e-6) {
       cameraTransition = null;
-      controls.enableDamping = !following;
+      controls.enableDamping = false;
       return;
     }
     const duration = THREE.MathUtils.clamp(Math.max(Math.abs(turn) / 0.7, distance / 48), 1.2, 4.5);
@@ -418,13 +418,13 @@ async function main() {
     });
     if (transition.elapsed >= transition.duration) {
       cameraTransition = null;
-      controls.enableDamping = !following;
+      controls.enableDamping = false;
       if (playing) play.textContent = 'Ⅱ Pause';
     }
   }
   function setFollowing(enabled: boolean) {
     cameraTransition = null;
-    controls.enableDamping = !enabled;
+    controls.enableDamping = false;
     if (following === enabled) return;
     if (playing) play.textContent = 'Ⅱ Pause';
     following = enabled;
