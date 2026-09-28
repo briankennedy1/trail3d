@@ -6,6 +6,8 @@ A watercolor terrain map of [BKXC's September 25, 2026 ride](https://www.trailfo
 
 Pan, rotate, and zoom to frame the map, then select **Set home**. The ⌂ button returns to that saved view. **Default** clears it and restores the original view. The saved home view persists in the same browser via local storage.
 
+The elevation profile above **Follow the ride** shows the recorded altitude along the route. Hover to inspect a point, or click, drag, and use the arrow keys to move the ride marker to that position.
+
 ## Run
 
 Requires Node 22.12 or newer.

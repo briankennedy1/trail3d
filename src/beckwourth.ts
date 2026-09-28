@@ -13,7 +13,7 @@ type Ride = { id: number; date: string; points: [number, number, number][] };
 type EmbeddedRide = { map: MapData; ride: Ride; terrain: string };
 type HomeView = { position: [number, number, number]; target: [number, number, number]; zoom: number };
 const HOME_KEY = 'beckwourth-home-view-v1';
-const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const $ = <T extends Element>(id: string) => document.getElementById(id) as unknown as T;
 
 async function main() {
   const embedded = (window as Window & { __BECKWOURTH__?: EmbeddedRide }).__BECKWOURTH__;
@@ -88,15 +88,44 @@ async function main() {
   const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const slider = $<HTMLInputElement>('progress');
   const play = $<HTMLButtonElement>('play');
+  const chart = $<HTMLDivElement>('elevation-chart');
+  const chartSvg = $<SVGSVGElement>('elevation-svg');
+  const elevationReadout = $<HTMLOutputElement>('elevation-readout');
+  const elevations = ride.points.map(point => point[2]);
+  const minElevation = Math.min(...elevations) - 12;
+  const maxElevation = Math.max(...elevations) + 12;
+  const chartX = (distance: number) => 280 * distance / total;
+  const chartY = (elevation: number) => 86 - 76 * (elevation - minElevation) / (maxElevation - minElevation);
+  const profile = ride.points.map((point, i) => `${i ? 'L' : 'M'}${chartX(distances[i]).toFixed(2)},${chartY(point[2]).toFixed(2)}`).join('');
+  const svg = (name: string, attributes: Record<string, string>) => {
+    const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+    chartSvg.append(node);
+    return node;
+  };
+  svg('path', { d: `${profile}L280,96L0,96Z`, fill: '#c6d8bd', opacity: '.8' });
+  svg('path', { d: profile, fill: 'none', stroke: '#477365', 'stroke-width': '2', 'vector-effect': 'non-scaling-stroke' });
+  const progressLine = svg('line', { y1: '0', y2: '96', stroke: '#b55d35', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
+  const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
+  const hoverLine = svg('line', { y1: '0', y2: '96', stroke: '#315653', 'stroke-width': '1', 'stroke-dasharray': '3 3', 'vector-effect': 'non-scaling-stroke', visibility: 'hidden' });
+  const hoverDot = svg('circle', { r: '4', fill: '#315653', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke', visibility: 'hidden' });
   let playing = false, progress = 1, last = performance.now();
 
-  function setProgress(value: number) {
-    progress = THREE.MathUtils.clamp(value, 0, 1);
-    const distance = progress * total;
+  function sampleAt(value: number) {
+    const distance = THREE.MathUtils.clamp(value, 0, 1) * total;
     let lo = 0, hi = distances.length - 1;
     while (lo < hi) { const mid = (lo + hi) >> 1; if (distances[mid] < distance) lo = mid + 1; else hi = mid; }
     const i = Math.max(1, lo);
     const t = THREE.MathUtils.clamp((distance - distances[i - 1]) / Math.max(1, distances[i] - distances[i - 1]), 0, 1);
+    return { i, t, elevation: THREE.MathUtils.lerp(elevations[i - 1], elevations[i], t) };
+  }
+  const feet = (meters: number) => `${Math.round(meters * 3.28084).toLocaleString()} ft`;
+  const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * 15).toFixed(1)} mi`;
+  let hovering = false;
+  function setProgress(value: number) {
+    progress = THREE.MathUtils.clamp(value, 0, 1);
+    const distance = progress * total;
+    const { i, t, elevation } = sampleAt(progress);
     const position = points[i - 1].clone().lerp(points[i], t);
     rider.position.copy(position);
     const path = points.slice(0, i).concat(position).flatMap(p => [p.x, p.y, p.z]);
@@ -105,7 +134,57 @@ async function main() {
     if (visible) { active.geometry.setPositions(path); activeHalo.geometry.setPositions(path); }
     slider.value = String(Math.round(progress * 1000));
     $<HTMLElement>('mile').textContent = `${(progress * 15).toFixed(1)} / 15.0 mi`;
+    const x = chartX(distance).toFixed(2);
+    progressLine.setAttribute('x1', x); progressLine.setAttribute('x2', x);
+    progressDot.setAttribute('cx', x); progressDot.setAttribute('cy', chartY(elevation).toFixed(2));
+    chart.setAttribute('aria-valuenow', String(Math.round(progress * 100)));
+    chart.setAttribute('aria-valuetext', readout(progress, elevation));
+    if (!hovering) elevationReadout.textContent = readout(progress, elevation);
   }
+
+  function valueAtPointer(event: PointerEvent) {
+    const bounds = chart.getBoundingClientRect();
+    return THREE.MathUtils.clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
+  }
+  let scrubbing = false;
+  chart.addEventListener('pointermove', event => {
+    const value = valueAtPointer(event);
+    if (scrubbing) { setProgress(value); }
+    const elevation = sampleAt(value).elevation;
+    const x = chartX(value * total).toFixed(2);
+    hoverLine.setAttribute('x1', x); hoverLine.setAttribute('x2', x);
+    hoverDot.setAttribute('cx', x); hoverDot.setAttribute('cy', chartY(elevation).toFixed(2));
+    hoverLine.setAttribute('visibility', 'visible'); hoverDot.setAttribute('visibility', 'visible');
+    hovering = true;
+    elevationReadout.textContent = readout(value, elevation);
+  });
+  chart.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    chart.setPointerCapture(event.pointerId);
+    scrubbing = true;
+    playing = false; play.textContent = '▶ Play ride';
+    setProgress(valueAtPointer(event));
+  });
+  function endScrub() { scrubbing = false; }
+  chart.addEventListener('pointerup', endScrub);
+  chart.addEventListener('pointercancel', endScrub);
+  chart.addEventListener('pointerleave', () => {
+    if (scrubbing) return;
+    hovering = false;
+    hoverLine.setAttribute('visibility', 'hidden'); hoverDot.setAttribute('visibility', 'hidden');
+    elevationReadout.textContent = readout(progress, sampleAt(progress).elevation);
+  });
+  chart.addEventListener('keydown', event => {
+    const step = event.shiftKey ? 0.05 : 0.01;
+    const next = event.key === 'ArrowRight' || event.key === 'ArrowUp' ? progress + step
+      : event.key === 'ArrowLeft' || event.key === 'ArrowDown' ? progress - step
+      : event.key === 'Home' ? 0 : event.key === 'End' ? 1 : null;
+    if (next === null) return;
+    event.preventDefault();
+    playing = false; play.textContent = '▶ Play ride';
+    setProgress(next);
+  });
 
   function resize() {
     const w = innerWidth, h = innerHeight, aspect = w / h;
