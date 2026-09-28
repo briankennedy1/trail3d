@@ -26,9 +26,15 @@ h2 { font-size: 30px; line-height: 1.1; margin: 0 0 8px; color: #29464b; }
 .elevation-chart:focus-visible { box-shadow: 0 0 0 2px #315653; }
 .elevation-chart svg { display: block; width: 100%; height: 100%; pointer-events: none; }
 .elevation-axis { margin-top: 5px; font-size: 10px; font-weight: 600; color: #7b8177; }
-.playback { margin: 17px 0 17px; }
-#play { border: 0; border-radius: 9px; background: #315653; color: white; padding: 11px 16px; width: 100%; font-size: 13px; font-weight: 700; }
+.playback { display: flex; gap: 8px; margin: 17px 0 17px; }
+#play { border: 0; border-radius: 9px; background: #315653; color: white; padding: 11px 16px; flex: 1; font-size: 13px; font-weight: 700; }
 #play:hover { background: #244540; }
+#follow { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #315653; border-radius: 9px; background: #fffaf0; color: #315653; padding: 10px 11px; font-size: 13px; font-weight: 700; }
+#follow[aria-pressed="true"] { background: #315653; color: #fffaf0; }
+.switch-track { position: relative; width: 27px; height: 16px; flex: none; border-radius: 999px; background: #bdc5b7; }
+.switch-track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0003; transition: transform .18s ease; }
+#follow[aria-pressed="true"] .switch-track { background: #83c5aa; }
+#follow[aria-pressed="true"] .switch-track::after { transform: translateX(11px); }
 .source { display: block; text-decoration: none; font-size: 12px; font-weight: 700; color: #9b5a37; }
 .source:hover { text-decoration: underline; }
 .map-controls { position: fixed; right: 30px; bottom: 24px; z-index: 2; display: flex; align-items: end; gap: 7px; }

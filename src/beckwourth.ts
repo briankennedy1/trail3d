@@ -95,6 +95,7 @@ async function main() {
   camera.lookAt(controls.target);
 
   const play = $<HTMLButtonElement>('play');
+  const followButton = $<HTMLButtonElement>('follow');
   const chart = $<HTMLDivElement>('elevation-chart');
   const chartSvg = $<SVGSVGElement>('elevation-svg');
   const elevationReadout = $<HTMLOutputElement>('elevation-readout');
@@ -115,6 +116,9 @@ async function main() {
   const progressLine = svg('line', { y1: '0', y2: '96', stroke: '#b55d35', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   let playing = false, progress = 1, last = performance.now();
+  let following = false;
+  let orbitAngle = 0, orbitRadius = 1, orbitHeight = 1, orbitZoom = 1;
+  const orbitCenter = new THREE.Vector3();
 
   function sampleAt(value: number) {
     const distance = THREE.MathUtils.clamp(value, 0, 1) * total;
@@ -126,6 +130,35 @@ async function main() {
   }
   const feet = (meters: number) => `${Math.round(meters * 3.28084).toLocaleString()} ft`;
   const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * totalMiles).toFixed(1)} mi`;
+  function updateFollowCamera(dt: number) {
+    if (playing) orbitAngle += dt * 0.028;
+    const position = orbitCenter.clone().add(new THREE.Vector3(
+      Math.sin(orbitAngle) * orbitRadius, orbitHeight, Math.cos(orbitAngle) * orbitRadius,
+    ));
+    const alpha = 1 - Math.exp(-2 * dt);
+    controls.target.lerp(orbitCenter, alpha);
+    camera.position.lerp(position, alpha);
+    camera.zoom = THREE.MathUtils.lerp(camera.zoom, orbitZoom, alpha);
+    camera.updateProjectionMatrix();
+    controls.update();
+  }
+  function setFollowing(enabled: boolean) {
+    if (following === enabled) return;
+    following = enabled;
+    followButton.setAttribute('aria-pressed', String(enabled));
+    if (enabled) {
+      const homeView = savedHome ?? defaultHome;
+      orbitCenter.fromArray(homeView.target);
+      const homeOffset = new THREE.Vector3(...homeView.position).sub(orbitCenter);
+      orbitRadius = Math.max(60, Math.hypot(homeOffset.x, homeOffset.z));
+      orbitHeight = Math.max(45, homeOffset.y);
+      orbitZoom = Math.min(homeView.zoom, 1.35);
+      orbitAngle = Math.atan2(camera.position.x - orbitCenter.x, camera.position.z - orbitCenter.z);
+    }
+    // Clear any remaining orbit inertia before the camera takes over.
+    controls.enableDamping = !enabled;
+    controls.update();
+  }
   function setProgress(value: number) {
     progress = THREE.MathUtils.clamp(value, 0, 1);
     const distance = progress * total;
@@ -241,13 +274,16 @@ async function main() {
   clearHomeButton.hidden = !savedHome;
   home();
   setProgress(1);
+  followButton.addEventListener('click', () => setFollowing(!following));
+  controls.addEventListener('start', () => setFollowing(false));
   play.addEventListener('click', () => {
     if (progress >= 1) setProgress(0);
     playing = !playing;
     play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
   });
-  $('home').addEventListener('click', () => { setSettingsOpen(false); home(); });
+  $('home').addEventListener('click', () => { setFollowing(false); setSettingsOpen(false); home(); });
   setHomeButton.addEventListener('click', () => {
+    setFollowing(false);
     savedHome = {
       position: camera.position.toArray() as HomeView['position'],
       target: controls.target.toArray() as HomeView['target'],
@@ -259,6 +295,7 @@ async function main() {
     clearHomeButton.hidden = false;
   });
   clearHomeButton.addEventListener('click', () => {
+    setFollowing(false);
     savedHome = null;
     setSettingsOpen(false);
     try { localStorage.removeItem(HOME_KEY); } catch { /* session-only home */ }
@@ -278,6 +315,7 @@ async function main() {
     heldPointerId = null;
   }
   function startViewMotion(button: HTMLButtonElement, motion: ViewMotion) {
+    setFollowing(false);
     stopViewMotion();
     heldButton = button;
     heldMotion = motion;
@@ -328,6 +366,7 @@ async function main() {
   window.addEventListener('blur', () => stopViewMotion());
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopViewMotion(); });
   $('north').addEventListener('click', () => {
+    setFollowing(false);
     setSettingsOpen(false);
     const radius = camera.position.clone().sub(controls.target).length();
     camera.position.copy(controls.target).add(new THREE.Vector3(0, radius * 0.7, radius * 0.7));
@@ -369,7 +408,9 @@ async function main() {
       setProgress(progress + dt / 38);
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
-    if (heldMotion) moveView(heldMotion, dt);
+    if (following) {
+      updateFollowCamera(dt);
+    } else if (heldMotion) moveView(heldMotion, dt);
     else controls.update();
     // Keep the diorama names readable without letting them fill the screen when zoomed in.
     const labelScale = Math.min(1, 1.8 / camera.zoom);
