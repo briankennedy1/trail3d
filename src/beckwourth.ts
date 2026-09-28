@@ -196,7 +196,18 @@ async function main() {
   }
   function buildFlightPath() {
     const centers = Array.from({ length: flightSteps + 1 }, (_, i) => followFocus(total * i / flightSteps));
-    const plannedAngles = centers.map((_, i) => plannedAngle(i / flightSteps));
+    const rawAngles = centers.map((_, i) => plannedAngle(i / flightSteps));
+    // Spread quick direction changes across more of the ride, so the camera
+    // can make its turn without nearly stopping the rider at one point.
+    const plannedAngles = rawAngles.map((_, i) => {
+      let angle = 0, weightSum = 0;
+      for (let j = Math.max(0, i - 5); j <= Math.min(flightSteps, i + 5); j++) {
+        const weight = 6 - Math.abs(i - j);
+        angle += rawAngles[j] * weight;
+        weightSum += weight;
+      }
+      return angle / weightSum;
+    });
     const required = centers.map((center, i) => viewHeight(center, plannedAngles[i], total * i / flightSteps));
     // Raise and lower at a controlled rate, planning high ground far in advance.
     const heights = required.slice();
@@ -224,7 +235,9 @@ async function main() {
     for (let i = 1; i <= flightSteps; i++) {
       const next = cameraPose(i);
       const turn = Math.acos(THREE.MathUtils.clamp(previous.direction.dot(next.direction), -1, 1));
-      const seconds = Math.max(38 / flightSteps, turn / 0.11,
+      // This is a scenic tour: route time follows the camera's needs, with a
+      // gentle minimum pace, rather than the speed of the recorded ride.
+      const seconds = Math.max(70 / flightSteps, turn / 0.11,
         previous.position.distanceTo(next.position) / 8,
         previous.target.distanceTo(next.target) / 5);
       flightTimes.push(flightTimes[i - 1] + seconds);
