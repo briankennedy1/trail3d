@@ -479,11 +479,12 @@ async function main() {
     return THREE.MathUtils.clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
   }
   chart.addEventListener('pointermove', event => {
+    if (playing) return;
     playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
     setProgress(valueAtPointer(event));
   });
   chart.addEventListener('pointerdown', event => {
-    if (event.button !== 0) return;
+    if (playing || event.button !== 0) return;
     event.preventDefault();
     chart.setPointerCapture(event.pointerId);
     playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
@@ -496,6 +497,7 @@ async function main() {
       : event.key === 'Home' ? 0 : event.key === 'End' ? 1 : null;
     if (next === null) return;
     event.preventDefault();
+    if (playing) return;
     playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
     setProgress(next);
   });
@@ -550,7 +552,7 @@ async function main() {
       }
     } else cameraTransition = null;
     playing = !playing;
-    play.textContent = playing ? cameraTransition ? 'Ⅱ Positioning…' : 'Ⅱ Pause' : '▶ Play ride';
+    play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
   });
   type ViewMotion = 'left' | 'right' | 'up' | 'down';
   let heldMotion: ViewMotion | null = null;
