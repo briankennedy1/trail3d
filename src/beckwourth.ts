@@ -175,6 +175,17 @@ async function main() {
     controls.update();
     frameRiderForMobile();
   }
+  function positionFollowCamera() {
+    orbitCenter.copy(rider.position);
+    const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
+    const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
+    orbitHeight = Math.max(95, clearSightHeight(rider.position, x, z) + 2);
+    controls.target.copy(orbitCenter);
+    camera.position.set(x, orbitCenter.y + orbitHeight, z);
+    camera.zoom = orbitZoom;
+    camera.updateProjectionMatrix();
+    frameRiderForMobile();
+  }
   function setFollowing(enabled: boolean) {
     if (following === enabled) return;
     following = enabled;
@@ -182,16 +193,8 @@ async function main() {
     if (enabled) {
       rider.visible = true;
       orbitAngle = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
-      orbitCenter.copy(rider.position);
-      const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
-      const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
-      orbitHeight = Math.max(95, clearSightHeight(rider.position, x, z) + 2);
       orbitZoom = 1.15;
-      controls.target.copy(orbitCenter);
-      camera.position.set(x, orbitCenter.y + orbitHeight, z);
-      camera.zoom = orbitZoom;
-      camera.updateProjectionMatrix();
-      frameRiderForMobile();
+      positionFollowCamera();
     } else if (camera.view?.enabled) {
       camera.clearViewOffset();
     }
@@ -207,13 +210,6 @@ async function main() {
     const position = points[i - 1].clone().lerp(points[i], t);
     rider.position.copy(position);
     rider.position.y += 0.1;
-    if (following && !playing) {
-      const shift = rider.position.clone().sub(orbitCenter);
-      orbitCenter.copy(rider.position);
-      controls.target.add(shift);
-      camera.position.add(shift);
-      controls.update();
-    }
     const path = points.slice(0, i).concat(position).flatMap(p => [p.x, p.y, p.z]);
     const visible = path.length >= 6;
     active.visible = activeHalo.visible = visible;
@@ -326,7 +322,10 @@ async function main() {
   followButton.addEventListener('click', () => setFollowing(!following));
   controls.addEventListener('start', () => setFollowing(false));
   play.addEventListener('click', () => {
-    if (progress >= 1) setProgress(0);
+    if (!playing) {
+      if (progress >= 1) setProgress(0);
+      if (following) positionFollowCamera();
+    }
     playing = !playing;
     play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
   });
@@ -494,7 +493,7 @@ async function main() {
       setProgress(progress + dt / 38);
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
-    if (following) updateFollowCamera(dt);
+    if (following && playing) updateFollowCamera(dt);
     else {
       if (heldMotion) moveView(heldMotion, dt);
       controls.update();
