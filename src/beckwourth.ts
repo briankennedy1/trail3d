@@ -97,6 +97,7 @@ async function main() {
 
   const play = $<HTMLButtonElement>('play');
   const followButton = $<HTMLButtonElement>('follow');
+  const compassNeedle = $<SVGSVGElement>('compass-needle');
   const chart = $<HTMLDivElement>('elevation-chart');
   const chartSvg = $<SVGSVGElement>('elevation-svg');
   const elevationReadout = $<HTMLOutputElement>('elevation-readout');
@@ -454,14 +455,16 @@ async function main() {
       setProgress(progress + dt / 38);
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
-    if (following) {
-      updateFollowCamera(dt);
-    } else if (heldMotion) moveView(heldMotion, dt);
-    else controls.update();
+    if (following) updateFollowCamera(dt);
+    else {
+      if (heldMotion) moveView(heldMotion, dt);
+      controls.update();
+    }
     // Keep the diorama names readable without letting them fill the screen when zoomed in.
     const labelScale = Math.min(1, 1.8 / camera.zoom);
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     const screenUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+    compassNeedle.style.transform = `rotate(${Math.atan2(-screenRight.z, -screenUp.z)}rad)`;
     for (let i = 0; i < pois.flags.length; i++) {
       const { pole, pennant, label, isPeak } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i;
