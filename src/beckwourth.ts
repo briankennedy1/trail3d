@@ -77,6 +77,7 @@ async function main() {
   const dot = new THREE.Mesh(new THREE.SphereGeometry(0.196, 16, 12), new THREE.MeshBasicMaterial({ color: '#0ba86b', depthTest: true }));
   rider.add(dot);
   rider.renderOrder = 25;
+  rider.visible = false;
   scene.add(rider);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 3000);
@@ -159,8 +160,9 @@ async function main() {
     controls.enableDamping = !enabled;
     controls.update();
   }
-  function setProgress(value: number) {
+  function setProgress(value: number, revealRider = true) {
     progress = THREE.MathUtils.clamp(value, 0, 1);
+    if (revealRider) rider.visible = true;
     const distance = progress * total;
     const { i, t, elevation } = sampleAt(progress);
     const position = points[i - 1].clone().lerp(points[i], t);
@@ -273,7 +275,7 @@ async function main() {
   function home() { applyHome(savedHome ?? defaultHome); }
   clearHomeButton.hidden = !savedHome;
   home();
-  setProgress(1);
+  setProgress(1, false);
   followButton.addEventListener('click', () => setFollowing(!following));
   controls.addEventListener('start', () => setFollowing(false));
   play.addEventListener('click', () => {
