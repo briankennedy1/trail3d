@@ -83,7 +83,9 @@ async function main() {
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 3000);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.1;
+  // Manual input should settle quickly; Follow uses its own smooth flight path.
+  controls.dampingFactor = 0.25;
+  controls.zoomSpeed = 1.4;
   controls.screenSpacePanning = false;
   controls.zoomToCursor = true;
   controls.minZoom = 0.65;
