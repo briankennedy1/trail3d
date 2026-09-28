@@ -552,7 +552,6 @@ async function main() {
     playing = !playing;
     play.textContent = playing ? cameraTransition ? 'Ⅱ Positioning…' : 'Ⅱ Pause' : '▶ Play ride';
   });
-  $('home').addEventListener('click', () => { setFollowing(false); home(); });
   type ViewMotion = 'left' | 'right' | 'up' | 'down';
   let heldMotion: ViewMotion | null = null;
   let heldButton: HTMLButtonElement | null = null;
