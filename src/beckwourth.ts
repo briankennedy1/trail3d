@@ -119,10 +119,11 @@ async function main() {
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   let playing = false, progress = 1, last = performance.now();
   let following = false;
-  let orbitAngle = 0, desiredOrbitAngle = 0, orbitHeight = 34, orbitZoom = 1;
-  let viewSearchTime = 0;
   const orbitRadius = 90;
-  const orbitCenter = new THREE.Vector3();
+  const flightSteps = 96;
+  const angleSteps = 36;
+  type Shot = { center: THREE.Vector3; angle: number; height: number };
+  let flightPath: Shot[] | null = null;
 
   function sampleAt(value: number) {
     const distance = THREE.MathUtils.clamp(value, 0, 1) * total;
@@ -136,9 +137,16 @@ async function main() {
     const { i, t } = sampleAt(distance / total);
     return points[i - 1].clone().lerp(points[i], t);
   }
-  function followFocus() {
-    // Show where the ride is going without steering the camera through every GPS bend.
-    return rider.position.clone().lerp(routePoint(progress * total + 1100), 0.35);
+  function followFocus(distance: number) {
+    // A broad, forward-weighted window gives the helicopter a smooth course.
+    const focus = new THREE.Vector3();
+    for (const [offset, weight] of [[-900, 0.08], [-450, 0.14], [0, 0.22],
+      [450, 0.24], [900, 0.2], [1350, 0.12]]) {
+      focus.addScaledVector(routePoint(distance + offset), weight);
+    }
+    focus.x *= 0.75;
+    focus.z *= 0.75;
+    return focus;
   }
   const feet = (meters: number) => `${Math.round(meters * 3.28084).toLocaleString()} ft`;
   const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * totalMiles).toFixed(1)} mi`;
@@ -158,29 +166,97 @@ async function main() {
     }
     return required;
   }
-  function viewHeight(center: THREE.Vector3, angle: number) {
+  function viewHeight(center: THREE.Vector3, angle: number, distance: number) {
     const x = center.x + Math.sin(angle) * orbitRadius;
     const z = center.z + Math.cos(angle) * orbitRadius;
-    // Clear the rider and the next stretch of trail, not just the camera target.
-    const subjects = [rider.position, routePoint(progress * total + 550), routePoint(progress * total + 1100)];
+    const subjects = [routePoint(distance), routePoint(distance + 500)];
     return Math.max(center.y + 34, ...subjects.map(p => p.y + clearSightHeight(p, x, z) + 2.5));
   }
-  function chooseViewAngle() {
-    const center = followFocus();
-    let bestAngle = desiredOrbitAngle;
-    let bestScore = Infinity;
-    // Look for a clear oblique sightline without whipping around the diorama.
-    for (const turn of [-1.15, -0.75, -0.38, 0, 0.38, 0.75, 1.15]) {
-      const angle = orbitAngle + turn;
-      const height = viewHeight(center, angle);
-      const score = Math.max(0, height - center.y - 34) + Math.abs(turn) * 7;
-      if (score < bestScore) { bestScore = score; bestAngle = angle; }
+  function buildFlightPath() {
+    const centers = Array.from({ length: flightSteps + 1 }, (_, i) => followFocus(total * i / flightSteps));
+    const step = 2 * Math.PI / angleSteps;
+    const costs = centers.map((center, i) => Array.from({ length: angleSteps }, (_, j) => {
+      const rise = viewHeight(center, j * step, total * i / flightSteps) - center.y - 34;
+      return rise * rise * 0.1;
+    }));
+    const previous: number[][] = Array.from({ length: flightSteps + 1 }, () => Array(angleSteps).fill(0));
+    let scores = costs[0].map((cost, j) => cost + 4 * (1 - Math.cos(j * step + 2.72)));
+    // Plan the entire ride at once. Changing sides has a cost, so a coming
+    // ridge starts a gradual turn well before it would hide the rider.
+    for (let i = 1; i <= flightSteps; i++) {
+      const next = Array(angleSteps).fill(Infinity);
+      for (let j = 0; j < angleSteps; j++) {
+        for (const change of [-1, 0, 1]) {
+          const prior = (j + change + angleSteps) % angleSteps;
+          const score = scores[prior] + costs[i][j] + (change ? 150 : 0);
+          if (score < next[j]) { next[j] = score; previous[i][j] = prior; }
+        }
+      }
+      scores = next;
     }
-    desiredOrbitAngle = bestAngle;
+    const chosen = Array<number>(flightSteps + 1);
+    chosen[flightSteps] = scores.indexOf(Math.min(...scores));
+    for (let i = flightSteps; i > 0; i--) chosen[i - 1] = previous[i][chosen[i]];
+    const angles = [chosen[0] * step];
+    for (let i = 1; i <= flightSteps; i++) {
+      const difference = Math.atan2(Math.sin((chosen[i] - chosen[i - 1]) * step),
+        Math.cos((chosen[i] - chosen[i - 1]) * step));
+      angles.push(angles[i - 1] + difference);
+    }
+    const plannedAngles = angles.map((_, i) => {
+      let sum = 0, weight = 0;
+      for (let k = -10; k <= 10; k++) {
+        const w = 11 - Math.abs(k);
+        sum += angles[THREE.MathUtils.clamp(i + k, 0, flightSteps)] * w;
+        weight += w;
+      }
+      return sum / weight;
+    });
+    // Keep the orbit below about eight degrees per second. The reverse pass
+    // moves necessary turns earlier instead of rushing through them on arrival.
+    const maxTurnPerStep = 0.055;
+    for (let i = flightSteps - 1; i >= 0; i--) {
+      plannedAngles[i] = THREE.MathUtils.clamp(plannedAngles[i],
+        plannedAngles[i + 1] - maxTurnPerStep, plannedAngles[i + 1] + maxTurnPerStep);
+    }
+    for (let i = 1; i <= flightSteps; i++) {
+      plannedAngles[i] = THREE.MathUtils.clamp(plannedAngles[i],
+        plannedAngles[i - 1] - maxTurnPerStep, plannedAngles[i - 1] + maxTurnPerStep);
+    }
+    const required = centers.map((center, i) => viewHeight(center, plannedAngles[i], total * i / flightSteps));
+    // Raise and lower at a controlled rate, planning high ground far in advance.
+    const heights = required.slice();
+    for (let i = flightSteps - 1; i >= 0; i--) heights[i] = Math.max(heights[i], heights[i + 1] - 1.5);
+    for (let i = 1; i <= flightSteps; i++) heights[i] = Math.max(heights[i], heights[i - 1] - 1.5);
+    flightPath = centers.map((center, i) => ({ center, angle: plannedAngles[i], height: heights[i] + 2 }));
+  }
+  function flightShot(value: number) {
+    if (!flightPath) buildFlightPath();
+    const path = flightPath!;
+    const at = THREE.MathUtils.clamp(value, 0, 1) * flightSteps;
+    const i = Math.min(flightSteps - 1, Math.floor(at));
+    const t = at - i;
+    // Cubic interpolation keeps velocity continuous between planned shots.
+    const a = path[Math.max(0, i - 1)], b = path[i];
+    const c = path[i + 1], d = path[Math.min(flightSteps, i + 2)];
+    const cubic = (v0: number, v1: number, v2: number, v3: number) =>
+      v1 + 0.5 * t * (v2 - v0 + t * (2 * v0 - 5 * v1 + 4 * v2 - v3
+        + t * (3 * (v1 - v2) + v3 - v0)));
+    return {
+      center: new THREE.Vector3(
+        cubic(a.center.x, b.center.x, c.center.x, d.center.x),
+        cubic(a.center.y, b.center.y, c.center.y, d.center.y),
+        cubic(a.center.z, b.center.z, c.center.z, d.center.z),
+      ),
+      angle: cubic(a.angle, b.angle, c.angle, d.angle),
+      height: cubic(a.height, b.height, c.height, d.height),
+    };
   }
   function frameRiderForMobile() {
     if (innerWidth > 700) {
-      if (camera.view?.enabled) camera.clearViewOffset();
+      const cardLeft = $<HTMLElement>('ride-card').getBoundingClientRect().left;
+      const sideOffset = (innerWidth - cardLeft) * (1 - progress) / 2;
+      camera.setViewOffset(innerWidth, innerHeight, sideOffset, 0, innerWidth, innerHeight);
       return;
     }
     const clearBottom = Math.min($<HTMLElement>('compass').getBoundingClientRect().top,
@@ -189,34 +265,14 @@ async function main() {
     const riderY = Math.min(innerHeight / 2, Math.max(clearTop + 24, (clearTop + clearBottom) / 2));
     camera.setViewOffset(innerWidth, innerHeight, 0, Math.max(0, innerHeight / 2 - riderY), innerWidth, innerHeight);
   }
-  function updateFollowCamera(dt: number) {
-    viewSearchTime -= dt;
-    if (viewSearchTime <= 0) { chooseViewAngle(); viewSearchTime = 1.5; }
-    orbitAngle = THREE.MathUtils.damp(orbitAngle, desiredOrbitAngle, 0.65, dt) + dt * 0.012;
-    orbitCenter.lerp(followFocus(), 1 - Math.exp(-1.7 * dt));
-    const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
-    const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
-    const minHeight = viewHeight(orbitCenter, orbitAngle) - orbitCenter.y;
-    orbitHeight = Math.max(minHeight, THREE.MathUtils.damp(orbitHeight, minHeight, 1.4, dt));
-    controls.target.copy(orbitCenter);
-    camera.position.set(x, orbitCenter.y + orbitHeight, z);
-    camera.zoom = THREE.MathUtils.damp(camera.zoom, orbitZoom, 3, dt);
+  function positionFollowCamera() {
+    const shot = flightShot(progress);
+    controls.target.copy(shot.center);
+    camera.position.set(shot.center.x + Math.sin(shot.angle) * orbitRadius,
+      shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius);
+    camera.zoom = 0.95;
     camera.updateProjectionMatrix();
     controls.update();
-    frameRiderForMobile();
-  }
-  function positionFollowCamera() {
-    orbitCenter.copy(followFocus());
-    chooseViewAngle();
-    orbitAngle = desiredOrbitAngle;
-    viewSearchTime = 1.5;
-    const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
-    const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
-    orbitHeight = viewHeight(orbitCenter, orbitAngle) - orbitCenter.y;
-    controls.target.copy(orbitCenter);
-    camera.position.set(x, orbitCenter.y + orbitHeight, z);
-    camera.zoom = orbitZoom;
-    camera.updateProjectionMatrix();
     frameRiderForMobile();
   }
   function setFollowing(enabled: boolean) {
@@ -225,8 +281,6 @@ async function main() {
     followButton.setAttribute('aria-pressed', String(enabled));
     if (enabled) {
       rider.visible = true;
-      orbitAngle = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
-      orbitZoom = 0.95;
       positionFollowCamera();
     } else if (camera.view?.enabled) {
       camera.clearViewOffset();
@@ -292,6 +346,7 @@ async function main() {
     const pixelHeight = Math.round(h * renderer.getPixelRatio());
     camera.left = -58 * aspect / 2; camera.right = 58 * aspect / 2;
     camera.top = 29; camera.bottom = -29; camera.updateProjectionMatrix();
+    if (following) frameRiderForMobile();
     for (const line of [preview, previewCore, active, activeHalo, overlap]) line.material.resolution.set(pixelWidth, pixelHeight);
   }
   addEventListener('resize', resize);
@@ -526,7 +581,7 @@ async function main() {
       setProgress(progress + dt / 38);
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
-    if (following && playing) updateFollowCamera(dt);
+    if (following && playing) positionFollowCamera();
     else {
       if (heldMotion) moveView(heldMotion, dt);
       controls.update();
