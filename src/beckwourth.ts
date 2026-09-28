@@ -86,7 +86,6 @@ async function main() {
   const postScene = new THREE.Scene();
   postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
   const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const slider = $<HTMLInputElement>('progress');
   const play = $<HTMLButtonElement>('play');
   const chart = $<HTMLDivElement>('elevation-chart');
   const chartSvg = $<SVGSVGElement>('elevation-svg');
@@ -129,8 +128,6 @@ async function main() {
     const visible = path.length >= 6;
     active.visible = activeHalo.visible = visible;
     if (visible) { active.geometry.setPositions(path); activeHalo.geometry.setPositions(path); }
-    slider.value = String(Math.round(progress * 1000));
-    $<HTMLElement>('mile').textContent = `${(progress * 15).toFixed(1)} / 15.0 mi`;
     const x = chartX(distance).toFixed(2);
     progressLine.setAttribute('x1', x); progressLine.setAttribute('x2', x);
     progressDot.setAttribute('cx', x); progressDot.setAttribute('cy', chartY(elevation).toFixed(2));
@@ -228,7 +225,6 @@ async function main() {
   clearHomeButton.hidden = !savedHome;
   home();
   setProgress(1);
-  slider.addEventListener('input', () => { playing = false; play.textContent = '▶ Play ride'; setProgress(Number(slider.value) / 1000); });
   play.addEventListener('click', () => {
     if (progress >= 1) setProgress(0);
     playing = !playing;
