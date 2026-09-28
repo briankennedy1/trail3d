@@ -48,14 +48,14 @@ async function main() {
     scene.add(line);
     return line;
   };
-  const preview = routeLine(mat('#fff7e7', 8, 0.9), 20);
+  const preview = routeLine(mat('#fff7e7', 6, 0.9), 20);
   preview.geometry.setPositions(points.flatMap(p => [p.x, p.y, p.z]));
-  const previewCore = routeLine(mat('#8a6d5b', 3, 0.85), 21);
+  const previewCore = routeLine(mat('#8a6d5b', 2.25, 0.85), 21);
   previewCore.geometry.setPositions(points.flatMap(p => [p.x, p.y, p.z]));
   // Keep all route strokes in the transparent pass so renderOrder can put the
   // growing gold line above the full, muted preview.
-  const activeHalo = routeLine(mat('#fff9df', 12, 0.99), 22);
-  const active = routeLine(mat('#edaa29', 6, 0.99), 23);
+  const activeHalo = routeLine(mat('#fff9df', 9, 0.99), 22);
+  const active = routeLine(mat('#edaa29', 4.5, 0.99), 23);
   const rider = new THREE.Group();
   const dot = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 8), new THREE.MeshBasicMaterial({ color: '#cf532e', depthTest: true }));
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.65, 0.9, 32), new THREE.MeshBasicMaterial({ color: '#fff8e4', side: THREE.DoubleSide, depthTest: true }));
