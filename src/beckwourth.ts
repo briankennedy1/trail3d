@@ -121,7 +121,7 @@ async function main() {
   const progressLine = svg('line', { y1: '0', y2: '96', stroke: '#b55d35', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   let playing = false, progress = 1, last = performance.now();
-  let following = false;
+  let following = true;
   const orbitRadius = 90;
   const flightSteps = 192;
   const followDuration = 45;
