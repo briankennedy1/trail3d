@@ -33,14 +33,7 @@ async function main() {
   const landscape = buildLandscape(terrain, { trees: false });
   scene.add(landscape.group);
   const pois = buildPOIs(map, terrain);
-  // Render POIs after the terrain so their labels stay crisp. Reuse the terrain
-  // geometry as depth-only occluders in that final pass.
-  const poiScene = new THREE.Scene();
-  const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true });
-  for (const mesh of landscape.group.children as THREE.Mesh[]) {
-    poiScene.add(new THREE.Mesh(mesh.geometry, depthOnly));
-  }
-  poiScene.add(pois.group);
+  scene.add(pois.group);
 
   const points = ride.points.map(([x, y]) => new THREE.Vector3(...toWorld(map, x, y, terrain.heightAt(x, y) + 5)));
   const distances = [0];
@@ -409,10 +402,6 @@ async function main() {
       label.position.y += isPeak && innerWidth < 700 ? 0.3 : poleHeight + 0.18;
     }
     renderer.render(scene, camera);
-    renderer.autoClear = false;
-    renderer.clearDepth();
-    renderer.render(poiScene, camera);
-    renderer.autoClear = true;
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
