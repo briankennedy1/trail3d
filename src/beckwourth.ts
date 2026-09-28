@@ -7,7 +7,7 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { EXAGGERATION, LAKE_LEVEL, Terrain, WORLD_SCALE, toWorld, type MapData } from './data';
 import { buildLandscape } from './terrain';
-import { buildPOIs } from './pois';
+import { BANNER_HEIGHT, PENNANT_CENTER, buildPOIs, shapeBanner } from './pois';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
 type EmbeddedRide = { map: MapData; ride: Ride; terrain: string };
@@ -623,6 +623,18 @@ async function main() {
   });
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const revealProgress = pois.flags.map(() => 0);
+  // Hovering blows the small pennant off like a leaf; it regrows once the pole is back down.
+  const LEAF_FLIGHT = 3;
+  const pennantGrowth = pois.flags.map(() => 1);
+  const leafAge = pois.flags.map(() => LEAF_FLIGHT);
+  const leafSize = pois.flags.map(() => 1);
+  // Moving off a flag blows its banner away too, while the pole drops and the pennant regrows.
+  const BANNER_FLIGHT = 2.8;
+  const bannerGone = pois.flags.map(() => false);
+  const looseFlights = pois.flags.map(flag => flag.looseBanners.map(() => ({ age: BANNER_FLIGHT, length: 0, reveal: 0, start: new THREE.Vector3() })));
+  let flagsFacing = false;
+  const toViewer = new THREE.Vector3();
+  const easeOutBack = (x: number, overshoot = 1.4) => 1 + (overshoot + 1) * (x - 1) ** 3 + overshoot * (x - 1) ** 2;
   let hoveredFlag = -1;
   let selectedFlag = -1;
   const flagRaycaster = new THREE.Raycaster();
@@ -711,34 +723,112 @@ async function main() {
       compassCenter.title = compassAction;
       compassCenter.setAttribute('aria-label', compassAction);
     }
+    // Flags turn their faces toward the viewer like slow weathervanes, snapping
+    // straight to it on the first frame.
+    camera.getWorldDirection(toViewer).negate();
+    const viewerYaw = Math.hypot(toViewer.x, toViewer.z) > 1e-3 ? Math.atan2(toViewer.x, toViewer.z) : null;
     for (let i = 0; i < pois.flags.length; i++) {
-      const { pole, pennant, label, isPeak } = pois.flags[i];
+      const { marker, pole, pennant, leaf, label, bannerWidth: width } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i;
+      if (viewerYaw !== null) {
+        const turn = Math.atan2(Math.sin(viewerYaw - marker.rotation.y), Math.cos(viewerYaw - marker.rotation.y));
+        // Swing round quickly while the big flag is out so its label reads straight on.
+        marker.rotation.y += reducedMotion || !flagsFacing ? turn : turn * (1 - Math.exp(-dt / (active ? 0.18 : 1.6)));
+      }
+      if (active && pennantGrowth[i] > 0) {
+        leaf.parent!.rotation.y = marker.rotation.y;
+        leafSize[i] = pennant.scale.x;
+        leafAge[i] = reducedMotion ? LEAF_FLIGHT : 0;
+        pennantGrowth[i] = 0;
+      }
+      if (active && bannerGone[i]) {
+        // Unfurl a fresh banner from the top of the pole, which is still raised here.
+        revealProgress[i] = Math.min(revealProgress[i], 0.25);
+        bannerGone[i] = false;
+      }
       revealProgress[i] = reducedMotion ? Number(active) : THREE.MathUtils.clamp(
-        revealProgress[i] + (active ? 1 : -1) * dt / 1.25, 0, 1,
+        revealProgress[i] + (active ? dt / 0.9 : -dt / 1.1), 0, 1,
       );
-      // The small flag returns only after the pole has finished lowering.
-      const detached = 1 - (1 - THREE.MathUtils.clamp(revealProgress[i] / 0.35, 0, 1)) ** 2;
-      const smallFlagReveal = 1 - detached;
-      pennant.visible = smallFlagReveal > 0.001;
-      pennant.position.set(2.1 * detached, 1.75 + detached, 0);
-      pennant.scale.x = smallFlagReveal;
-      (pennant.material as THREE.MeshBasicMaterial).opacity = smallFlagReveal;
-      const raised = 1 - (1 - THREE.MathUtils.clamp((revealProgress[i] - 0.35) / 0.27, 0, 1)) ** 3;
+      if (!active && revealProgress[i] === 0 && pennantGrowth[i] < 1) {
+        pennantGrowth[i] = reducedMotion ? 1 : Math.min(1, pennantGrowth[i] + dt / 0.5);
+      }
+      pennant.visible = pennantGrowth[i] > 0.001;
+      pennant.scale.x = easeOutBack(pennantGrowth[i]);
+      pennant.material.opacity = Math.min(1, pennantGrowth[i] * 3);
+
+      // The leaf drifts downwind, rocking side to side as it sinks and tumbles.
+      leafAge[i] += dt;
+      const flight = leafAge[i] / LEAF_FLIGHT;
+      leaf.visible = flight < 1;
+      if (leaf.visible) {
+        const swing = flight * Math.PI * 2 * 1.6;
+        const loose = Math.min(1, flight / 0.12);
+        const drift = 1 - (1 - flight) ** 1.7;
+        leaf.scale.x = leafSize[i];
+        leaf.position.set(
+          PENNANT_CENTER.x * leafSize[i] + 4.8 * drift + 0.45 * Math.sin(swing),
+          1.75 + PENNANT_CENTER.y - 1.3 * flight + 0.28 * Math.sin(swing) ** 2,
+          0.6 * flight * Math.sin(swing * 0.5),
+        );
+        leaf.rotation.set(flight * Math.PI * 2.2, loose * 0.5 * Math.sin(swing * 0.7), loose * 0.75 * Math.cos(swing));
+        leaf.material.opacity = Math.min(1, (1 - flight) / 0.35);
+        // A fading leaf shouldn't leave a hard-edged hole in the route behind it.
+        leaf.material.depthWrite = leaf.material.opacity > 0.99;
+      }
+
+      const raised = easeOutBack(THREE.MathUtils.clamp((revealProgress[i] - 0.05) / 0.35, 0, 1), 1.1);
       const poleHeight = 1.75 + 1.45 * raised;
       pole.scale.y = poleHeight;
       pole.position.y = poleHeight / 2;
-      const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.64) / 0.36, 0, 1);
+      const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.25) / 0.75, 0, 1);
       const reveal = 1 - (1 - unfurl) ** 3;
-      const width = isPeak ? 11.6 : 10.5;
-      const height = 1.97;
-      label.visible = reveal > 0.001;
-      // Grow the new banner from its hoist edge at the raised pole.
-      label.material.map!.repeat.x = reveal;
-      label.material.map!.updateMatrix();
-      label.scale.set(width * reveal, height, 1);
-      label.position.set(0.12 + width * reveal / 2, poleHeight - height / 2, 0);
+      const height = BANNER_HEIGHT;
+      if (!active && label.visible && !bannerGone[i] && !reducedMotion) {
+        const slot = looseFlights[i].reduce((oldest, flight, k) => flight.age > looseFlights[i][oldest].age ? k : oldest, 0);
+        const flight = looseFlights[i][slot];
+        flight.age = 0;
+        flight.reveal = reveal;
+        flight.length = width * flight.reveal;
+        flight.start.set(0.12 + flight.length / 2, poleHeight - height / 2, 0);
+        pois.flags[i].looseBanners[slot].parent!.parent!.rotation.y = marker.rotation.y;
+        bannerGone[i] = true;
+        // Skip furling: the pole starts lowering as soon as the banner is gone.
+        revealProgress[i] = Math.min(revealProgress[i], 0.4);
+      }
+      if (bannerGone[i] && revealProgress[i] <= 0.25) bannerGone[i] = false;
+      // The loose banner billows and tumbles downwind, rocking as it sinks and fades.
+      pois.flags[i].looseBanners.forEach((banner, k) => {
+        const flight = looseFlights[i][k];
+        flight.age += dt;
+        const progress = flight.age / BANNER_FLIGHT;
+        banner.visible = progress < 1;
+        if (!banner.visible) return;
+        const loose = Math.min(1, progress / 0.15);
+        const swing = progress * Math.PI * 2 * 1.1;
+        const drift = 1 - (1 - progress) ** 1.6;
+        const pivot = banner.parent!;
+        shapeBanner(banner, width, height, flight.reveal, now / 1000, false, 0.35 * loose);
+        banner.position.x = -flight.length / 2;
+        pivot.position.set(
+          flight.start.x + 6.5 * drift + 0.6 * Math.sin(swing),
+          flight.start.y - 2.2 * progress + 0.35 * Math.sin(swing) ** 2,
+          1.2 * progress * Math.sin(swing * 0.5),
+        );
+        pivot.rotation.set(progress * Math.PI * 1.2, loose * 0.35 * Math.sin(swing * 0.8), loose * 0.3 * Math.cos(swing));
+        const opacity = Math.min(1, (1 - progress) / 0.4);
+        banner.material.opacity = opacity;
+        // Keep discarding the clear margins as the fabric fades out.
+        banner.material.alphaTest = 0.5 * opacity;
+        banner.material.depthWrite = opacity > 0.99;
+      });
+      label.visible = reveal > 0.001 && !bannerGone[i];
+      if (label.visible) {
+        shapeBanner(label, width, height, reveal, now / 1000, reducedMotion);
+        label.material.opacity = Math.min(1, reveal * 5);
+        label.position.set(0.12, poleHeight - height / 2, 0);
+      }
     }
+    flagsFacing = true;
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }

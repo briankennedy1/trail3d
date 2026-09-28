@@ -51,11 +51,30 @@ function tailnetShare(port: number): Plugin {
   };
 }
 
+// Stamp the footer with a version from git: the commit count, counting uncommitted
+// work as the next commit since index.html is usually built just before committing.
+function buildVersion(): Plugin {
+  const git = (...args: string[]) => execFileSync('git', args, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  let label = 'dev', detail = '';
+  try {
+    const dirty = git('status', '--porcelain') !== '';
+    label = `v${Number(git('rev-list', '--count', 'HEAD')) + (dirty ? 1 : 0)}`;
+    const built = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+    detail = `Built ${built} from ${git('rev-parse', '--short', 'HEAD')}${dirty ? ' + uncommitted changes' : ''}`;
+  } catch {
+    // not a git checkout
+  }
+  return {
+    name: 'build-version',
+    transformIndexHtml: html => html.replaceAll('%APP_VERSION%', label).replaceAll('%APP_VERSION_DETAIL%', detail),
+  };
+}
+
 export default defineConfig({
   base: './',
   build: { chunkSizeWarningLimit: 800, rollupOptions: { input: resolve(import.meta.dirname, 'app.html') } }, // three.js is most of it
   // strictPort: the tailnet share points at this exact port
   server: { port: PORT, strictPort: true, allowedHosts: ['.ts.net'] },
   preview: { port: PORT, strictPort: true, allowedHosts: ['.ts.net'] },
-  plugins: [tailnetShare(PORT)],
+  plugins: [tailnetShare(PORT), buildVersion()],
 });
