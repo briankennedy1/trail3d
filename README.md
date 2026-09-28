@@ -4,7 +4,7 @@ A watercolor terrain map of [BKXC's September 25, 2026 ride](https://www.trailfo
 
 **To view it:** double-click `index.html`. It is a self-contained page with the styles, app, ride path, and terrain embedded, so it also works from a `file://` URL. A network connection is useful for the optional Google fonts only.
 
-Pan, rotate, and zoom to frame the map, then open the ⚙︎ settings menu and select **Set home**. The ⌂ button returns to that saved view. **Reset default** in the settings menu clears it and restores the original view. The saved home view persists in the same browser via local storage.
+The initial Home view is Brian's chosen framing, built into the site for every visitor. Pan, rotate, and zoom to frame the map, then open the ⚙︎ settings menu and select **Set home** to save a personal view. The ⌂ button returns to the saved view, or the site default if none is saved. **Reset default** clears a personal view and restores the site default. Personal views persist in the same browser via local storage.
 
 The elevation profile shows the recorded altitude along the route. Hover, tap, drag, or use the arrow keys to move the ride marker and yellow track to that position. **Play ride** animates the route from the current position.
 

@@ -173,7 +173,11 @@ async function main() {
   }
   addEventListener('resize', resize);
   resize();
-  const defaultHome: HomeView = { position: [100, 105, 100], target: [0, -2, 0], zoom: 1.17 };
+  const defaultHome: HomeView = {
+    position: [-73.69087860310381, 69.64247192938878, -153.77908766318367],
+    target: [-7.2191607049007676, -1.9999999999999996, -7.33110929236435],
+    zoom: 1.273332761095871,
+  };
   function readHome(): HomeView | null {
     try {
       const value = JSON.parse(localStorage.getItem(HOME_KEY) || 'null') as HomeView | null;
@@ -248,7 +252,7 @@ async function main() {
     try { localStorage.removeItem(HOME_KEY); } catch { /* session-only home */ }
     clearHomeButton.hidden = true;
     applyHome(defaultHome);
-    status('Original home restored');
+    status('Default home restored');
   });
   $('north').addEventListener('click', () => {
     setSettingsOpen(false);
