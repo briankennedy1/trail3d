@@ -308,7 +308,7 @@ async function main() {
     camera.position.fromArray(view.position).lerp(new THREE.Vector3(
       shot.center.x + Math.sin(shot.angle) * orbitRadius,
       shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius), intro);
-    camera.zoom = THREE.MathUtils.lerp(view.zoom, 0.95, intro);
+    camera.zoom = THREE.MathUtils.lerp(view.zoom, 1.1, intro);
     camera.updateProjectionMatrix();
     controls.update();
     frameRiderForMobile();
