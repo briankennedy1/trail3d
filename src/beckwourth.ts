@@ -123,9 +123,15 @@ async function main() {
   const flightSteps = 96;
   const introEnd = 0.25;
   type Shot = { center: THREE.Vector3; angle: number; height: number };
+  type CameraPose = { position: THREE.Vector3; target: THREE.Vector3; zoom: number; offsetX: number; offsetY: number };
+  type CameraTransition = {
+    from: CameraPose; to: CameraPose; elapsed: number; duration: number;
+    startAngle: number; turn: number; startRadius: number; endRadius: number;
+  };
   let flightPath: Shot[] | null = null;
   let flightTimes: number[] = [];
   let playbackTime = 0;
+  let cameraTransition: CameraTransition | null = null;
 
   function sampleAt(value: number) {
     const distance = THREE.MathUtils.clamp(value, 0, 1) * total;
@@ -286,35 +292,98 @@ async function main() {
       height: cubic(a.height, b.height, c.height, d.height),
     };
   }
-  function frameRiderForMobile() {
+  function followViewOffset() {
     const intro = THREE.MathUtils.smoothstep(progress, 0, introEnd);
     if (innerWidth > 700) {
       const cardLeft = $<HTMLElement>('ride-card').getBoundingClientRect().left;
-      const sideOffset = (innerWidth - cardLeft) * (1 - progress) * intro / 2;
-      camera.setViewOffset(innerWidth, innerHeight, sideOffset, 0, innerWidth, innerHeight);
-      return;
+      return { x: (innerWidth - cardLeft) * (1 - progress) * intro / 2, y: 0 };
     }
     const clearBottom = Math.min($<HTMLElement>('compass').getBoundingClientRect().top,
       $<HTMLElement>('ride-card').getBoundingClientRect().top);
     const clearTop = $<HTMLElement>('masthead').getBoundingClientRect().bottom;
     const riderY = Math.min(innerHeight / 2, Math.max(clearTop + 24, (clearTop + clearBottom) / 2));
-    camera.setViewOffset(innerWidth, innerHeight, 0, Math.max(0, innerHeight / 2 - riderY) * intro, innerWidth, innerHeight);
+    return { x: 0, y: Math.max(0, innerHeight / 2 - riderY) * intro };
   }
-  function positionFollowCamera() {
+  function frameRiderForMobile() {
+    const offset = followViewOffset();
+    camera.setViewOffset(innerWidth, innerHeight, offset.x, offset.y, innerWidth, innerHeight);
+  }
+  function followCameraPose(): CameraPose {
     const shot = flightShot(progress);
     const view = savedHome ?? defaultHome;
     const intro = THREE.MathUtils.smoothstep(progress, 0, introEnd);
-    controls.target.fromArray(view.target).lerp(shot.center, intro);
-    camera.position.fromArray(view.position).lerp(new THREE.Vector3(
-      shot.center.x + Math.sin(shot.angle) * orbitRadius,
-      shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius), intro);
-    camera.zoom = THREE.MathUtils.lerp(view.zoom, 1.1, intro);
+    const offset = followViewOffset();
+    return {
+      target: new THREE.Vector3(...view.target).lerp(shot.center, intro),
+      position: new THREE.Vector3(...view.position).lerp(new THREE.Vector3(
+        shot.center.x + Math.sin(shot.angle) * orbitRadius,
+        shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius), intro),
+      zoom: THREE.MathUtils.lerp(view.zoom, 1.1, intro),
+      offsetX: offset.x, offsetY: offset.y,
+    };
+  }
+  function applyCameraPose(pose: CameraPose) {
+    controls.target.copy(pose.target);
+    camera.position.copy(pose.position);
+    camera.zoom = pose.zoom;
+    camera.setViewOffset(innerWidth, innerHeight, pose.offsetX, pose.offsetY, innerWidth, innerHeight);
     camera.updateProjectionMatrix();
     controls.update();
-    frameRiderForMobile();
+  }
+  function positionFollowCamera() { applyCameraPose(followCameraPose()); }
+  function startCameraTransition() {
+    const from: CameraPose = {
+      position: camera.position.clone(), target: controls.target.clone(), zoom: camera.zoom,
+      offsetX: camera.view?.enabled ? camera.view.offsetX : 0,
+      offsetY: camera.view?.enabled ? camera.view.offsetY : 0,
+    };
+    const to = followCameraPose();
+    const fromOffset = from.position.clone().sub(from.target);
+    const toOffset = to.position.clone().sub(to.target);
+    const startAngle = Math.atan2(fromOffset.x, fromOffset.z);
+    const endAngle = Math.atan2(toOffset.x, toOffset.z);
+    const turn = Math.atan2(Math.sin(endAngle - startAngle), Math.cos(endAngle - startAngle));
+    const startRadius = Math.hypot(fromOffset.x, fromOffset.z);
+    const endRadius = Math.hypot(toOffset.x, toOffset.z);
+    const distance = from.position.distanceTo(to.position);
+    if (distance < 0.5 && from.target.distanceTo(to.target) < 0.5
+      && Math.abs(from.zoom - to.zoom) < 0.01
+      && Math.hypot(from.offsetX - to.offsetX, from.offsetY - to.offsetY) < 1) {
+      cameraTransition = null;
+      return;
+    }
+    cameraTransition = {
+      from, to, elapsed: 0,
+      duration: THREE.MathUtils.clamp(Math.max(Math.abs(turn) / 0.7, distance / 48), 1.2, 4.5),
+      startAngle, turn, startRadius, endRadius,
+    };
+  }
+  function advanceCameraTransition(dt: number) {
+    const transition = cameraTransition!;
+    transition.elapsed = Math.min(transition.duration, transition.elapsed + dt);
+    const t = THREE.MathUtils.smootherstep(transition.elapsed / transition.duration, 0, 1);
+    const target = transition.from.target.clone().lerp(transition.to.target, t);
+    const angle = transition.startAngle + transition.turn * t;
+    const radius = THREE.MathUtils.lerp(transition.startRadius, transition.endRadius, t);
+    const height = THREE.MathUtils.lerp(
+      transition.from.position.y - transition.from.target.y,
+      transition.to.position.y - transition.to.target.y, t);
+    applyCameraPose({
+      target,
+      position: target.clone().add(new THREE.Vector3(Math.sin(angle) * radius, height, Math.cos(angle) * radius)),
+      zoom: THREE.MathUtils.lerp(transition.from.zoom, transition.to.zoom, t),
+      offsetX: THREE.MathUtils.lerp(transition.from.offsetX, transition.to.offsetX, t),
+      offsetY: THREE.MathUtils.lerp(transition.from.offsetY, transition.to.offsetY, t),
+    });
+    if (transition.elapsed >= transition.duration) {
+      cameraTransition = null;
+      play.textContent = 'Ⅱ Pause';
+    }
   }
   function setFollowing(enabled: boolean) {
     if (following === enabled) return;
+    cameraTransition = null;
+    if (playing) play.textContent = 'Ⅱ Pause';
     following = enabled;
     followButton.setAttribute('aria-pressed', String(enabled));
     if (enabled) {
@@ -365,14 +434,14 @@ async function main() {
     return THREE.MathUtils.clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
   }
   chart.addEventListener('pointermove', event => {
-    playing = false; play.textContent = '▶ Play ride';
+    playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
     setProgress(valueAtPointer(event));
   });
   chart.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     event.preventDefault();
     chart.setPointerCapture(event.pointerId);
-    playing = false; play.textContent = '▶ Play ride';
+    playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
     setProgress(valueAtPointer(event));
   });
   chart.addEventListener('keydown', event => {
@@ -382,7 +451,7 @@ async function main() {
       : event.key === 'Home' ? 0 : event.key === 'End' ? 1 : null;
     if (next === null) return;
     event.preventDefault();
-    playing = false; play.textContent = '▶ Play ride';
+    playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
     setProgress(next);
   });
 
@@ -393,7 +462,7 @@ async function main() {
     const pixelHeight = Math.round(h * renderer.getPixelRatio());
     camera.left = -58 * aspect / 2; camera.right = 58 * aspect / 2;
     camera.top = 29; camera.bottom = -29; camera.updateProjectionMatrix();
-    if (following) frameRiderForMobile();
+    if (following && !cameraTransition) frameRiderForMobile();
     for (const line of [preview, previewCore, active, activeHalo, overlap]) line.material.resolution.set(pixelWidth, pixelHeight);
   }
   addEventListener('resize', resize);
@@ -461,11 +530,11 @@ async function main() {
       if (progress >= 1) setProgress(0);
       if (following) {
         playbackTime = timeAtProgress(progress);
-        positionFollowCamera();
+        startCameraTransition();
       }
-    }
+    } else cameraTransition = null;
     playing = !playing;
-    play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
+    play.textContent = playing ? cameraTransition ? 'Ⅱ Positioning…' : 'Ⅱ Pause' : '▶ Play ride';
   });
   $('home').addEventListener('click', () => { setFollowing(false); setSettingsOpen(false); home(); });
   setHomeButton.addEventListener('click', () => {
@@ -627,15 +696,17 @@ async function main() {
   $('loading').remove();
   function frame(now: number) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (playing) {
+    if (following && playing && cameraTransition) advanceCameraTransition(dt);
+    else if (playing) {
       if (following) {
         playbackTime += dt;
         setProgress(progressAtTime(playbackTime));
       } else setProgress(progress + dt / 38);
       if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
     }
-    if (following && playing) positionFollowCamera();
-    else {
+    if (following && playing) {
+      if (!cameraTransition) positionFollowCamera();
+    } else {
       if (heldMotion) moveView(heldMotion, dt);
       controls.update();
     }
