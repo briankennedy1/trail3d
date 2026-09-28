@@ -274,6 +274,36 @@ async function main() {
     camera.position.copy(controls.target).add(new THREE.Vector3(0, radius * 0.7, radius * 0.7));
     controls.update();
   });
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const revealAt = pois.flags.map((_, i) => performance.now() + i * 260);
+  let hoveredFlag = -1;
+  function flagAt(clientX: number, clientY: number) {
+    const bounds = renderer.domElement.getBoundingClientRect();
+    const x = clientX - bounds.left, y = clientY - bounds.top;
+    for (let i = 0; i < pois.flags.length; i++) {
+      const p = pois.flags[i].marker.position.clone().add(new THREE.Vector3(0, 1.25, 0)).project(camera);
+      const sx = (p.x + 1) * bounds.width / 2;
+      const sy = (1 - p.y) * bounds.height / 2;
+      if (Math.hypot(x - sx, y - sy) < 28) return i;
+    }
+    return -1;
+  }
+  renderer.domElement.addEventListener('pointermove', event => {
+    const index = flagAt(event.clientX, event.clientY);
+    if (index !== hoveredFlag) {
+      hoveredFlag = index;
+      if (index >= 0) revealAt[index] = performance.now();
+    }
+    renderer.domElement.style.cursor = index >= 0 ? 'pointer' : '';
+  });
+  renderer.domElement.addEventListener('pointerleave', () => {
+    hoveredFlag = -1;
+    renderer.domElement.style.cursor = '';
+  });
+  renderer.domElement.addEventListener('pointerdown', event => {
+    const index = flagAt(event.clientX, event.clientY);
+    if (index >= 0) revealAt[index] = performance.now();
+  });
   $('loading').remove();
   function frame(now: number) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
@@ -285,9 +315,19 @@ async function main() {
     // Keep the diorama names readable without letting them fill the screen when zoomed in.
     const labelScale = Math.min(1, 1.8 / camera.zoom);
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-    for (const label of pois.billboards) {
-      label.scale.set(10.5 * labelScale, 1.97 * labelScale, 1);
-      label.position.copy(screenRight).multiplyScalar((label.userData.isPeak ? (innerWidth < 700 ? 14 : 7) : 6) * labelScale);
+    for (let i = 0; i < pois.flags.length; i++) {
+      const { label, isPeak } = pois.flags[i];
+      const elapsed = THREE.MathUtils.clamp((now - revealAt[i]) / 700, 0, 1);
+      const reveal = reducedMotion ? 1 : 1 - (1 - elapsed) ** 3;
+      const width = 10.5 * labelScale;
+      label.visible = reveal > 0.001;
+      // Grow the visible strip and its UV range together: text is uncovered,
+      // never stretched, and the edge nearest the flag stays in place.
+      label.material.map!.repeat.x = reveal;
+      label.material.map!.updateMatrix();
+      label.scale.set(width * reveal, 1.97 * labelScale, 1);
+      const fullCenter = (isPeak ? (innerWidth < 700 ? 14 : 7) : 6) * labelScale;
+      label.position.copy(screenRight).multiplyScalar(fullCenter - width * (1 - reveal) / 2);
       label.position.y += 2.65;
     }
     renderer.setRenderTarget(target); renderer.render(scene, camera);

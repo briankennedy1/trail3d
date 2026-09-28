@@ -43,7 +43,7 @@ function labelTexture(name: string, color: string) {
 
 export function buildPOIs(map: MapData, terrain: Terrain) {
   const group = new THREE.Group();
-  const billboards: THREE.Sprite[] = [];
+  const flags: { marker: THREE.Group; label: THREE.Sprite; isPeak: boolean }[] = [];
   const metersLon = 111320 * Math.cos((map.bbox.south + map.bbox.north) * Math.PI / 360);
   for (const place of places) {
     const x = (place.longitude - map.bbox.west) * metersLon;
@@ -72,10 +72,9 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     }));
     label.position.set(0, 2.65, 0);
     label.scale.set(10.5, 1.97, 1);
-    label.userData.isPeak = place.name === 'Beckwourth Peak';
     marker.add(label);
-    billboards.push(label);
+    flags.push({ marker, label, isPeak: place.name === 'Beckwourth Peak' });
     group.add(marker);
   }
-  return { group, billboards };
+  return { group, flags };
 }
