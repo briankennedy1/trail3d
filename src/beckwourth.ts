@@ -98,7 +98,6 @@ async function main() {
   camera.lookAt(controls.target);
 
   const play = $<HTMLButtonElement>('play');
-  const followButton = $<HTMLButtonElement>('follow');
   const compassNeedle = $<SVGSVGElement>('compass-needle');
   const compassCenter = $<HTMLButtonElement>('north');
   const chart = $<HTMLDivElement>('elevation-chart');
@@ -121,7 +120,6 @@ async function main() {
   const progressLine = svg('line', { y1: '0', y2: '96', stroke: '#b55d35', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   let playing = false, progress = 1, last = performance.now();
-  let following = true;
   const orbitRadius = 90;
   const flightSteps = 192;
   const followDuration = 45;
@@ -395,12 +393,12 @@ async function main() {
     // blends into a moving target, so it never settles and restarts abruptly.
     const leadStart = transition.duration - transition.leadTime;
     const rideTime = Math.max(0, transition.elapsed - leadStart) - Math.max(0, before - leadStart);
-    if (rideTime > 0 && transition.trackFollow && following && playing) {
+    if (rideTime > 0 && transition.trackFollow && playing) {
       playbackTime += rideTime;
       setProgress(progressAtTime(playbackTime));
       play.textContent = 'Ⅱ Pause';
     }
-    const to = transition.trackFollow && following && playing ? followCameraPose() : transition.to;
+    const to = transition.trackFollow && playing ? followCameraPose() : transition.to;
     const originalOffset = transition.to.position.clone().sub(transition.to.target);
     const toOffset = to.position.clone().sub(to.target);
     const originalAngle = Math.atan2(originalOffset.x, originalOffset.z);
@@ -427,21 +425,12 @@ async function main() {
       if (playing) play.textContent = 'Ⅱ Pause';
     }
   }
-  function setFollowing(enabled: boolean) {
+  function pauseForManualView() {
+    playing = false;
     cameraTransition = null;
-    controls.enableDamping = false;
-    if (following === enabled) return;
-    if (playing) play.textContent = 'Ⅱ Pause';
-    following = enabled;
-    followButton.setAttribute('aria-pressed', String(enabled));
-    if (enabled) {
-      flightPath = null;
-      setProgress(0);
-      playbackTime = 0;
-      startCameraTransition();
-    } else if (camera.view?.enabled) {
-      // Bake the follow composition into the camera before removing the view
-      // offset, so switching Follow off leaves the exact same pixels in place.
+    play.textContent = '▶ Play Ride';
+    if (camera.view?.enabled) {
+      // Preserve the current composition when handing control back to the viewer.
       camera.updateMatrixWorld();
       const before = new THREE.Vector3().unproject(camera);
       camera.clearViewOffset();
@@ -480,14 +469,14 @@ async function main() {
   }
   chart.addEventListener('pointermove', event => {
     if (playing) return;
-    playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
+    playing = false; cameraTransition = null; play.textContent = '▶ Play Ride';
     setProgress(valueAtPointer(event));
   });
   chart.addEventListener('pointerdown', event => {
     if (playing || event.button !== 0) return;
     event.preventDefault();
     chart.setPointerCapture(event.pointerId);
-    playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
+    playing = false; cameraTransition = null; play.textContent = '▶ Play Ride';
     setProgress(valueAtPointer(event));
   });
   chart.addEventListener('keydown', event => {
@@ -498,7 +487,7 @@ async function main() {
     if (next === null) return;
     event.preventDefault();
     if (playing) return;
-    playing = false; cameraTransition = null; play.textContent = '▶ Play ride';
+    playing = false; cameraTransition = null; play.textContent = '▶ Play Ride';
     setProgress(next);
   });
 
@@ -509,7 +498,7 @@ async function main() {
     const pixelHeight = Math.round(h * renderer.getPixelRatio());
     camera.left = -58 * aspect / 2; camera.right = 58 * aspect / 2;
     camera.top = 29; camera.bottom = -29; camera.updateProjectionMatrix();
-    if (following && !cameraTransition) frameRiderForMobile();
+    if (playing && !cameraTransition) frameRiderForMobile();
     for (const line of [preview, previewCore, active, activeHalo, overlap]) line.material.resolution.set(pixelWidth, pixelHeight);
   }
   addEventListener('resize', resize);
@@ -541,18 +530,16 @@ async function main() {
   function home() { applyHome(savedHome ?? defaultHome); }
   applyHome(savedHome ?? defaultHome, false);
   setProgress(1, false);
-  followButton.addEventListener('click', () => setFollowing(!following));
-  controls.addEventListener('start', () => setFollowing(false));
+  controls.addEventListener('start', pauseForManualView);
   play.addEventListener('click', () => {
     if (!playing) {
       if (progress >= 1) setProgress(0);
-      if (following) {
-        playbackTime = timeAtProgress(progress);
-        startCameraTransition();
-      }
+      stopViewMotion();
+      playbackTime = timeAtProgress(progress);
+      startCameraTransition();
     } else cameraTransition = null;
     playing = !playing;
-    play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
+    play.textContent = playing ? 'Ⅱ Pause' : '▶ Play Ride';
   });
   type ViewMotion = 'left' | 'right' | 'up' | 'down';
   let heldMotion: ViewMotion | null = null;
@@ -566,7 +553,7 @@ async function main() {
     heldPointerId = null;
   }
   function startViewMotion(button: HTMLButtonElement, motion: ViewMotion) {
-    setFollowing(false);
+    pauseForManualView();
     stopViewMotion();
     heldButton = button;
     heldMotion = motion;
@@ -623,7 +610,7 @@ async function main() {
   }
   compassCenter.addEventListener('click', () => {
     const returnHome = compassPointsNorth();
-    setFollowing(false);
+    pauseForManualView();
     if (returnHome) {
       home();
       return;
@@ -705,14 +692,12 @@ async function main() {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     const transitioning = cameraTransition !== null;
     if (transitioning) advanceCameraTransition(dt);
-    if (playing && !(transitioning && following)) {
-      if (following) {
-        playbackTime += dt;
-        setProgress(progressAtTime(playbackTime));
-      } else setProgress(progress + dt / 38);
-      if (progress >= 1) { playing = false; play.textContent = '↺ Replay ride'; }
+    if (playing && !transitioning) {
+      playbackTime += dt;
+      setProgress(progressAtTime(playbackTime));
+      if (progress >= 1) { playing = false; play.textContent = '↺ Replay Ride'; }
     }
-    if (!transitioning && following && playing) {
+    if (!transitioning && playing) {
       positionFollowCamera();
     } else if (!transitioning) {
       if (heldMotion) moveView(heldMotion, dt);
