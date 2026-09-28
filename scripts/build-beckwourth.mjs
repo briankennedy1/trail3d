@@ -42,8 +42,15 @@ if (gap(coords[0], coords[recordedStartOnReturn]) > 20 ||
     gap(coords[outboundJunction], coords[returnJunction]) > 20) {
   throw new Error('Lollipop splice points no longer match the source trace');
 }
+const parkApproach = coords.slice(recordedStartOnReturn).reverse();
+// Trailforks' mapped Salty Section follows the direct City Park approach.
+// The return GPS trace adds a park overshoot, a backtrack, and a south spur.
+// https://www.trailforks.com/trails/beckwourth-peak-trail-park-to-bottom-of-climb-salty-section/
+const approachDetours = [[1, 6], [12, 30], [35, 44], [50, 69]];
+const directParkApproach = parkApproach.filter((_, i) =>
+  !approachDetours.some(([first, last]) => i >= first && i <= last));
 const stem = [
-  ...coords.slice(recordedStartOnReturn).reverse(),
+  ...directParkApproach,
   ...coords.slice(0, outboundJunction + 1),
 ];
 const cleanedCoords = [
