@@ -419,25 +419,24 @@ async function main() {
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     const screenUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
     for (let i = 0; i < pois.flags.length; i++) {
-      const { pole, pennant, cap, label, isPeak } = pois.flags[i];
+      const { pole, pennant, label, isPeak } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i;
       revealProgress[i] = reducedMotion ? Number(active) : THREE.MathUtils.clamp(
         revealProgress[i] + (active ? 1 : -1) * dt / 1.25, 0, 1,
       );
-      const detached = 1 - (1 - THREE.MathUtils.clamp(revealProgress[i] / 0.42, 0, 1)) ** 2;
-      const oldOpacity = 1 - THREE.MathUtils.clamp((revealProgress[i] - 0.14) / 0.28, 0, 1);
-      pennant.visible = oldOpacity > 0.001;
+      // The small flag returns only after the pole has finished lowering.
+      const detached = 1 - (1 - THREE.MathUtils.clamp(revealProgress[i] / 0.35, 0, 1)) ** 2;
+      const smallFlagReveal = 1 - detached;
+      pennant.visible = smallFlagReveal > 0.001;
       pennant.quaternion.copy(camera.quaternion);
       pennant.position.copy(screenRight).multiplyScalar(2.1 * detached).addScaledVector(screenUp, 1.0 * detached);
       pennant.position.y += 1.75;
-      (pennant.material as THREE.MeshBasicMaterial).opacity = oldOpacity;
+      pennant.scale.x = smallFlagReveal;
+      (pennant.material as THREE.MeshBasicMaterial).opacity = smallFlagReveal;
       const raised = 1 - (1 - THREE.MathUtils.clamp((revealProgress[i] - 0.35) / 0.27, 0, 1)) ** 3;
       const poleHeight = 1.75 + 1.45 * raised;
       pole.scale.y = poleHeight;
       pole.position.y = poleHeight / 2;
-      cap.position.y = poleHeight;
-      cap.visible = raised > 0;
-      (cap.material as THREE.MeshBasicMaterial).opacity = raised;
       const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.64) / 0.36, 0, 1);
       const reveal = 1 - (1 - unfurl) ** 3;
       const width = (isPeak ? 11.6 : 10.5) * labelScale;

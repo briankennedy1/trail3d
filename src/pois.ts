@@ -52,7 +52,7 @@ function labelTexture(name: string, color: string, elevationFt?: number) {
 
 export function buildPOIs(map: MapData, terrain: Terrain) {
   const group = new THREE.Group();
-  const flags: { marker: THREE.Group; pole: THREE.Mesh; pennant: THREE.Mesh; cap: THREE.Mesh; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; isPeak: boolean }[] = [];
+  const flags: { marker: THREE.Group; pole: THREE.Mesh; pennant: THREE.Mesh; label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>; isPeak: boolean }[] = [];
   const metersLon = 111320 * Math.cos((map.bbox.south + map.bbox.north) * Math.PI / 360);
   for (const place of places) {
     const x = (place.longitude - map.bbox.west) * metersLon;
@@ -77,14 +77,6 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     pennant.position.y = 1.75;
     marker.add(pennant);
 
-    const cap = new THREE.Mesh(
-      new THREE.SphereGeometry(0.18, 12, 8),
-      new THREE.MeshBasicMaterial({ color: place.color, depthTest: true, transparent: true }),
-    );
-    cap.position.y = 1.75;
-    cap.visible = false;
-    marker.add(cap);
-
     const label = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({
       map: labelTexture(place.name, place.color, place.elevationFt), transparent: true,
       side: THREE.DoubleSide, depthTest: true, depthWrite: false,
@@ -92,7 +84,7 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     label.scale.set(10.5, 1.97, 1);
     label.visible = false;
     marker.add(label);
-    flags.push({ marker, pole, pennant, cap, label, isPeak: place.name === 'Beckwourth Peak' });
+    flags.push({ marker, pole, pennant, label, isPeak: place.name === 'Beckwourth Peak' });
     group.add(marker);
   }
   return { group, flags };
