@@ -8,7 +8,6 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { Terrain, toWorld, type MapData } from './data';
 import { buildLandscape } from './terrain';
 import { buildPOIs } from './pois';
-import { resolveTrace, sharedStickPoints, type TraceLeg } from './route-trace';
 import { POST_FRAG, POST_VERT } from './shaders';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
@@ -177,83 +176,6 @@ async function main() {
     setProgress(next);
   });
 
-  const sharedPoints = sharedStickPoints(ride.points);
-  const projectedRoute = new Float32Array(points.length * 2);
-  const projection = new THREE.Vector3();
-  let lastOutwardDistance: number | null = null;
-  let lastTraceProgress: number | null = null;
-  let traceLeg: TraceLeg = null;
-  let tracingRoute = -1;
-  let routeHover = false;
-  function traceAtPointer(event: PointerEvent, radius: number) {
-    const bounds = renderer.domElement.getBoundingClientRect();
-    const x = event.clientX - bounds.left, y = event.clientY - bounds.top;
-    camera.updateMatrixWorld();
-    for (let i = 0; i < points.length; i++) {
-      projection.copy(points[i]).project(camera);
-      projectedRoute[i * 2] = (projection.x + 1) * bounds.width / 2;
-      projectedRoute[i * 2 + 1] = (1 - projection.y) * bounds.height / 2;
-    }
-    let best = { index: -1, t: 0, squared: radius * radius };
-    for (let i = 0; i < points.length - 1; i++) {
-      const ax = projectedRoute[i * 2], ay = projectedRoute[i * 2 + 1];
-      const dx = projectedRoute[i * 2 + 2] - ax, dy = projectedRoute[i * 2 + 3] - ay;
-      const lengthSquared = dx * dx + dy * dy;
-      if (lengthSquared < 0.01) continue;
-      const t = THREE.MathUtils.clamp(((x - ax) * dx + (y - ay) * dy) / lengthSquared, 0, 1);
-      const squared = (x - ax - t * dx) ** 2 + (y - ay - t * dy) ** 2;
-      if (squared < best.squared) best = { index: i, t, squared };
-    }
-    if (best.index < 0) return null;
-    const outward = Math.min(best.index, points.length - 2 - best.index);
-    const outwardT = best.index === outward ? best.t : 1 - best.t;
-    const outwardDistance = THREE.MathUtils.lerp(distances[outward], distances[outward + 1], outwardT);
-    return { ...resolveTrace(best.index, best.t, distances, sharedPoints,
-      lastTraceProgress ?? progress, traceLeg, outwardDistance - (lastOutwardDistance ?? outwardDistance)), outwardDistance };
-  }
-  function scrubRoute(event: PointerEvent, radius = 14) {
-    const hit = traceAtPointer(event, radius);
-    routeHover = !!hit;
-    if (!hit) {
-      if (tracingRoute < 0) { lastOutwardDistance = null; lastTraceProgress = null; traceLeg = null; }
-      return false;
-    }
-    playing = false; play.textContent = '▶ Play ride';
-    traceLeg = hit.leg;
-    if (lastOutwardDistance === null || Math.abs(hit.outwardDistance - lastOutwardDistance) >= total * 0.004) {
-      lastOutwardDistance = hit.outwardDistance;
-    }
-    lastTraceProgress = hit.progress;
-    setProgress(hit.progress);
-    return true;
-  }
-  renderer.domElement.addEventListener('pointerdown', event => {
-    if (event.button !== 0 || flagAt(event.clientX, event.clientY) >= 0 || !scrubRoute(event)) return;
-    tracingRoute = event.pointerId;
-    renderer.domElement.setPointerCapture(event.pointerId);
-    event.preventDefault();
-    event.stopImmediatePropagation();
-  }, { capture: true });
-  renderer.domElement.addEventListener('pointermove', event => {
-    if (tracingRoute >= 0 && event.pointerId === tracingRoute) {
-      scrubRoute(event, 24);
-      event.stopImmediatePropagation();
-    } else if (event.buttons === 0 && event.pointerType !== 'touch') scrubRoute(event);
-  }, { capture: true });
-  const endTrace = (event: PointerEvent) => {
-    if (event.pointerId !== tracingRoute) return;
-    tracingRoute = -1;
-    renderer.domElement.releasePointerCapture(event.pointerId);
-    event.stopImmediatePropagation();
-  };
-  renderer.domElement.addEventListener('pointerup', endTrace, { capture: true });
-  renderer.domElement.addEventListener('pointercancel', endTrace, { capture: true });
-  renderer.domElement.addEventListener('pointerleave', () => {
-    if (tracingRoute >= 0) return;
-    lastOutwardDistance = null; lastTraceProgress = null; traceLeg = null;
-    routeHover = false;
-  });
-
   function resize() {
     const w = innerWidth, h = innerHeight, aspect = w / h;
     renderer.setSize(w, h, false);
@@ -371,7 +293,7 @@ async function main() {
     if (event.pointerType === 'touch') return;
     const index = flagAt(event.clientX, event.clientY);
     hoveredFlag = index;
-    renderer.domElement.style.cursor = index >= 0 ? 'pointer' : routeHover ? 'crosshair' : '';
+    renderer.domElement.style.cursor = index >= 0 ? 'pointer' : '';
   });
   renderer.domElement.addEventListener('pointerleave', () => {
     hoveredFlag = -1;
