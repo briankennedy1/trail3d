@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <canvas id="scene" aria-label="3D terrain map of the Beckwourth Peak ride"></canvas>
+  <canvas id="scene" aria-label="3D terrain map of the Beckwourth Peak ride. Hover or tap a colored pin to reveal its place name."></canvas>
   <header class="masthead"><h1>Beckwourth <em>Peak</em></h1><p>September 25, 2026 · Portola, California</p></header>
   <section class="ride-card" aria-label="Ride details">
     <h2>The full loop</h2><p class="description">A climb around Beckwourth Peak and a long descent through fall color.</p>
@@ -32,7 +32,7 @@
     </div>
     <span id="home-status" role="status" aria-live="polite" hidden></span>
   </nav>
-  <p class="map-hint">Drag to pan · Scroll to zoom · Right drag to rotate</p>
+  <p class="map-hint">Hover a pin to reveal its name · Drag to pan · Scroll to zoom · Right drag to rotate</p>
   <footer>Source ride: <a href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">Trailforks</a> · Terrain: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS Terrain Tiles</a> · Inspired by <a href="https://github.com/kneath/tahoe-trails" target="_blank" rel="noopener">Tahoe Trails</a></footer>
   <div id="loading" role="status">Painting the mountains…</div>
   <script type="module" src="/src/beckwourth.ts"></script>

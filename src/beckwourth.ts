@@ -275,25 +275,24 @@ async function main() {
     controls.update();
   });
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const revealAt = pois.flags.map((_, i) => performance.now() + i * 260);
+  const revealProgress = pois.flags.map(() => 0);
   let hoveredFlag = -1;
+  let selectedFlag = -1;
   function flagAt(clientX: number, clientY: number) {
     const bounds = renderer.domElement.getBoundingClientRect();
     const x = clientX - bounds.left, y = clientY - bounds.top;
     for (let i = 0; i < pois.flags.length; i++) {
-      const p = pois.flags[i].marker.position.clone().add(new THREE.Vector3(0, 1.25, 0)).project(camera);
+      const p = pois.flags[i].marker.position.clone().add(new THREE.Vector3(0, 1.2, 0)).project(camera);
       const sx = (p.x + 1) * bounds.width / 2;
       const sy = (1 - p.y) * bounds.height / 2;
-      if (Math.hypot(x - sx, y - sy) < 28) return i;
+      if (Math.hypot(x - sx, y - sy) < 32) return i;
     }
     return -1;
   }
   renderer.domElement.addEventListener('pointermove', event => {
+    if (event.pointerType === 'touch') return;
     const index = flagAt(event.clientX, event.clientY);
-    if (index !== hoveredFlag) {
-      hoveredFlag = index;
-      if (index >= 0) revealAt[index] = performance.now();
-    }
+    hoveredFlag = index;
     renderer.domElement.style.cursor = index >= 0 ? 'pointer' : '';
   });
   renderer.domElement.addEventListener('pointerleave', () => {
@@ -302,7 +301,7 @@ async function main() {
   });
   renderer.domElement.addEventListener('pointerdown', event => {
     const index = flagAt(event.clientX, event.clientY);
-    if (index >= 0) revealAt[index] = performance.now();
+    if (event.pointerType !== 'mouse') selectedFlag = index === selectedFlag ? -1 : index;
   });
   $('loading').remove();
   function frame(now: number) {
@@ -316,19 +315,26 @@ async function main() {
     const labelScale = Math.min(1, 1.8 / camera.zoom);
     const screenRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
     for (let i = 0; i < pois.flags.length; i++) {
-      const { label, isPeak } = pois.flags[i];
-      const elapsed = THREE.MathUtils.clamp((now - revealAt[i]) / 700, 0, 1);
-      const reveal = reducedMotion ? 1 : 1 - (1 - elapsed) ** 3;
+      const { pole, cap, label, isPeak } = pois.flags[i];
+      const active = hoveredFlag === i || selectedFlag === i;
+      revealProgress[i] = reducedMotion ? Number(active) : THREE.MathUtils.clamp(
+        revealProgress[i] + (active ? 1 : -1) * dt / 0.85, 0, 1,
+      );
+      const raised = 1 - (1 - THREE.MathUtils.clamp(revealProgress[i] / 0.45, 0, 1)) ** 3;
+      const poleHeight = 0.85 + 2.35 * raised;
+      pole.scale.y = poleHeight;
+      pole.position.y = poleHeight / 2;
+      cap.position.y = poleHeight;
+      const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.32) / 0.68, 0, 1);
+      const reveal = 1 - (1 - unfurl) ** 3;
       const width = 10.5 * labelScale;
       label.visible = reveal > 0.001;
-      // Grow the visible strip and its UV range together: text is uncovered,
-      // never stretched, and the edge nearest the flag stays in place.
+      // The strip extends from the pole while its UV range uncovers the text.
       label.material.map!.repeat.x = reveal;
       label.material.map!.updateMatrix();
       label.scale.set(width * reveal, 1.97 * labelScale, 1);
-      const fullCenter = (isPeak ? (innerWidth < 700 ? 6 : 7) : 6) * labelScale;
-      label.position.copy(screenRight).multiplyScalar(fullCenter - width * (1 - reveal) / 2);
-      label.position.y += isPeak && innerWidth < 700 ? 0.3 : 2.65;
+      label.position.copy(screenRight).multiplyScalar(0.22 + width * reveal / 2);
+      label.position.y += isPeak && innerWidth < 700 ? 0.3 : poleHeight + 0.18;
     }
     renderer.setRenderTarget(target); renderer.render(scene, camera);
     renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
