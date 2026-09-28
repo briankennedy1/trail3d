@@ -8,7 +8,6 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { Terrain, toWorld, type MapData } from './data';
 import { buildLandscape } from './terrain';
 import { buildPOIs } from './pois';
-import { POST_FRAG, POST_VERT } from './shaders';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
 type EmbeddedRide = { map: MapData; ride: Ride; terrain: string };
@@ -26,7 +25,7 @@ async function main() {
         fetch('beckwourth/terrain.bin').then(r => r.arrayBuffer()),
       ]);
   const terrain = new Terrain(map, new Uint16Array(heights));
-  const renderer = new THREE.WebGLRenderer({ canvas: $<HTMLCanvasElement>('scene'), antialias: false });
+  const renderer = new THREE.WebGLRenderer({ canvas: $<HTMLCanvasElement>('scene'), antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const scene = new THREE.Scene();
@@ -34,8 +33,8 @@ async function main() {
   const landscape = buildLandscape(terrain, { trees: false });
   scene.add(landscape.group);
   const pois = buildPOIs(map, terrain);
-  // Render POIs after the watercolor pass so their type and edges stay crisp.
-  // Reuse the terrain geometry as depth-only occluders in that final pass.
+  // Render POIs after the terrain so their labels stay crisp. Reuse the terrain
+  // geometry as depth-only occluders in that final pass.
   const poiScene = new THREE.Scene();
   const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true });
   for (const mesh of landscape.group.children as THREE.Mesh[]) {
@@ -102,19 +101,6 @@ async function main() {
   camera.position.set(100, 105, 100);
   camera.lookAt(controls.target);
 
-  const target = new THREE.WebGLRenderTarget(1, 1, { samples: 4, type: THREE.HalfFloatType });
-  const post = new THREE.ShaderMaterial({ vertexShader: POST_VERT, fragmentShader: POST_FRAG, uniforms: {
-    tColor: { value: target.texture }, uResolution: { value: new THREE.Vector2() }, uPixelRatio: { value: renderer.getPixelRatio() },
-  }, depthTest: false, depthWrite: false });
-  const postScene = new THREE.Scene();
-  postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), post));
-  const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  const watercolorButton = $<HTMLButtonElement>('watercolor');
-  let watercolorEnabled = true;
-  watercolorButton.addEventListener('click', () => {
-    watercolorEnabled = !watercolorEnabled;
-    watercolorButton.setAttribute('aria-pressed', String(watercolorEnabled));
-  });
   const play = $<HTMLButtonElement>('play');
   const chart = $<HTMLDivElement>('elevation-chart');
   const chartSvg = $<SVGSVGElement>('elevation-svg');
@@ -198,11 +184,11 @@ async function main() {
   function resize() {
     const w = innerWidth, h = innerHeight, aspect = w / h;
     renderer.setSize(w, h, false);
-    target.setSize(Math.round(w * renderer.getPixelRatio()), Math.round(h * renderer.getPixelRatio()));
-    post.uniforms.uResolution.value.set(target.width, target.height);
+    const pixelWidth = Math.round(w * renderer.getPixelRatio());
+    const pixelHeight = Math.round(h * renderer.getPixelRatio());
     camera.left = -58 * aspect / 2; camera.right = 58 * aspect / 2;
     camera.top = 29; camera.bottom = -29; camera.updateProjectionMatrix();
-    for (const line of [preview, previewCore, active, activeHalo, overlap]) line.material.resolution.set(target.width, target.height);
+    for (const line of [preview, previewCore, active, activeHalo, overlap]) line.material.resolution.set(pixelWidth, pixelHeight);
   }
   addEventListener('resize', resize);
   resize();
@@ -360,12 +346,7 @@ async function main() {
       label.position.copy(screenRight).multiplyScalar(0.22 + width * reveal / 2);
       label.position.y += isPeak && innerWidth < 700 ? 0.3 : poleHeight + 0.18;
     }
-    if (watercolorEnabled) {
-      renderer.setRenderTarget(target); renderer.render(scene, camera);
-      renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
-    } else {
-      renderer.setRenderTarget(null); renderer.render(scene, camera);
-    }
+    renderer.render(scene, camera);
     renderer.autoClear = false;
     renderer.clearDepth();
     renderer.render(poiScene, camera);
