@@ -125,8 +125,8 @@ async function main() {
   type Shot = { center: THREE.Vector3; angle: number; height: number };
   type CameraPose = { position: THREE.Vector3; target: THREE.Vector3; zoom: number; offsetX: number; offsetY: number };
   type CameraTransition = {
-    from: CameraPose; to: CameraPose; elapsed: number; duration: number;
-    startAngle: number; turn: number; startRadius: number; endRadius: number;
+    from: CameraPose; to: CameraPose; elapsed: number; duration: number; leadTime: number;
+    startAngle: number; turn: number; startRadius: number;
   };
   let flightPath: Shot[] | null = null;
   let flightTimes: number[] = [];
@@ -365,7 +365,6 @@ async function main() {
     const endAngle = Math.atan2(toOffset.x, toOffset.z);
     const turn = Math.atan2(Math.sin(endAngle - startAngle), Math.cos(endAngle - startAngle));
     const startRadius = Math.hypot(fromOffset.x, fromOffset.z);
-    const endRadius = Math.hypot(toOffset.x, toOffset.z);
     const distance = from.position.distanceTo(to.position);
     if (distance < 0.5 && from.target.distanceTo(to.target) < 0.5
       && Math.abs(from.zoom - to.zoom) < 0.01
@@ -373,28 +372,43 @@ async function main() {
       cameraTransition = null;
       return;
     }
-    cameraTransition = {
-      from, to, elapsed: 0,
-      duration: THREE.MathUtils.clamp(Math.max(Math.abs(turn) / 0.7, distance / 48), 1.2, 4.5),
-      startAngle, turn, startRadius, endRadius,
-    };
+    const duration = THREE.MathUtils.clamp(Math.max(Math.abs(turn) / 0.7, distance / 48), 1.2, 4.5);
+    cameraTransition = { from, to, elapsed: 0, duration, leadTime: Math.min(1.4, duration * 0.4),
+      startAngle, turn, startRadius };
   }
   function advanceCameraTransition(dt: number) {
     const transition = cameraTransition!;
+    const before = transition.elapsed;
     transition.elapsed = Math.min(transition.duration, transition.elapsed + dt);
+    // Let the rider start during the final part of the flight. The camera
+    // blends into a moving target, so it never settles and restarts abruptly.
+    const leadStart = transition.duration - transition.leadTime;
+    const rideTime = Math.max(0, transition.elapsed - leadStart) - Math.max(0, before - leadStart);
+    if (rideTime > 0) {
+      playbackTime += rideTime;
+      setProgress(progressAtTime(playbackTime));
+      play.textContent = 'Ⅱ Pause';
+    }
+    const to = followCameraPose();
+    const originalOffset = transition.to.position.clone().sub(transition.to.target);
+    const toOffset = to.position.clone().sub(to.target);
+    const originalAngle = Math.atan2(originalOffset.x, originalOffset.z);
+    const toAngle = Math.atan2(toOffset.x, toOffset.z);
+    const movingTurn = transition.turn + Math.atan2(
+      Math.sin(toAngle - originalAngle), Math.cos(toAngle - originalAngle));
     const t = THREE.MathUtils.smootherstep(transition.elapsed / transition.duration, 0, 1);
-    const target = transition.from.target.clone().lerp(transition.to.target, t);
-    const angle = transition.startAngle + transition.turn * t;
-    const radius = THREE.MathUtils.lerp(transition.startRadius, transition.endRadius, t);
+    const target = transition.from.target.clone().lerp(to.target, t);
+    const angle = transition.startAngle + movingTurn * t;
+    const radius = THREE.MathUtils.lerp(transition.startRadius, Math.hypot(toOffset.x, toOffset.z), t);
     const height = THREE.MathUtils.lerp(
       transition.from.position.y - transition.from.target.y,
-      transition.to.position.y - transition.to.target.y, t);
+      to.position.y - to.target.y, t);
     applyCameraPose({
       target,
       position: target.clone().add(new THREE.Vector3(Math.sin(angle) * radius, height, Math.cos(angle) * radius)),
-      zoom: THREE.MathUtils.lerp(transition.from.zoom, transition.to.zoom, t),
-      offsetX: THREE.MathUtils.lerp(transition.from.offsetX, transition.to.offsetX, t),
-      offsetY: THREE.MathUtils.lerp(transition.from.offsetY, transition.to.offsetY, t),
+      zoom: THREE.MathUtils.lerp(transition.from.zoom, to.zoom, t),
+      offsetX: THREE.MathUtils.lerp(transition.from.offsetX, to.offsetX, t),
+      offsetY: THREE.MathUtils.lerp(transition.from.offsetY, to.offsetY, t),
     });
     if (transition.elapsed >= transition.duration) {
       cameraTransition = null;
