@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import { Terrain, toWorld, type MapData } from './data';
+import { EXAGGERATION, LAKE_LEVEL, Terrain, WORLD_SCALE, toWorld, type MapData } from './data';
 import { buildLandscape } from './terrain';
 import { buildPOIs } from './pois';
 
@@ -119,10 +119,9 @@ async function main() {
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   let playing = false, progress = 1, last = performance.now();
   let following = false;
-  let orbitAngle = 0, orbitRadius = 1, orbitHeight = 1, orbitZoom = 1;
+  let orbitAngle = 0, orbitHeight = 95, orbitZoom = 1;
+  const orbitRadius = 70;
   const orbitCenter = new THREE.Vector3();
-  const followHomeCenter = new THREE.Vector3();
-  const followTarget = new THREE.Vector3();
 
   function sampleAt(value: number) {
     const distance = THREE.MathUtils.clamp(value, 0, 1) * total;
@@ -134,35 +133,67 @@ async function main() {
   }
   const feet = (meters: number) => `${Math.round(meters * 3.28084).toLocaleString()} ft`;
   const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * totalMiles).toFixed(1)} mi`;
+  function clearSightHeight(marker: THREE.Vector3, cameraX: number, cameraZ: number) {
+    const dx = cameraX - marker.x, dz = cameraZ - marker.z;
+    const distance = Math.hypot(dx, dz);
+    let required = 0;
+    // Follow the sightline across the height field, including ridges near the rider.
+    for (let along = 0.75; along < distance; along += 0.75) {
+      const x = marker.x + dx * along / distance;
+      const z = marker.z + dz * along / distance;
+      const mapX = x * WORLD_SCALE + map.widthM / 2;
+      const mapY = map.heightM / 2 - z * WORLD_SCALE;
+      if (mapX < 0 || mapX > map.widthM || mapY < 0 || mapY > map.heightM) continue;
+      const groundY = (terrain.heightAt(mapX, mapY) - LAKE_LEVEL) * EXAGGERATION / WORLD_SCALE;
+      required = Math.max(required, (groundY + 0.12 - marker.y) * distance / along);
+    }
+    return required;
+  }
+  function frameRiderForMobile() {
+    if (innerWidth > 700) {
+      if (camera.view?.enabled) camera.clearViewOffset();
+      return;
+    }
+    const clearBottom = Math.min($<HTMLElement>('compass').getBoundingClientRect().top,
+      $<HTMLElement>('ride-card').getBoundingClientRect().top);
+    const clearTop = $<HTMLElement>('masthead').getBoundingClientRect().bottom;
+    const riderY = Math.min(innerHeight / 2, Math.max(clearTop + 24, (clearTop + clearBottom) / 2));
+    camera.setViewOffset(innerWidth, innerHeight, 0, Math.max(0, innerHeight / 2 - riderY), innerWidth, innerHeight);
+  }
   function updateFollowCamera(dt: number) {
     if (playing) orbitAngle += dt * 0.028;
-    // Ease the wide shot toward the rider without centering every GPS wiggle.
-    followTarget.copy(followHomeCenter).lerp(rider.position, 0.6);
-    followTarget.y = THREE.MathUtils.lerp(followHomeCenter.y, rider.position.y, 0.25);
-    orbitCenter.lerp(followTarget, 1 - Math.exp(-1.5 * dt));
-    const position = orbitCenter.clone().add(new THREE.Vector3(
-      Math.sin(orbitAngle) * orbitRadius, orbitHeight, Math.cos(orbitAngle) * orbitRadius,
-    ));
-    const alpha = 1 - Math.exp(-2 * dt);
-    controls.target.lerp(orbitCenter, alpha);
-    camera.position.lerp(position, alpha);
-    camera.zoom = THREE.MathUtils.lerp(camera.zoom, orbitZoom, alpha);
+    // A single fast damper removes GPS wiggle without letting the rider outrun the shot.
+    orbitCenter.lerp(rider.position, 1 - Math.exp(-8 * dt));
+    const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
+    const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
+    const minHeight = Math.max(95, rider.position.y + clearSightHeight(rider.position, x, z) + 2 - orbitCenter.y);
+    orbitHeight = Math.max(minHeight, THREE.MathUtils.damp(orbitHeight, minHeight, 0.8, dt));
+    controls.target.copy(orbitCenter);
+    camera.position.set(x, orbitCenter.y + orbitHeight, z);
+    camera.zoom = THREE.MathUtils.damp(camera.zoom, orbitZoom, 3, dt);
     camera.updateProjectionMatrix();
     controls.update();
+    frameRiderForMobile();
   }
   function setFollowing(enabled: boolean) {
     if (following === enabled) return;
     following = enabled;
     followButton.setAttribute('aria-pressed', String(enabled));
     if (enabled) {
-      const homeView = savedHome ?? defaultHome;
-      followHomeCenter.fromArray(homeView.target);
-      orbitCenter.copy(controls.target);
-      const homeOffset = new THREE.Vector3(...homeView.position).sub(followHomeCenter);
-      orbitRadius = Math.max(60, Math.hypot(homeOffset.x, homeOffset.z));
-      orbitHeight = Math.max(45, homeOffset.y);
-      orbitZoom = Math.min(homeView.zoom, 1.35);
-      orbitAngle = Math.atan2(camera.position.x - orbitCenter.x, camera.position.z - orbitCenter.z);
+      rider.visible = true;
+      orbitAngle = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+      orbitCenter.copy(rider.position);
+      const x = orbitCenter.x + Math.sin(orbitAngle) * orbitRadius;
+      const z = orbitCenter.z + Math.cos(orbitAngle) * orbitRadius;
+      orbitHeight = Math.max(95, clearSightHeight(rider.position, x, z) + 2);
+      orbitZoom = 1.15;
+      controls.target.copy(orbitCenter);
+      camera.position.set(x, orbitCenter.y + orbitHeight, z);
+      camera.zoom = orbitZoom;
+      camera.updateProjectionMatrix();
+      frameRiderForMobile();
+    } else if (camera.view?.enabled) {
+      camera.clearViewOffset();
     }
     // Clear any remaining orbit inertia before the camera takes over.
     controls.enableDamping = !enabled;
@@ -175,6 +206,14 @@ async function main() {
     const { i, t, elevation } = sampleAt(progress);
     const position = points[i - 1].clone().lerp(points[i], t);
     rider.position.copy(position);
+    rider.position.y += 0.1;
+    if (following && !playing) {
+      const shift = rider.position.clone().sub(orbitCenter);
+      orbitCenter.copy(rider.position);
+      controls.target.add(shift);
+      camera.position.add(shift);
+      controls.update();
+    }
     const path = points.slice(0, i).concat(position).flatMap(p => [p.x, p.y, p.z]);
     const visible = path.length >= 6;
     active.visible = activeHalo.visible = visible;

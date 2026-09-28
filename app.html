@@ -13,8 +13,8 @@
 </head>
 <body>
   <canvas id="scene" aria-label="3D terrain map of the Beckwourth Peak ride. Hover or tap a colored flag to reveal its place name."></canvas>
-  <header class="masthead"><h1>Beckwourth <em>Peak</em></h1><p>September 25, 2026 · Portola, California</p></header>
-  <section class="ride-card" aria-label="Ride details">
+  <header id="masthead" class="masthead"><h1>Beckwourth <em>Peak</em></h1><p>September 25, 2026 · Portola, California</p></header>
+  <section id="ride-card" class="ride-card" aria-label="Ride details">
     <h2>The full loop</h2><p class="description">A climb around Beckwourth Peak and a long descent through fall color.</p>
     <div class="stats"><div><strong id="ride-distance">14.9</strong><span>miles</span></div><div><strong>2,083</strong><span>ft climbing</span></div><div><strong>2:01</strong><span>moving time</span></div></div>
     <div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="14.9 miles"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span>Hover or drag to explore</span><span id="profile-end">14.9 mi</span></div></div>
@@ -22,7 +22,7 @@
     <a class="source" href="https://www.trailforks.com/ridelog/view/124349783/" target="_blank" rel="noopener">View original ride on Trailforks ↗</a>
   </section>
   <nav class="map-controls" aria-label="Map controls">
-    <div class="compass" role="group" aria-label="3D compass controls">
+    <div id="compass" class="compass" role="group" aria-label="3D compass controls">
       <button id="tilt-up" type="button" aria-label="Hold to tilt view up" title="Hold to tilt view up">↑</button>
       <button id="rotate-left" type="button" aria-label="Hold to rotate view left" title="Hold to rotate view left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
       <button id="north" type="button" title="Face north" aria-label="Face north"><svg id="compass-needle" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4 27 21 20 18 13 21Z" fill="#bc6342"/><path d="M20 36 27 19 20 22 13 19Z" fill="#315653"/><circle cx="20" cy="20" r="2.5" fill="#fffaf0"/></svg></button>
