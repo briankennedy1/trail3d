@@ -12,7 +12,7 @@ const places: POI[] = [
   { name: 'Portola City Park', latitude: 39.80559, longitude: -120.46534, color: '#34877b', url: 'https://maps.app.goo.gl/hbWBTh69hicjwSwB6' },
 ];
 
-function labelTexture(name: string, color: string, elevationFt?: number) {
+function labelTexture(name: string, color: string, elevationFt?: number, linked = false) {
   const canvas = document.createElement('canvas');
   canvas.width = 768;
   canvas.height = 144;
@@ -31,18 +31,38 @@ function labelTexture(name: string, color: string, elevationFt?: number) {
   ctx.fillRect(0, 8, 17, 128);
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#fffaf0';
+  const textStart = linked ? 99 : 36;
   if (elevationFt) {
     const elevation = `${elevationFt.toLocaleString()} ft`;
     ctx.font = '700 38px system-ui, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(elevation, 674, 72);
-    const nameWidth = 674 - ctx.measureText(elevation).width - 30 - 36;
+    ctx.fillText(elevation, linked ? 645 : 674, 72);
+    const nameWidth = (linked ? 645 : 674) - ctx.measureText(elevation).width - 30 - textStart;
     ctx.font = '700 49px system-ui, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(name, 36, 72, nameWidth);
+    ctx.fillText(name, textStart, 72, nameWidth);
   } else {
     ctx.font = '700 53px system-ui, sans-serif';
-    ctx.fillText(name, 36, 72, 640);
+    ctx.fillText(name, textStart, 72, linked ? 537 : 640);
+  }
+  if (linked) {
+    // Standard external-link mark, drawn on the fabric rather than overlaid on it.
+    ctx.strokeStyle = '#fffaf0';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(65, 68);
+    ctx.lineTo(65, 91);
+    ctx.lineTo(39, 91);
+    ctx.lineTo(39, 65);
+    ctx.lineTo(62, 65);
+    ctx.moveTo(55, 76);
+    ctx.lineTo(81, 50);
+    ctx.moveTo(67, 50);
+    ctx.lineTo(81, 50);
+    ctx.lineTo(81, 64);
+    ctx.stroke();
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -78,7 +98,7 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     marker.add(pennant);
 
     const label = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({
-      map: labelTexture(place.name, place.color, place.elevationFt), transparent: true,
+      map: labelTexture(place.name, place.color, place.elevationFt, Boolean(place.url)), transparent: true,
       side: THREE.DoubleSide, depthTest: true, depthWrite: false,
     }));
     label.scale.set(10.5, 1.97, 1);

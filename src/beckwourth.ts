@@ -120,6 +120,8 @@ async function main() {
   let following = false;
   let orbitAngle = 0, orbitRadius = 1, orbitHeight = 1, orbitZoom = 1;
   const orbitCenter = new THREE.Vector3();
+  const followHomeCenter = new THREE.Vector3();
+  const followTarget = new THREE.Vector3();
 
   function sampleAt(value: number) {
     const distance = THREE.MathUtils.clamp(value, 0, 1) * total;
@@ -133,6 +135,10 @@ async function main() {
   const readout = (value: number, elevation: number) => `${feet(elevation)} · ${(value * totalMiles).toFixed(1)} mi`;
   function updateFollowCamera(dt: number) {
     if (playing) orbitAngle += dt * 0.028;
+    // Ease the wide shot toward the rider without centering every GPS wiggle.
+    followTarget.copy(followHomeCenter).lerp(rider.position, 0.6);
+    followTarget.y = THREE.MathUtils.lerp(followHomeCenter.y, rider.position.y, 0.25);
+    orbitCenter.lerp(followTarget, 1 - Math.exp(-1.5 * dt));
     const position = orbitCenter.clone().add(new THREE.Vector3(
       Math.sin(orbitAngle) * orbitRadius, orbitHeight, Math.cos(orbitAngle) * orbitRadius,
     ));
@@ -149,8 +155,9 @@ async function main() {
     followButton.setAttribute('aria-pressed', String(enabled));
     if (enabled) {
       const homeView = savedHome ?? defaultHome;
-      orbitCenter.fromArray(homeView.target);
-      const homeOffset = new THREE.Vector3(...homeView.position).sub(orbitCenter);
+      followHomeCenter.fromArray(homeView.target);
+      orbitCenter.copy(controls.target);
+      const homeOffset = new THREE.Vector3(...homeView.position).sub(followHomeCenter);
       orbitRadius = Math.max(60, Math.hypot(homeOffset.x, homeOffset.z));
       orbitHeight = Math.max(45, homeOffset.y);
       orbitZoom = Math.min(homeView.zoom, 1.35);
@@ -406,42 +413,40 @@ async function main() {
     }
     return -1;
   }
+  function hoveredFlagAt(clientX: number, clientY: number) {
+    const labelIndex = labelAt(clientX, clientY);
+    return labelIndex >= 0 ? labelIndex : flagAt(clientX, clientY);
+  }
   renderer.domElement.addEventListener('pointermove', event => {
     if (event.pointerType === 'touch') return;
-    const labelIndex = labelAt(event.clientX, event.clientY);
-    const index = labelIndex >= 0 ? labelIndex : flagAt(event.clientX, event.clientY);
+    const index = hoveredFlagAt(event.clientX, event.clientY);
     hoveredFlag = index;
-    renderer.domElement.style.cursor = labelIndex >= 0
-      ? (revealProgress[labelIndex] >= 0.98 && pois.flags[labelIndex].url ? 'pointer' : '')
-      : (index >= 0 ? 'pointer' : '');
+    renderer.domElement.style.cursor = index >= 0 ? 'pointer' : '';
   });
   renderer.domElement.addEventListener('pointerleave', () => {
     hoveredFlag = -1;
     renderer.domElement.style.cursor = '';
   });
-  let pressedLabel = -1;
+  let pressedFlag = -1;
   let pressedX = 0, pressedY = 0;
   renderer.domElement.addEventListener('pointerdown', event => {
-    const labelIndex = labelAt(event.clientX, event.clientY);
-    if (labelIndex >= 0) {
-      if (revealProgress[labelIndex] >= 0.98 && pois.flags[labelIndex].url) {
-        pressedLabel = labelIndex;
-        pressedX = event.clientX;
-        pressedY = event.clientY;
-      }
+    const index = hoveredFlagAt(event.clientX, event.clientY);
+    if (index >= 0 && revealProgress[index] >= 0.98 && pois.flags[index].url) {
+      pressedFlag = index;
+      pressedX = event.clientX;
+      pressedY = event.clientY;
       return;
     }
-    const index = flagAt(event.clientX, event.clientY);
-    if (event.pointerType !== 'mouse') selectedFlag = index === selectedFlag ? -1 : index;
+    if (event.pointerType !== 'mouse' && index >= 0) selectedFlag = index === selectedFlag ? -1 : index;
   });
   renderer.domElement.addEventListener('pointerup', event => {
-    if (pressedLabel >= 0 && Math.hypot(event.clientX - pressedX, event.clientY - pressedY) < 8
-      && labelAt(event.clientX, event.clientY) === pressedLabel) {
-      window.open(pois.flags[pressedLabel].url!, '_blank', 'noopener,noreferrer');
+    if (pressedFlag >= 0 && Math.hypot(event.clientX - pressedX, event.clientY - pressedY) < 8
+      && hoveredFlagAt(event.clientX, event.clientY) === pressedFlag) {
+      window.open(pois.flags[pressedFlag].url!, '_blank', 'noopener,noreferrer');
     }
-    pressedLabel = -1;
+    pressedFlag = -1;
   });
-  renderer.domElement.addEventListener('pointercancel', () => { pressedLabel = -1; });
+  renderer.domElement.addEventListener('pointercancel', () => { pressedFlag = -1; });
   $('loading').remove();
   function frame(now: number) {
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
