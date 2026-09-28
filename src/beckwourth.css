@@ -38,7 +38,12 @@ h2 { font-size: 30px; line-height: 1.1; margin: 18px 0 8px; color: #29464b; }
 .source:hover { text-decoration: underline; }
 .map-controls { position: fixed; right: 30px; bottom: 24px; z-index: 2; display: flex; gap: 7px; }
 .map-controls button { border: 1px solid #e1d5bc; background: rgba(255,250,239,.95); border-radius: 9px; box-shadow: 0 5px 20px #554a3529; min-width: 42px; height: 42px; font-weight: 700; color: #315653; }
-.map-controls #set-home, .map-controls #clear-home { padding: 0 10px; font-size: 11px; white-space: nowrap; }
+#settings { font-family: Arial, sans-serif; font-size: 22px; line-height: 1; }
+.settings-menu { position: absolute; right: 0; bottom: 49px; width: 164px; padding: 7px; display: flex; flex-direction: column; gap: 2px; background: rgba(255,250,239,.97); border: 1px solid #e1d5bc; border-radius: 10px; box-shadow: 0 8px 24px #554a3533; }
+.settings-menu[hidden] { display: none; }
+.settings-heading { padding: 5px 8px 3px; color: #8c6a45; font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.map-controls .settings-menu button { height: 34px; width: 100%; min-width: 0; padding: 0 8px; border: 0; box-shadow: none; background: transparent; text-align: left; font-size: 12px; white-space: nowrap; }
+.map-controls .settings-menu button:hover, .map-controls .settings-menu button:focus-visible { background: #e7eee8; }
 #home-status { position: absolute; right: 0; bottom: 49px; padding: 6px 9px; border-radius: 8px; background: rgba(255,250,239,.96); box-shadow: 0 4px 15px #554a3529; color: #315653; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .map-hint { position: fixed; left: 38px; bottom: 56px; z-index: 2; font-size: 11px; font-weight: 700; color: #66716a; text-shadow: 0 1px 4px #fff9; }
 footer { position: fixed; left: 38px; bottom: 24px; z-index: 2; font-size: 10px; color: #777a6d; }

@@ -209,8 +209,26 @@ async function main() {
     } catch { return null; }
   }
   let savedHome = readHome();
+  const settingsButton = $<HTMLButtonElement>('settings');
+  const settingsMenu = $<HTMLDivElement>('view-settings');
+  const setHomeButton = $<HTMLButtonElement>('set-home');
   const clearHomeButton = $<HTMLButtonElement>('clear-home');
   const homeStatus = $<HTMLSpanElement>('home-status');
+  function setSettingsOpen(open: boolean) {
+    settingsMenu.hidden = !open;
+    settingsButton.setAttribute('aria-expanded', String(open));
+    if (open) homeStatus.hidden = true;
+  }
+  settingsButton.addEventListener('click', () => setSettingsOpen(settingsMenu.hasAttribute('hidden')));
+  document.addEventListener('pointerdown', event => {
+    if (!settingsMenu.hidden && !settingsButton.closest('.map-controls')?.contains(event.target as Node)) setSettingsOpen(false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !settingsMenu.hidden) {
+      setSettingsOpen(false);
+      settingsButton.focus();
+    }
+  });
   let statusTimer = 0;
   function status(message: string) {
     homeStatus.textContent = message;
@@ -237,25 +255,28 @@ async function main() {
     playing = !playing;
     play.textContent = playing ? 'Ⅱ Pause' : '▶ Play ride';
   });
-  $('home').addEventListener('click', home);
-  $('set-home').addEventListener('click', () => {
+  $('home').addEventListener('click', () => { setSettingsOpen(false); home(); });
+  setHomeButton.addEventListener('click', () => {
     savedHome = {
       position: camera.position.toArray() as HomeView['position'],
       target: controls.target.toArray() as HomeView['target'],
       zoom: camera.zoom,
     };
+    setSettingsOpen(false);
     try { localStorage.setItem(HOME_KEY, JSON.stringify(savedHome)); status('Home view saved'); }
     catch { status('Home saved for this session'); }
     clearHomeButton.hidden = false;
   });
   clearHomeButton.addEventListener('click', () => {
     savedHome = null;
+    setSettingsOpen(false);
     try { localStorage.removeItem(HOME_KEY); } catch { /* session-only home */ }
     clearHomeButton.hidden = true;
     applyHome(defaultHome);
     status('Original home restored');
   });
   $('north').addEventListener('click', () => {
+    setSettingsOpen(false);
     const radius = camera.position.clone().sub(controls.target).length();
     camera.position.copy(controls.target).add(new THREE.Vector3(0, radius * 0.7, radius * 0.7));
     controls.update();
