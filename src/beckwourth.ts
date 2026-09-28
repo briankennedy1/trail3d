@@ -39,7 +39,7 @@ async function main() {
   const total = distances.at(-1)!;
   const mat = (color: string, width: number, opacity = 1) => new LineMaterial({
     color: new THREE.Color(color).getHex(), linewidth: width, transparent: opacity < 1, opacity,
-    depthTest: false, depthWrite: false,
+    depthTest: true, depthWrite: false,
   });
   const routeLine = (material: LineMaterial, order: number) => {
     const line = new Line2(new LineGeometry(), material);
@@ -57,8 +57,8 @@ async function main() {
   const activeHalo = routeLine(mat('#fff9df', 12, 0.99), 22);
   const active = routeLine(mat('#edaa29', 6, 0.99), 23);
   const rider = new THREE.Group();
-  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 8), new THREE.MeshBasicMaterial({ color: '#cf532e', depthTest: false }));
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.65, 0.9, 32), new THREE.MeshBasicMaterial({ color: '#fff8e4', side: THREE.DoubleSide, depthTest: false }));
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 8), new THREE.MeshBasicMaterial({ color: '#cf532e', depthTest: true }));
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.65, 0.9, 32), new THREE.MeshBasicMaterial({ color: '#fff8e4', side: THREE.DoubleSide, depthTest: true }));
   ring.rotation.x = -Math.PI / 2;
   rider.add(dot, ring);
   rider.renderOrder = 24;
