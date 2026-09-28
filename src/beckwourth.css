@@ -37,6 +37,7 @@ h2 { font-size: 30px; line-height: 1.1; margin: 0 0 8px; color: #29464b; }
 .view-control-row { display: grid; grid-template-columns: 43px 38px 38px; align-items: center; gap: 3px; }
 .view-control-row span { color: #52645e; font-size: 11px; font-weight: 700; }
 .map-controls .view-control-row button { min-width: 0; width: 38px; height: 36px; box-shadow: none; background: #f6f1e6; font-size: 19px; line-height: 1; touch-action: none; user-select: none; }
+.view-control-row button svg { display: block; width: 21px; height: 21px; margin: auto; }
 .map-controls .view-control-row button:hover, .map-controls .view-control-row button:focus-visible { background: #e7eee8; }
 .map-controls .view-control-row button.is-pressed { background: #315653; color: #fffaf0; }
 #settings { font-family: Arial, sans-serif; font-size: 22px; line-height: 1; }
