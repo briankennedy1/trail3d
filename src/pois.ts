@@ -1,17 +1,18 @@
 import * as THREE from 'three';
 import { Terrain, toWorld, type MapData } from './data';
 
-type POI = { name: string; latitude: number; longitude: number; color: string };
+type POI = { name: string; latitude: number; longitude: number; color: string; elevationFt?: number };
 
-// Summit: USGS/GNIS coordinate via TopoQuest. Park: Sierra Trails trail plan.
-// https://www.topoquest.com/place/california/populated-place/beckwourth/1658022
+// Summit: lidar-based high point, which is southwest of the older GNIS waypoint.
+// https://www.peakbagger.com/peak.aspx?pid=2554
+// Park: Sierra Trails trail plan.
 // https://sierratrails.org/wp-content/uploads/2024/05/TMP-DRAFT-V3-052223.pdf
 const places: POI[] = [
-  { name: 'Beckwourth Peak', latitude: 39.7735129, longitude: -120.4321572, color: '#c8613d' },
+  { name: 'Beckwourth Peak', latitude: 39.7725, longitude: -120.43315, elevationFt: 7267, color: '#c8613d' },
   { name: 'Portola City Park', latitude: 39.80559, longitude: -120.46534, color: '#34877b' },
 ];
 
-function labelTexture(name: string, color: string) {
+function labelTexture(name: string, color: string, elevationFt?: number) {
   const canvas = document.createElement('canvas');
   canvas.width = 768;
   canvas.height = 144;
@@ -31,10 +32,21 @@ function labelTexture(name: string, color: string) {
   ctx.beginPath();
   ctx.arc(67, 70, 15, 0, Math.PI * 2);
   ctx.fill();
-  ctx.font = '600 55px system-ui, sans-serif';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#302f29';
-  ctx.fillText(name, 105, 72);
+  if (elevationFt) {
+    const elevation = `${elevationFt.toLocaleString()} ft`;
+    ctx.font = '700 39px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(elevation, 720, 72);
+    const nameWidth = 720 - ctx.measureText(elevation).width - 25 - 105;
+    ctx.font = '600 51px system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(name, 105, 72, nameWidth);
+  } else {
+    ctx.font = '600 55px system-ui, sans-serif';
+    ctx.fillText(name, 105, 72);
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
@@ -67,7 +79,7 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     marker.add(pennant);
 
     const label = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: labelTexture(place.name, place.color), transparent: true,
+      map: labelTexture(place.name, place.color, place.elevationFt), transparent: true,
       depthTest: true, depthWrite: false,
     }));
     label.position.set(0, 2.65, 0);

@@ -326,9 +326,9 @@ async function main() {
       label.material.map!.repeat.x = reveal;
       label.material.map!.updateMatrix();
       label.scale.set(width * reveal, 1.97 * labelScale, 1);
-      const fullCenter = (isPeak ? (innerWidth < 700 ? 14 : 7) : 6) * labelScale;
+      const fullCenter = (isPeak ? (innerWidth < 700 ? 6 : 7) : 6) * labelScale;
       label.position.copy(screenRight).multiplyScalar(fullCenter - width * (1 - reveal) / 2);
-      label.position.y += 2.65;
+      label.position.y += isPeak && innerWidth < 700 ? 0.3 : 2.65;
     }
     renderer.setRenderTarget(target); renderer.render(scene, camera);
     renderer.setRenderTarget(null); renderer.render(postScene, postCamera);
