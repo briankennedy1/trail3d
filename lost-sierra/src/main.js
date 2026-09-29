@@ -77,6 +77,13 @@ const movingTime=e=>{
   const hours=Math.floor(minutes/60),remainder=minutes%60;
   return `${e.movingTimeEstimated?'~':''}${hours?`${hours}h `:''}${remainder}m`;
 };
+const intensityDisplay=entry=>{
+  const label=entry.intensity?.trim()||'Not rated';
+  const levels={'mellow-ish':1,moderate:2,challenging:3,intense:4};
+  const level=levels[label.toLowerCase()]||0;
+  const peaks=[12,17,23,30].map((height,i)=>`<path class="${i<level?'lit':''}" d="M${i*23+1} 32L${i*23+11} ${32-height}L${i*23+21} 32Z"/>`).join('');
+  return `<div class="ride-intensity intensity-${level}" aria-label="Intensity: ${escape(label)}"><div class="intensity-caption"><span>Intensity</span><strong>${escape(label)}</strong></div><svg class="intensity-ridge" viewBox="0 0 92 35" aria-hidden="true">${peaks}</svg></div>`;
+};
 const surfaceKey=types=>{
   const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt Road',unknown:'Unverified'};
   return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap, with rider-confirmed corrections. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
@@ -218,6 +225,7 @@ async function openRide(entry,rideTrack,token,animate=true){
       const climbing=original?'2,083':number(display.climbingFt??(mode==='loop'&&rideTrack.properties.ascentM!=null?rideTrack.properties.ascentM*3.28084:null));
       $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
         ${hasShuttle?`<div class="ride-mode" role="group" aria-label="Ride option"><button type="button" data-mode="loop" aria-pressed="${mode==='loop'}">↻ Loop</button><button type="button" data-mode="shuttle" aria-pressed="${mode==='shuttle'}">↗ Shuttle</button></div>`:''}
+        ${intensityDisplay(display)}
         <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(display)}</strong><span>Moving Time</span></div></div>
         ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
         <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
@@ -284,8 +292,8 @@ async function openRide(entry,rideTrack,token,animate=true){
 }
 function renderDetail(e){
   const distance='—';
-  const stats=e.kind==='ride'?`<div class="stats"><div><b>${distance}</b><span>Miles</span></div><div><b>${number(e.climbingFt)}</b><span>Climbing Ft</span></div><div><b>${movingTime(e)}</b><span>Moving Time</span></div></div>`:'';
-  $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.name)}</h1><div class="entry-meta">${escape(e.intensity||e.type||'Explore')}</div><div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
+  const stats=e.kind==='ride'?`${intensityDisplay(e)}<div class="stats"><div><b>${distance}</b><span>Miles</span></div><div><b>${number(e.climbingFt)}</b><span>Climbing Ft</span></div><div><b>${movingTime(e)}</b><span>Moving Time</span></div></div>`:'';
+  $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.name)}</h1>${e.kind==='ride'?'':`<div class="entry-meta">${escape(e.type||'Explore')}</div>`}<div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
   ${e.notes||e.summary?`<h3>Field notes</h3><div class="detail-copy ride-description">${descriptionParagraphs(e.notes||e.summary)}</div>`:''}
   <div class="facts">${e.season?`<div class="fact-row"><span>Season</span><b>${escape(e.season)}</b></div>`:''}${e.driveMinutes!=null?`<div class="fact-row"><span>Drive from Everstoke</span><b>~${e.driveMinutes} min</b></div>`:''}${e.shuttleOption&&e.shuttleOption!=='no'?`<div class="fact-row"><span>Shuttle option</span><b>${e.shuttleOption==='partial'?'Partial':'Yes'}</b></div>`:''}${e.ebikeRecommended?'<p class="small muted">The planner recommends an e-bike. Confirm current e-bike access for each trail.</p>':''}</div>
   <div class="detail-links">${e.kind==='ride'?accessLinks(e):''}${external(e.routeUrl,'Open original route')}${external(e.shuttleRouteUrl,'Shuttle route')}${external(e.bkxcVideoUrl,'Watch BKXC’s ride')}</div>${e.incomplete?'<p class="notice">These notes are still being filled in.</p>':''}<p class="track-source">From the Everstoke planner. Locations and seasonal notes need local confirmation; this is not a live trail conditions feed.</p>`;

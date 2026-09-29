@@ -134,3 +134,15 @@
 .guide-page:has(.show-notes) .ride-panel{position:absolute;top:24px;bottom:auto;transform:none;max-height:none;padding-bottom:24px}
 .guide-page:has(.show-notes) .ride-card{overflow:visible;flex-shrink:0}
 @media(max-width:700px){.guide-page:has(.show-notes) .ride-panel{top:110px}}
+
+/* Four rising peaks echo the diorama and show the planner's intensity scale. */
+.ride-intensity{--intensity-color:#68716c;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:16px 0 0}
+.intensity-1{--intensity-color:#5c8067}.intensity-2{--intensity-color:#8b7439}.intensity-3{--intensity-color:#b2703b}.intensity-4{--intensity-color:#b64f39}
+.intensity-caption{display:grid;gap:3px;min-width:0}
+.intensity-caption span{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#68716c}
+.intensity-caption strong{font-size:14px;font-weight:650;line-height:1.25;color:var(--intensity-color);overflow-wrap:anywhere}
+.intensity-ridge{width:92px;height:35px;flex:none;overflow:visible}
+.intensity-ridge path{fill:#e7e5d9;stroke:#cbcbbd;stroke-width:1;stroke-linejoin:round}
+.intensity-ridge path.lit{fill:var(--intensity-color);stroke:var(--intensity-color)}
+.intensity-ridge path.lit:nth-child(1){opacity:.5}.intensity-ridge path.lit:nth-child(2){opacity:.67}.intensity-ridge path.lit:nth-child(3){opacity:.83}
+.guide-page .ride-intensity+.stats{margin-top:12px}
