@@ -36,6 +36,9 @@ export async function prepareRide(entry,track,signal){
   const surfaces=await surfacesRequest;signal.throwIfAborted();
   options.surfaceTypes=await surfaceTypesForTrack(surfaces?.rides?.[entry.id],track.geometry.coordinates);
   signal.throwIfAborted();
+  if(entry.rideFamily?.id==='downieville'){
+    for(const feature of options.contextFeatures||[])feature.showLabel=false;
+  }
   if(entry.id==='beckwourth-peak'){
     const hiddenLabels=new Set(['Carman Creek','West Street','Commercial Street']);
     for(const feature of options.contextFeatures||[])if(hiddenLabels.has(feature.name))feature.showLabel=false;

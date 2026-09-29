@@ -46,6 +46,18 @@ export function openStore(dir) {
   migrateRideSlugs(db);
   importCuratedRides(db,root,saveTrack);
   correctBeckwourthLoop(db);
+  for(const id of scope.excludedEntries||[]){
+    const key=`guide-archive-v1:${id}`;
+    if(db.prepare('SELECT key FROM settings WHERE key=?').get(key))continue;
+    const row=db.prepare('SELECT status FROM entries WHERE id=?').get(id);if(!row)continue;
+    const now=new Date().toISOString();db.exec('BEGIN IMMEDIATE');
+    try{
+      db.prepare("UPDATE entries SET status='archived',version=version+1,updated_at=? WHERE id=?").run(now,id);
+      db.prepare('INSERT INTO audit_log(action,entry_id,before_json,after_json,created_at) VALUES(?,?,?,?,?)').run('guide-entry-archive',id,JSON.stringify(row),JSON.stringify({status:'archived'}),now);
+      db.prepare('INSERT INTO settings VALUES(?,?,NULL)').run(key,JSON.stringify({archivedAt:now}));
+      db.exec('COMMIT');
+    }catch(error){db.exec('ROLLBACK');throw error;}
+  }
   return db;
 }
 export function rowEntry(row) {
