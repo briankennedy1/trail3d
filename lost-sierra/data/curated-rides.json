@@ -299,7 +299,7 @@
         "lat": 39.840827,
         "lng": -120.856356
       },
-      "climbingFt": 4156,
+      "climbingFt": 3600,
       "summary": "A recorded climb and descent on Buzzards Roost Ridge.",
       "notes": "Climb La Porte Road to Buzzard Roost Ridge, then descend a steep, technical trail toward Nelson Creek. Expect tight switchbacks and rocky sections on the descent.",
       "incomplete": false,
@@ -334,7 +334,7 @@
           "zoom": 0.85
         }
       },
-      "descendingFt": 4170,
+      "descendingFt": 3600,
       "startMapsUrl": "https://maps.app.goo.gl/dMWgUQ9zvk9EmSez5",
       "finishMapsUrl": null,
       "sameStartFinish": true

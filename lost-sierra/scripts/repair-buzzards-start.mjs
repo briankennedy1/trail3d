@@ -48,8 +48,8 @@ route.properties.repair={
 fs.writeFileSync(file,JSON.stringify(route)+'\n');
 const manifestFile=path.join(root,'data/curated-rides.json'),manifest=JSON.parse(fs.readFileSync(manifestFile)),ride=manifest.find(r=>r.id===id);
 ride.details.coordinates={lat:recorded.at(-1)[1],lng:recorded.at(-1)[0]};
-ride.details.climbingFt=2894+Math.round(added.ascent/.3048);
-ride.details.descendingFt=4034+Math.round(added.descent/.3048);
+// Preserve reviewed public climbing/descent totals. Summing tiny elevation
+// changes overstates gain; see data/routes/buzzards-roost-ridge-elevation.md.
 // Repair provenance belongs in route.properties, not the public ride notes.
 const flag=ride.details.viewer.pointsOfInterest.find(p=>p.name==='Route start');flag.latitude=recorded.at(-1)[1];flag.longitude=recorded.at(-1)[0];
 const b=meta.bbox,scale=Math.max(.25,Math.max((b.east-b.west)*111320*Math.cos((b.north+b.south)*Math.PI/360),(b.north-b.south)*111320)/7338),cy=((meta.min+meta.max)/2-1898)/100*2.3;
