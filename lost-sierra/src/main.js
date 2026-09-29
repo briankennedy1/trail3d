@@ -28,9 +28,9 @@ async function selectEntry(id,push=true,animate=true){
   $('.sidebar').scrollTop=0;
 }
 async function openRide(entry,rideTrack,token,animate=true){
-  const controller=new AbortController();let viewer,canvas,controls,context;
+  const controller=new AbortController();let viewer,canvas,controls,context,settings;
   closeRide=()=>{
-    controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();
+    controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settings?.remove();
     controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
     $('#map-labels').hidden=false;
@@ -50,9 +50,9 @@ async function openRide(entry,rideTrack,token,animate=true){
       ${entry.notes||entry.summary?`<details class="ride-notes"><summary>Ride notes</summary><p class="detail-copy">${escape(entry.notes||entry.summary)}</p></details>`:''}`;
     $('#back').onclick=()=>reset();
     if(canSetHome){
-      const settings=document.createElement('details');settings.className='ride-settings';
+      settings=document.createElement('details');settings.className='ride-settings';
       settings.innerHTML='<summary aria-label="Ride settings" title="Ride settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.1-2 .9-2.1-.5-2 3.5 1.5 1.6v2.3L2.3 15l2 3.5 2.1-.5 2 .9L9 21h4l.6-2.1 2-.9 2.1.5 2-3.5-1.5-1.6v-2.3L19.7 9l-2-3.5-2.1.5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></summary><div class="ride-settings-menu"><button type="button" id="set-home" disabled>Set current view as home</button><button type="button" id="go-home" disabled>Go to home view</button><p>Saves the default view for everyone.</p></div>';
-      $('#detail').prepend(settings);
+      document.body.append(settings);
       $('#set-home').onclick=async()=>{
         const button=$('#set-home'),home=viewer.captureHome();button.disabled=true;button.textContent='Saving…';
         try{
@@ -114,7 +114,7 @@ for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
 try{
-  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');entries=(await response.json()).entries;
+  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');entries=(await response.json()).entries;
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
   const initial=new URLSearchParams(location.search).get('ride');

@@ -25,7 +25,7 @@ async function readBody(req) {
   for await(const chunk of req) {size+=chunk.length;if(size>4_000_000) throw error(413,'Upload is too large (4 MB maximum).');chunks.push(chunk);}
   try {return JSON.parse(Buffer.concat(chunks).toString());} catch {throw error(400,'Invalid JSON.');}
 }
-export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join(root,'.data'),origin=process.env.APP_ORIGIN||'http://127.0.0.1:5318',development=false,localEditing=false}={}) {
+export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join(root,'.data'),origin=process.env.APP_ORIGIN||'http://127.0.0.1:5318',development=false}={}) {
   const db=openStore(dataDir),originUrl=new URL(origin),secure=originUrl.protocol==='https:';
   const tokenFile=path.join(dataDir,'setup-token');
   if(!db.prepare('SELECT id FROM users LIMIT 1').get()&&!fs.existsSync(tokenFile)) fs.writeFileSync(tokenFile,randomBytes(32).toString('hex'),{mode:0o600});
@@ -70,10 +70,7 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
           if(!allowedOrigins.has(req.headers.origin)) throw error(403,'Request must come from this site.');
         }
         const user=currentUser(req);
-        // Local authoring only on a loopback-bound server with a loopback origin
-        // and client. Hosted visitors still need an authenticated admin session.
-        const loopback=address=>['127.0.0.1','::1','::ffff:127.0.0.1'].includes(address);
-        const canSetHome=!!user||(localEditing&&localAlias&&loopback(server.address()?.address)&&loopback(req.socket.remoteAddress));
+        const canSetHome=!!user;
         if(p==='/api/session'&&method==='GET') return json(200,{user:user?{username:user.username}:null,needsSetup:!db.prepare('SELECT id FROM users LIMIT 1').get(),canSetHome});
         const homeRoute=p.match(/^\/api\/ride-home\/([a-z0-9-]+)$/);
         if(homeRoute&&method==='PUT'){
@@ -199,7 +196,7 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1])) {
   const port=Number(process.env.PORT||5318),host=process.env.HOST||'127.0.0.1';
   const origin=process.env.APP_ORIGIN||`http://127.0.0.1:${port}`;
-  const app=await createGuideServer({origin,development:!process.argv.includes('--production'),localEditing:['127.0.0.1','::1','localhost'].includes(host)});
+  const app=await createGuideServer({origin,development:!process.argv.includes('--production')});
   app.server.listen(port,host,()=>{
     console.log(`Ride The Lost Sierra: ${origin}`);
     if(app.setupToken) console.log(`One-time admin setup: ${origin}/admin.html#setup=${app.setupToken}`);

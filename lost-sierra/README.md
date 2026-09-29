@@ -122,6 +122,6 @@ Technical references: [Node SQLite](https://nodejs.org/api/sqlite.html), [Vite b
 
 ### Set a ride home view
 
-Open a tracked ride, position the camera, then choose **Ride settings (cog) → Set current view as home**. This saves `viewer.home` in SQLite, preserves other ride settings, checks the entry version, and records the change in the audit log. Reloads and other visitors receive this shared default. The compass and helicopter playback use the new home immediately; saving does not move the camera.
+Sign in as an admin, open a tracked ride, position the camera, then choose **Ride settings (bottom-right cog) → Set current view as home**. This saves `viewer.home` in SQLite, preserves other ride settings, checks the entry version, and records the change in the audit log. Reloads and other visitors receive this shared default. The compass and helicopter playback use the new home immediately; saving does not move the camera.
 
-On the local loopback server, this one home-setting action is available without creating an admin account. It requires a loopback bind address, a loopback configured origin, a loopback client, and a matching request Origin. It does not grant access to other admin operations. On a hosted/non-loopback server the control is hidden and the endpoint requires the existing admin session.
+The cog is shown only to signed-in admins, and the home-setting API requires a valid admin session on both local and hosted servers. Matching Origin, version checks, and validation remain required.
