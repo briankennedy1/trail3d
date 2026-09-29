@@ -142,9 +142,8 @@ export class Diorama {
       this.routePopup.href=`/?ride=${encodeURIComponent(entry.id)}`;
       this.routePopup.textContent=entry.name;
       this.routePopup.setAttribute('aria-label',`Explore ${entry.name}`);
-      // Anchor the label above the route's summit, independent of pointer position.
-      let summit=0;for(let i=3;i<positions.length;i+=3)if(positions[i+1]>positions[summit+1])summit=i;
-      this.routeLabelAnchor=new THREE.Vector3(...positions.slice(summit,summit+3)).add(new THREE.Vector3(0,2,0));
+      // Anchor the label above the route's start, independent of pointer position.
+      this.routeLabelAnchor=new THREE.Vector3(...positions.slice(0,3)).add(new THREE.Vector3(0,2,0));
     }catch(error){console.warn('Could not show Beckwourth Peak on the overview:',error);}
   }
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
