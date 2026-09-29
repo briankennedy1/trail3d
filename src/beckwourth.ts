@@ -7,7 +7,7 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { EXAGGERATION, LAKE_LEVEL, Terrain, WORLD_SCALE, toWorld, type MapData } from './data';
 import { buildLandscape } from './terrain';
-import { BANNER_HEIGHT, PENNANT_CENTER, buildPOIs, shapeBanner } from './pois';
+import { BANNER_HEIGHT, PENNANT_CENTER, buildPOIs, shapeBanner, type LoosePiece } from './pois';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
 type EmbeddedRide = { map: MapData; ride: Ride; terrain: string };
@@ -624,14 +624,11 @@ async function main() {
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const revealProgress = pois.flags.map(() => 0);
   // Hovering blows the small pennant off like a leaf; it regrows once the pole is back down.
-  const LEAF_FLIGHT = 3;
   const pennantGrowth = pois.flags.map(() => 1);
-  const leafAge = pois.flags.map(() => LEAF_FLIGHT);
-  const leafSize = pois.flags.map(() => 1);
   // Moving off a flag blows its banner away too, while the pole drops and the pennant regrows.
-  const BANNER_FLIGHT = 2.8;
   const bannerGone = pois.flags.map(() => false);
-  const looseFlights = pois.flags.map(flag => flag.looseBanners.map(() => ({ age: BANNER_FLIGHT, length: 0, reveal: 0, start: new THREE.Vector3() })));
+  // Reuse whichever loose piece has been out the longest (idle ones count as forever).
+  const idlest = (pieces: LoosePiece[]) => pieces.reduce((a, b) => b.age > a.age ? b : a);
   let flagsFacing = false;
   const toViewer = new THREE.Vector3();
   const easeOutBack = (x: number, overshoot = 1.4) => 1 + (overshoot + 1) * (x - 1) ** 3 + overshoot * (x - 1) ** 2;
@@ -728,7 +725,7 @@ async function main() {
     camera.getWorldDirection(toViewer).negate();
     const viewerYaw = Math.hypot(toViewer.x, toViewer.z) > 1e-3 ? Math.atan2(toViewer.x, toViewer.z) : null;
     for (let i = 0; i < pois.flags.length; i++) {
-      const { marker, pole, pennant, leaf, label, bannerWidth: width } = pois.flags[i];
+      const { marker, pole, pennant, label, leaves, looseBanners, bannerWidth: width } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i;
       if (viewerYaw !== null) {
         const turn = Math.atan2(Math.sin(viewerYaw - marker.rotation.y), Math.cos(viewerYaw - marker.rotation.y));
@@ -736,9 +733,11 @@ async function main() {
         marker.rotation.y += reducedMotion || !flagsFacing ? turn : turn * (1 - Math.exp(-dt / (active ? 0.18 : 1.6)));
       }
       if (active && pennantGrowth[i] > 0) {
-        leaf.parent!.rotation.y = marker.rotation.y;
-        leafSize[i] = pennant.scale.x;
-        leafAge[i] = reducedMotion ? LEAF_FLIGHT : 0;
+        if (!reducedMotion) {
+          const leaf = idlest(leaves);
+          leaf.launch(marker.position, marker.rotation.y, new THREE.Vector3(PENNANT_CENTER.x * pennant.scale.x, 1.75 + PENNANT_CENTER.y, 0));
+          leaf.offset.scale.x = pennant.scale.x;
+        }
         pennantGrowth[i] = 0;
       }
       if (active && bannerGone[i]) {
@@ -756,25 +755,7 @@ async function main() {
       pennant.scale.x = easeOutBack(pennantGrowth[i]);
       pennant.material.opacity = Math.min(1, pennantGrowth[i] * 3);
 
-      // The leaf drifts downwind, rocking side to side as it sinks and tumbles.
-      leafAge[i] += dt;
-      const flight = leafAge[i] / LEAF_FLIGHT;
-      leaf.visible = flight < 1;
-      if (leaf.visible) {
-        const swing = flight * Math.PI * 2 * 1.6;
-        const loose = Math.min(1, flight / 0.12);
-        const drift = 1 - (1 - flight) ** 1.7;
-        leaf.scale.x = leafSize[i];
-        leaf.position.set(
-          PENNANT_CENTER.x * leafSize[i] + 4.8 * drift + 0.45 * Math.sin(swing),
-          1.75 + PENNANT_CENTER.y - 1.3 * flight + 0.28 * Math.sin(swing) ** 2,
-          0.6 * flight * Math.sin(swing * 0.5),
-        );
-        leaf.rotation.set(flight * Math.PI * 2.2, loose * 0.5 * Math.sin(swing * 0.7), loose * 0.75 * Math.cos(swing));
-        leaf.material.opacity = Math.min(1, (1 - flight) / 0.35);
-        // A fading leaf shouldn't leave a hard-edged hole in the route behind it.
-        leaf.material.depthWrite = leaf.material.opacity > 0.99;
-      }
+      for (const leaf of leaves) leaf.update(dt, now / 1000);
 
       const raised = easeOutBack(THREE.MathUtils.clamp((revealProgress[i] - 0.05) / 0.35, 0, 1), 1.1);
       const poleHeight = 1.75 + 1.45 * raised;
@@ -784,46 +765,20 @@ async function main() {
       const reveal = 1 - (1 - unfurl) ** 3;
       const height = BANNER_HEIGHT;
       if (!active && label.visible && !bannerGone[i] && !reducedMotion) {
-        const slot = looseFlights[i].reduce((oldest, flight, k) => flight.age > looseFlights[i][oldest].age ? k : oldest, 0);
-        const flight = looseFlights[i][slot];
-        flight.age = 0;
-        flight.reveal = reveal;
-        flight.length = width * flight.reveal;
-        flight.start.set(0.12 + flight.length / 2, poleHeight - height / 2, 0);
-        pois.flags[i].looseBanners[slot].parent!.parent!.rotation.y = marker.rotation.y;
+        const banner = idlest(looseBanners);
+        const length = width * reveal;
+        banner.launch(marker.position, marker.rotation.y, new THREE.Vector3(0.12 + length / 2, poleHeight - height / 2, 0));
+        banner.offset.position.x = -length / 2;
+        banner.shape = (loose, time) => shapeBanner(banner.source, width, height, reveal, time, false, 0.35 * loose);
         bannerGone[i] = true;
         // Skip furling: the pole starts lowering as soon as the banner is gone.
         revealProgress[i] = Math.min(revealProgress[i], 0.4);
       }
       if (bannerGone[i] && revealProgress[i] <= 0.25) bannerGone[i] = false;
-      // The loose banner billows and tumbles downwind, rocking as it sinks and fades.
-      pois.flags[i].looseBanners.forEach((banner, k) => {
-        const flight = looseFlights[i][k];
-        flight.age += dt;
-        const progress = flight.age / BANNER_FLIGHT;
-        banner.visible = progress < 1;
-        if (!banner.visible) return;
-        const loose = Math.min(1, progress / 0.15);
-        const swing = progress * Math.PI * 2 * 1.1;
-        const drift = 1 - (1 - progress) ** 1.6;
-        const pivot = banner.parent!;
-        shapeBanner(banner, width, height, flight.reveal, now / 1000, false, 0.35 * loose);
-        banner.position.x = -flight.length / 2;
-        pivot.position.set(
-          flight.start.x + 6.5 * drift + 0.6 * Math.sin(swing),
-          flight.start.y - 2.2 * progress + 0.35 * Math.sin(swing) ** 2,
-          1.2 * progress * Math.sin(swing * 0.5),
-        );
-        pivot.rotation.set(progress * Math.PI * 1.2, loose * 0.35 * Math.sin(swing * 0.8), loose * 0.3 * Math.cos(swing));
-        const opacity = Math.min(1, (1 - progress) / 0.4);
-        banner.material.opacity = opacity;
-        // Keep discarding the clear margins as the fabric fades out.
-        banner.material.alphaTest = 0.5 * opacity;
-        banner.material.depthWrite = opacity > 0.99;
-      });
+      for (const banner of looseBanners) banner.update(dt, now / 1000);
       label.visible = reveal > 0.001 && !bannerGone[i];
       if (label.visible) {
-        shapeBanner(label, width, height, reveal, now / 1000, reducedMotion);
+        shapeBanner(label.geometry, width, height, reveal, now / 1000, reducedMotion);
         label.material.opacity = Math.min(1, reveal * 5);
         label.position.set(0.12, poleHeight - height / 2, 0);
       }

@@ -3,7 +3,7 @@ import { EXAGGERATION, LAKE_LEVEL, Terrain, WORLD_SCALE, toWorld } from './data'
 import { SIDE_FRAG, SIDE_VERT, TERRAIN_FRAG, TERRAIN_VERT, TREE_FRAG, TREE_VERT } from './shaders';
 
 export const LIGHT_DIR = new THREE.Vector3(-0.55, 0.9, -0.45).normalize();
-const BASE_ELEVATION = 1350; // bottom of the diorama block, meters
+export const BASE_ELEVATION = 1350; // bottom of the diorama block, meters
 
 export interface Landscape {
   group: THREE.Group;
