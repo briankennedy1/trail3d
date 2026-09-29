@@ -681,5 +681,42 @@
         "pointsOfInterest": []
       }
     }
+  },
+  {
+    "id": "downieville-adventure-mode",
+    "entry": {
+      "name": "Downieville Adventure Mode",
+      "kind": "ride",
+      "area": "Downieville"
+    },
+    "terrain": "/terrain/downieville-adventure-mode",
+    "track": "routes/downieville-adventure-mode.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.6147,
+        "lng": -120.66595
+      },
+      "rideFamily": {
+        "id": "downieville",
+        "name": "Downieville",
+        "option": "Adventure Mode",
+        "order": 1
+      },
+      "routeUrl": "https://www.trailforks.com/routeplan/view/785607/",
+      "startMapsUrl": "https://www.google.com/maps?q=39.6147,-120.66595",
+      "finishMapsUrl": "https://www.google.com/maps?q=39.55981,-120.8289",
+      "sameStartFinish": false,
+      "climbingFt": 2028,
+      "descendingFt": 6214,
+      "movingMinutes": 271,
+      "movingTimeEstimated": true,
+      "shuttleOption": "yes",
+      "incomplete": false,
+      "summary": "Gold Valley Rim, Pauley Creek and Second Divide into Downieville.",
+      "notes": "Follow Gold Valley Rim into the Gold Valley and Pauley Creek OHV trails, then descend Pauley Creek Trail to Second Divide. Continue through Upper First Divide and Lower First Divide, finishing on Main Street in Downieville.\n\nThis is a point-to-point ride. Arrange transportation between the start and finish.",
+      "viewer": {
+        "pointsOfInterest": []
+      }
+    }
   }
 ]

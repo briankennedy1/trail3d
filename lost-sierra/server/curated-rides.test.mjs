@@ -35,7 +35,7 @@ test('curated imports preserve CMS edits, existing tracks and saved home on repe
  }finally{db.close();fs.rmSync(dir,{recursive:true,force:true});}
 });
 test('all imported tracks fit detailed terrain and have usable profiles',()=>{
- const expectedMiles={'downieville-original':16.18,'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell-hard-way':23.64,'mt-elwell-not-so-easy':12.70,'buzzards-roost-ridge':12.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
+ const expectedMiles={'downieville-adventure-mode':22.28,'downieville-original':16.18,'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell-hard-way':23.64,'mt-elwell-not-so-easy':12.70,'buzzards-roost-ridge':12.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
  for(const {id,terrain,track} of JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')))){
   const route=JSON.parse(fs.readFileSync(path.join(root,`data/${track}`)));
   assert.ok(Math.abs(trackStats(route).distance/1609.344-expectedMiles[id])<.1,id);
