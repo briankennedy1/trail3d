@@ -28,4 +28,24 @@ export function importCuratedRides(db,root,saveTrack){
       db.exec('COMMIT');
     }catch(error){db.exec('ROLLBACK');throw error;}
   }
+  // Add newly supplied access links to older imports once, without replaying
+  // their track import or replacing any subsequent CMS edits.
+  for(const ride of rides){
+    const fields=['startMapsUrl','finishMapsUrl','sameStartFinish'];
+    if(!fields.some(f=>ride.details[f]!=null))continue;
+    const key=`curated-access-v1:${ride.id}`;
+    if(db.prepare('SELECT key FROM settings WHERE key=?').get(key))continue;
+    const row=db.prepare('SELECT content_json FROM entries WHERE id=?').get(ride.id);if(!row)continue;
+    const before=JSON.parse(row.content_json),after={...before};
+    for(const f of fields)if(before[f]===undefined&&ride.details[f]!==undefined)after[f]=ride.details[f];
+    const now=new Date().toISOString();db.exec('BEGIN IMMEDIATE');
+    try{
+      if(JSON.stringify(before)!==JSON.stringify(after)){
+        db.prepare('UPDATE entries SET content_json=?,version=version+1,updated_at=? WHERE id=?').run(JSON.stringify(after),now,ride.id);
+        db.prepare('INSERT INTO audit_log(action,entry_id,before_json,after_json,created_at) VALUES(?,?,?,?,?)').run('ride-access-links',ride.id,JSON.stringify(before),JSON.stringify(after),now);
+      }
+      db.prepare('INSERT INTO settings VALUES(?,?,NULL)').run(key,JSON.stringify({importedAt:now}));
+      db.exec('COMMIT');
+    }catch(error){db.exec('ROLLBACK');throw error;}
+  }
 }

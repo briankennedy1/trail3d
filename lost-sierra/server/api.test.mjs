@@ -16,6 +16,17 @@ test('persistent guide and authenticated publishing',async t=>{
  await t.test('public cannot edit or export',async()=>{assert.equal((await call('admin/entries')).status,401);assert.equal((await call('admin/entries/beckwourth-peak')).status,401);assert.equal((await call('admin/export')).status,401);assert.equal((await call('admin/entries/beckwourth-peak','PUT',{})).status,401);});
  await t.test('one-time setup requires secret and same origin',async()=>{assert.equal((await call('setup','POST',{username:'admin',password:'test-only-password',token:'wrong'})).status,403);assert.equal((await call('setup','POST',{username:'admin',password:'test-only-password',token:app.setupToken},{Origin:'https://other.example'})).status,403);const r=await call('setup','POST',{username:'admin',password:'test-only-password',token:app.setupToken});assert.equal(r.status,201);assert.match(r.cookie,/HttpOnly/);assert.match(r.cookie,/SameSite=Strict/);cookie=r.cookie.split(';')[0];assert.equal((await call('setup','POST',{})).status,409);assert.equal(fs.existsSync(path.join(dir,'setup-token')),false);});
  let ride=(await call('admin/entries')).body.entries.find(e=>e.id==='beckwourth-peak');
+ await t.test('start and finish map links persist and a loop needs only one URL',async()=>{
+   const buzz=(await call('catalog')).body.entries.find(e=>e.id==='buzzards-roost-ridge');
+   assert.equal(buzz.startMapsUrl,'https://maps.app.goo.gl/dMWgUQ9zvk9EmSez5');assert.equal(buzz.sameStartFinish,true);assert.equal(buzz.finishMapsUrl,null);
+   let saved=await call('admin/entries/'+ride.id,'PUT',{...ride,startMapsUrl:'https://maps.app.goo.gl/start',finishMapsUrl:'https://maps.app.goo.gl/finish',sameStartFinish:false});
+   assert.equal(saved.status,200);ride=saved.body.entry;
+   await app.close();await start();
+   const published=(await call('catalog')).body.entries.find(e=>e.id===ride.id);
+   assert.equal(published.startMapsUrl,ride.startMapsUrl);assert.equal(published.finishMapsUrl,ride.finishMapsUrl);assert.equal(published.sameStartFinish,false);
+   saved=await call('admin/entries/'+ride.id,'PUT',{...ride,finishMapsUrl:'',sameStartFinish:true});
+   assert.equal(saved.status,200);ride=saved.body.entry;assert.equal(ride.sameStartFinish,true);assert.equal(ride.finishMapsUrl,'');
+ });
  await t.test('CMS exposes original source, track metadata and saved viewer settings',async()=>{
    let detail=await call('admin/entries/'+ride.id);
    assert.equal(detail.status,200);assert.equal(detail.body.original.id,ride.id);
@@ -36,6 +47,9 @@ test('persistent guide and authenticated publishing',async t=>{
 test('data validation rejects unsafe URLs and malformed or out-of-region tracks',()=>{
  const entry={id:'test',kind:'ride',name:'Test',area:'Portola',status:'draft',coordinates:{lat:39.8,lng:-120.45}};
  assert.throws(()=>validateEntry({...entry,routeUrl:'javascript:alert(1)'}));
+ assert.throws(()=>validateEntry({...entry,startMapsUrl:'javascript:alert(1)'}));
+ assert.throws(()=>validateEntry({...entry,finishMapsUrl:'data:text/html,unsafe'}));
+ assert.throws(()=>validateEntry({...entry,sameStartFinish:'true'}));
  assert.throws(()=>validateEntry({...entry,coordinates:{lat:null,lng:-120.45}}));
  assert.throws(()=>trackStats({type:'LineString',coordinates:[[-120,38],[-120,39]]}));
  assert.throws(()=>trackStats({type:'LineString',coordinates:[[-120.4,39.8],[-120.5,40.1]]}));
