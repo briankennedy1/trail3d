@@ -154,7 +154,7 @@ try{
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
   const initial=new URLSearchParams(location.search).get('ride');
-  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},});await map.init(filtered(),overviewHome.home);if(!initial)showOverviewSettings();if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
+  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},onRide:id=>selectEntry(id)});await map.init(filtered(),overviewHome.home);if(!initial)showOverviewSettings();if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
   if(initial){
     // Shared links and refreshes open at the saved home view, with no overview
     // flash or crumble. Only an in-page ride selection makes the approach.

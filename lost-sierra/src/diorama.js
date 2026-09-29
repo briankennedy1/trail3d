@@ -19,8 +19,8 @@ function surfaceElevation(d,lon,lat){
   return (u+v<=1?a+(b-a)*u+(c-a)*v:e+(c-e)*(1-u)+(b-e)*(1-v))/d.scale;
 }
 export class Diorama {
-  constructor(element,labels,{onArea}) {
-    Object.assign(this,{element,labels,onArea});
+  constructor(element,labels,{onArea,onRide}) {
+    Object.assign(this,{element,labels,onArea,onRide});
     this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.scene=new THREE.Scene();
     this.camera=new THREE.OrthographicCamera(-1,1,1,-1,.05,1200);
@@ -41,6 +41,7 @@ export class Diorama {
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.controls.update();
     this.chunks=[];this.markers=[];this.crumble=0;this.crumbleTarget=0;this.active=null;
     this.overviewRoute=new THREE.Group();this.scene.add(this.overviewRoute);
+    this.setupRoutePopup();
     this.routeGroup=new THREE.Group();this.scene.add(this.routeGroup);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(element);this.resize();
     this.last=performance.now();this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);
@@ -50,13 +51,77 @@ export class Diorama {
   async init(entries,savedHome){
     [this.region,this.beck]=await Promise.all([dataset('region'),dataset('beckwourth')]);
     const rb=this.region.bbox;const center=world((rb.west+rb.east)/2,(rb.south+rb.north)/2,1400);this.home.target.copy(center);this.home.position.copy(center).add(new THREE.Vector3(-75,105,-135).multiplyScalar(Math.max((rb.north-rb.south)*Z,(rb.east-rb.west)*X)/111.32));this.camera.position.copy(this.home.position);this.controls.target.copy(center);
-    this.buildTerrain(this.region,16,false);
+    this.overviewTerrain=this.buildTerrain(this.region,16,false);
     this.detailTerrain=this.buildTerrain(this.beck,Math.max(this.beck.width,this.beck.height),true);this.detailTerrain.visible=false;
     if(savedHome)this.setHome(savedHome);
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;this.controls.update();this.projection();
     this.setEntries(entries);
     const beckwourth=entries.find(entry=>entry.id==='beckwourth-peak'&&entry.hasTrack);
     if(beckwourth)await this.loadOverviewRoute(beckwourth);
+  }
+  setupRoutePopup(){
+    const canvas=this.renderer.domElement,popup=document.createElement('a');
+    popup.className='overview-route-popup';popup.hidden=true;
+    popup.innerHTML='<strong></strong><span class="overview-route-meta"></span><span class="overview-route-open">Explore ride <span aria-hidden="true">→</span></span>';
+    this.element.parentElement.append(popup);this.routePopup=popup;
+    const raycaster=new THREE.Raycaster();raycaster.params.Line2={threshold:9};this.routeRaycaster=raycaster;
+    const scheduleHide=()=>{clearTimeout(this.routePopupTimer);this.routePopupTimer=setTimeout(()=>{if(!popup.matches(':hover')&&!popup.contains(document.activeElement))this.hideRoutePopup();},250);};
+    canvas.addEventListener('pointermove',event=>{
+      if(event.buttons){if(this.routePress&&Math.hypot(event.clientX-this.routePress.x,event.clientY-this.routePress.y)>6)this.routePress.dragged=true;this.hideRoutePopup();return;}
+      this.routePointer={x:event.clientX,y:event.clientY};
+    });
+    canvas.addEventListener('pointerleave',()=>{this.routePointer=null;scheduleHide();});
+    canvas.addEventListener('pointerdown',event=>{
+      if(event.button!==0)return;
+      const hit=this.hitOverviewRoute(event.clientX,event.clientY);
+      this.routePress=hit?{x:event.clientX,y:event.clientY,open:!popup.hidden,dragged:false}:null;
+      if(hit)this.showRoutePopup(hit);else this.hideRoutePopup();
+    });
+    canvas.addEventListener('pointerup',event=>{
+      const press=this.routePress;this.routePress=null;
+      if(!press||press.dragged||Math.hypot(event.clientX-press.x,event.clientY-press.y)>6)return;
+      const hit=this.hitOverviewRoute(event.clientX,event.clientY);if(!hit)return;
+      if(press.open){this.hideRoutePopup();this.onRide?.(this.overviewRouteEntry);}else this.showRoutePopup(hit);
+    });
+    canvas.addEventListener('pointercancel',()=>{this.routePress=null;this.hideRoutePopup();});
+    canvas.addEventListener('wheel',()=>this.hideRoutePopup(),{passive:true});
+    popup.addEventListener('pointerenter',()=>clearTimeout(this.routePopupTimer));
+    popup.addEventListener('pointerleave',scheduleHide);
+    popup.addEventListener('focus',()=>clearTimeout(this.routePopupTimer));
+    popup.addEventListener('blur',scheduleHide);
+    popup.addEventListener('keydown',event=>{if(event.key==='Escape')this.hideRoutePopup();});
+    popup.addEventListener('click',event=>{
+      if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+      event.preventDefault();this.hideRoutePopup();this.onRide?.(this.overviewRouteEntry);
+    });
+    this.controls.addEventListener('start',()=>{this.routePointer=null;});
+  }
+  hitOverviewRoute(x,y){
+    if(this.suspended||this.active||!this.overviewRoute.visible||!this.overviewRoute.children.length)return null;
+    const rect=this.renderer.domElement.getBoundingClientRect();
+    const raycaster=this.routeRaycaster;raycaster.setFromCamera(new THREE.Vector2((x-rect.left)/rect.width*2-1,1-(y-rect.top)/rect.height*2),this.camera);
+    const hit=raycaster.intersectObject(this.overviewRoute.children.at(-1),false)[0];if(!hit)return null;
+    const point=hit.pointOnLine||hit.point;
+    // Match terrain occlusion: a route behind a mountain cannot trigger a popup.
+    const projected=point.clone().project(this.camera);raycaster.setFromCamera(new THREE.Vector2(projected.x,projected.y),this.camera);
+    const ground=raycaster.intersectObject(this.overviewTerrain,true)[0];
+    if(ground&&ground.distance+.025<point.clone().sub(raycaster.ray.origin).dot(raycaster.ray.direction))return null;
+    return point;
+  }
+  showRoutePopup(point){
+    clearTimeout(this.routePopupTimer);this.routePopupTimer=null;this.routePopupPoint=point.clone();this.routePopup.hidden=false;
+    this.renderer.domElement.style.cursor='pointer';this.positionRoutePopup();
+  }
+  hideRoutePopup(){
+    clearTimeout(this.routePopupTimer);this.routePopupTimer=null;this.routePopup.hidden=true;this.routePopupPoint=null;this.routePointer=null;
+    this.renderer.domElement.style.cursor='';
+  }
+  positionRoutePopup(){
+    if(!this.routePopupPoint)return;
+    const p=this.routePopupPoint.clone().project(this.camera),w=this.element.clientWidth,h=this.element.clientHeight;
+    const popup=this.routePopup,width=popup.offsetWidth,height=popup.offsetHeight;
+    popup.style.left=`${clamp((p.x*.5+.5)*w-width/2,12,Math.max(12,w-width-12))}px`;
+    popup.style.top=`${clamp((-.5*p.y+.5)*h-height-14,12,Math.max(12,h-height-12))}px`;
   }
   async loadOverviewRoute(entry){
     try{
@@ -76,6 +141,9 @@ export class Diorama {
         line.renderOrder=order;line.frustumCulled=false;this.overviewRoute.add(line);
       }
       this.overviewRouteEntry=entry.id;
+      this.routePopup.href=`/?ride=${encodeURIComponent(entry.id)}`;
+      this.routePopup.querySelector('strong').textContent=entry.name;
+      this.routePopup.querySelector('.overview-route-meta').textContent=[entry.area,entry.intensity].filter(Boolean).join(' · ');
     }catch(error){console.warn('Could not show Beckwourth Peak on the overview:',error);}
   }
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
@@ -203,7 +271,7 @@ export class Diorama {
   north(){const offset=this.camera.position.clone().sub(this.controls.target),radius=offset.length();if(Math.abs(Math.atan2(offset.x,offset.z))<.02){const pose=this.active?this.focusPose:this.home;this.move(pose.target,pose.position,1.5,pose.zoom||1);}else this.move(this.controls.target,this.controls.target.clone().add(new THREE.Vector3(0,radius*.68,radius*.733)),1.5);}
   control(action,dt){this.tween=null;const offset=this.camera.position.clone().sub(this.controls.target);if(action==='left'||action==='right')offset.applyAxisAngle(new THREE.Vector3(0,1,0),(action==='left'?1:-1)*dt*.8);else{const spherical=new THREE.Spherical().setFromVector3(offset);spherical.phi=clamp(spherical.phi+(action==='up'?-1:1)*dt*.6,.55,1.35);offset.setFromSpherical(spherical);}this.camera.position.copy(this.controls.target).add(offset);}
   frame(now){requestAnimationFrame(this.frame);const dt=Math.min((now-this.last)/1000,.05);this.last=now;
-    if(this.suspended)return;
+    if(this.suspended){this.hideRoutePopup();return;}
     const speed=this.reduced?8:.57;this.crumble+=Math.sign(this.crumbleTarget-this.crumble)*Math.min(Math.abs(this.crumbleTarget-this.crumble),dt*speed);
     this.overviewRoute.visible=!this.active&&this.crumble<.02&&this.entries?.some(entry=>entry.id===this.overviewRouteEntry);
     if(this.region){
@@ -213,6 +281,13 @@ export class Diorama {
     if(this.held)this.control(this.held,dt);
     if(this.tween){const t=this.tween,p=clamp((now-t.start)/1000/t.duration),s=ease(p);this.camera.zoom=THREE.MathUtils.lerp(t.fromZoom,t.zoom,s);this.camera.position.lerpVectors(t.from,t.to,s);this.controls.target.lerpVectors(t.fromTarget,t.target,s);if(p>=1)this.tween=null;}
     this.controls.update();this.projection();
+    if(!this.overviewRoute.visible||this.held||this.tween)this.hideRoutePopup();
+    else if(this.routePointer){
+      const pointer=this.routePointer;this.routePointer=null;const hit=this.hitOverviewRoute(pointer.x,pointer.y);
+      if(hit)this.showRoutePopup(hit);
+      else if(!this.routePopup.hidden&&!this.routePopupTimer)this.routePopupTimer=setTimeout(()=>{this.routePopupTimer=null;if(!this.routePopup.matches(':hover')&&!this.routePopup.contains(document.activeElement))this.hideRoutePopup();},250);
+    }
+    if(!this.routePopup.hidden)this.positionRoutePopup();
     const needle=document.querySelector('#compass-needle');if(needle){const delta=this.camera.position.clone().sub(this.controls.target);needle.style.transform=`rotate(${Math.atan2(delta.x,delta.z)}rad)`;}
     const boxes=[];
     for(const marker of this.markers){

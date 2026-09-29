@@ -52,3 +52,6 @@
 .ride-settings-menu button:hover{background:#e7eee8}.ride-settings-menu p{margin:8px 10px 5px;font-size:10px;line-height:1.5;color:#68716c}
 
 @media(max-width:700px){.ride-settings{right:14px;bottom:14px}}
+
+.overview-route-popup{position:absolute;z-index:4;display:flex;flex-direction:column;gap:5px;min-width:190px;max-width:calc(100% - 24px);padding:14px 16px;border:1px solid #d8d1be;border-radius:12px;background:#fffaf0;box-shadow:0 8px 24px #30362924;color:#315653;text-decoration:none;cursor:pointer}
+.overview-route-popup strong{font:600 19px/1.2 Fraunces,Georgia,serif}.overview-route-meta{font-size:11px;color:#68716c}.overview-route-open{display:flex;justify-content:space-between;margin-top:6px;font-size:12px;font-weight:600;color:#b95a37}.overview-route-popup:hover{border-color:#b95a37}
