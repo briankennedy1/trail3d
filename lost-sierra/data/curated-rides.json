@@ -752,7 +752,7 @@
   {
     "id": "mills-peak-shuttle",
     "entry": {
-      "name": "Mills Peak Shuttle",
+      "name": "Mills Peak Highway Shuttle",
       "kind": "ride",
       "area": "Lakes Basin",
       "status": "published"
@@ -779,6 +779,51 @@
       "shuttleOption": "yes",
       "sameStartFinish": false,
       "startMapsUrl": "https://www.google.com/maps?q=39.68444,-120.64052",
+      "finishMapsUrl": "https://www.google.com/maps?q=39.7536,-120.5991",
+      "rideFamily": {
+        "id": "mills-peak",
+        "name": "Mills Peak",
+        "option": "Highway Shuttle",
+        "order": 0
+      }
+    }
+  },
+  {
+    "id": "mills-peak-shuttle-from-the-top",
+    "entry": {
+      "name": "Mills Peak \u2014 Shuttle From the Top",
+      "kind": "ride",
+      "area": "Lakes Basin",
+      "status": "published"
+    },
+    "terrain": "/terrain/mills-peak-shuttle-from-the-top",
+    "track": "routes/mills-peak-shuttle-from-the-top.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.70428,
+        "lng": -120.62317
+      },
+      "routeUrl": "https://www.trailforks.com/routeplan/view/785881/",
+      "incomplete": false,
+      "summary": "A mostly downhill shuttle ride from the top of Mills Peak.",
+      "notes": "Start at the upper Mills Peak trail and descend via Mills Peak Trail and Mills Peak (Lower). This option skips the longer road approach of the standard shuttle.\n\nArrange transportation between the separate start and finish. Trailforks estimates approximately 2h 21m of moving time.",
+      "viewer": {
+        "pointsOfInterest": []
+      },
+      "climbingFt": 171,
+      "descendingFt": 3044,
+      "movingMinutes": 141,
+      "movingTimeEstimated": true,
+      "rideFamily": {
+        "id": "mills-peak",
+        "name": "Mills Peak",
+        "option": "Shuttle From the Top",
+        "order": 1
+      },
+      "intensity": "Challenging",
+      "shuttleOption": "yes",
+      "sameStartFinish": false,
+      "startMapsUrl": "https://www.google.com/maps?q=39.70428,-120.62317",
       "finishMapsUrl": "https://www.google.com/maps?q=39.7536,-120.5991"
     }
   }

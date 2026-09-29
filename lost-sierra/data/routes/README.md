@@ -124,3 +124,11 @@ Rider-confirmed corrections in `../route-surface-overrides.json` mark Original a
 [Trailforks plan 785873](https://www.trailforks.com/routeplan/view/785873/), exported September 29, 2026. All 1,353 XY points are preserved (12.44 miles calculated; Trailforks displays 12.43). Source totals: 1,007 ft climbing, 3,083 ft descending, estimated 2h 45m.
 
 The shuttle GPX contains zero elevation placeholders, replaced with AWS/USGS terrain samples. OSM matching identifies 9.64 miles singletrack, 2.12 dirt road, 0.40 asphalt and 0.29 unverified; this is map-derived classification, not rider confirmation. Start/finish Maps links use the route endpoints, not separately verified parking lots. Challenging intensity is inherited from the previous Mills Peak guide.
+
+### Shuttle From the Top
+
+`mills-peak-shuttle-from-the-top` is the second option in the `mills-peak` family, alongside `mills-peak-shuttle` (**Highway Shuttle**). The archived full-pedal ride remains archived.
+
+Imported from [Trailforks plan 785881](https://www.trailforks.com/routeplan/view/785881/) on September 29, 2026. All 977 XY points are preserved: 9.24 miles calculated, 9.23 displayed by Trailforks; source totals are 171 ft climbing, 3,044 ft descending, estimated 2h 21m. Zero GPX elevations were replaced with AWS/USGS terrain samples. Endpoint Maps links identify the supplied start and finish, not separately verified parking lots. Challenging intensity follows the existing Mills Peak guide. OSM surface matching estimates 8.56 miles singletrack, 0.40 asphalt and 0.29 unverified.
+
+The one-time `curated-family-v2` migration adds missing family metadata to previously imported routes without changing saved camera views, tracks, notes or explicit CMS family choices.
