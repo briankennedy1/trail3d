@@ -87,7 +87,7 @@ export class Diorama {
       for(const label of data.labels){
         const [lon,lat]=label.coordinates,element=document.createElement('span');
         element.className='map-marker river-marker';element.textContent=label.name;this.labels.append(element);
-        this.riverMarkers.push({element,position:point(lon,lat)});
+        this.riverMarkers.push({element,position:point(lon,lat),offsetX:label.offsetX||0});
       }
     }catch(error){console.warn('Could not show the Feather River:',error);}
   }
@@ -383,7 +383,7 @@ export class Diorama {
     const boxes=[];
     for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers]){
       if(this.active||((this.highwayMarkers.includes(marker)||this.riverMarkers.includes(marker))&&!this.highways.visible)){marker.element.style.display='none';continue;}
-      const p=marker.position.clone().project(this.camera);const w=this.element.clientWidth,h=this.element.clientHeight,x=(p.x*.5+.5)*w,y=(-p.y*.5+.5)*h;
+      const p=marker.position.clone().project(this.camera);const w=this.element.clientWidth,h=this.element.clientHeight,x=(p.x*.5+.5)*w+(marker.offsetX||0),y=(-p.y*.5+.5)*h;
       const visible=p.z>-1&&p.z<1&&x>20&&x<w-20&&y>45&&y<h-(marker.destination?25:85);
       const width=marker.element.offsetWidth||90;const rect={x:x-width/2,y:y-25,w:width,h:32};const overlap=boxes.some(b=>rect.x<b.x+b.w&&rect.x+rect.w>b.x&&rect.y<b.y+b.h&&rect.y+rect.h>b.y);
       marker.element.style.display=visible&&!overlap?'flex':'none';marker.element.style.left=`${x}px`;marker.element.style.top=`${y}px`;if(visible&&!overlap)boxes.push(rect);
