@@ -748,6 +748,13 @@ export async function mountRideViewer(options: RideViewerOptions) {
   last = performance.now();
   animation = requestAnimationFrame(frame);
   return {
+    captureFrame(): HTMLCanvasElement {
+      renderer.render(scene, camera);
+      const frame = document.createElement('canvas');
+      frame.width = renderer.domElement.width; frame.height = renderer.domElement.height;
+      frame.getContext('2d')!.drawImage(renderer.domElement, 0, 0);
+      return frame;
+    },
     captureHome(): HomeView {
       // Clear playback framing without changing the visible camera composition.
       pauseForManualView();

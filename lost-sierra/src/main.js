@@ -92,7 +92,7 @@ const surfaceKey=types=>{
   return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap, with rider-confirmed corrections. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
 };
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
-let closeRide=()=>{},returnToOverview=null,returning=false;
+let closeRide=()=>{},captureRideTransition=null,returnToOverview=null,returning=false;
 let settingsContext=null,overviewHome={version:0};
 const regionalControls=$('.map-controls');
 $('.masthead').id='masthead';$('.sidebar').id='ride-card';
@@ -187,19 +187,38 @@ async function reset(push=true){
 async function selectEntry(id,push=true,animate=true){
   const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
   map?.highlightOverviewRoute(null);
+  const transition=!animate?captureRideTransition?.():null;
+  if(transition){
+    transition.frame.className='ride-transition-frame';$('#canvas').append(transition.frame);
+  }
   const token=++selection;closeRide();settingsContext=null;renderSettings();track=null;
-  $('#browse').hidden=true;$('#detail').hidden=false;$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
+  if(transition){document.body.classList.add('ride-open');$('#map-labels').hidden=true;if(map)map.suspended=true;}
+  $('#browse').hidden=true;$('#detail').hidden=false;
+  if(!transition)$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
+  else if($('#family-option'))$('#family-option').disabled=true;
   if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
-  if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection)return;track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
-  if(token!==selection)return;
-  if(track){await openRide(entry,track,token,animate);return;}
+  if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection){transition?.frame.remove();return;}track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
+  if(token!==selection){transition?.frame.remove();return;}
+  if(track){
+    try{await openRide(entry,track,token,animate,transition);}
+    finally{
+      if(transition){
+        if(token===selection&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
+          await transition.frame.animate([{opacity:1},{opacity:0}],{duration:420,easing:'ease-in-out',fill:'forwards'}).finished.catch(()=>{});
+        transition.frame.remove();
+      }
+    }
+    return;
+  }
+  transition?.frame.remove();
   renderDetail(entry);await map?.select(entry,null,animate);
   $('#map-kicker').textContent=entry.area.toUpperCase();$('#map-title').textContent=entry.name;$('#map-status').textContent=track?'A closer look. Drag to explore.': 'Approximate area location · add a GPS track for the full route';
   $('.sidebar').scrollTop=0;
 }
-async function openRide(entry,rideTrack,token,animate=true){
+async function openRide(entry,rideTrack,token,animate=true,transition=null){
   const controller=new AbortController();let viewer,canvas,controls,context,cardResizeAnimation,panelMoveAnimation;
   closeRide=()=>{
+    captureRideTransition=null;
     returnToOverview=null;cardResizeAnimation?.cancel();panelMoveAnimation?.cancel();controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
     controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
@@ -226,7 +245,7 @@ async function openRide(entry,rideTrack,token,animate=true){
       ],{duration:280,easing:timing.easing});
     };
   }
-  $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p class="muted" role="status">Opening the ride…</p>';
+  if(!transition)$('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p class="muted" role="status">Opening the ride…</p>';
   $('#back').onclick=()=>reset();
   try{
     const base=await prepareRide(entry,rideTrack,controller.signal);
@@ -241,6 +260,15 @@ async function openRide(entry,rideTrack,token,animate=true){
       viewer?.dispose();canvas?.remove();context?.dispose();context=null;
       const variant=rideVariant(entry,rideTrack,base,mode),options=variant.options,display=variant.entry;
       if(initialView)options.initialView=initialView;
+      else if(first&&transition){
+        // Preserve the same geographic camera framing across differently cropped terrain.
+        const old=transition.map,next=options.data.map;
+        const lon=(old.bbox.west+old.bbox.east-next.bbox.west-next.bbox.east)/2;
+        const lat=(old.bbox.south+old.bbox.north-next.bbox.south-next.bbox.north)/2;
+        const dx=lon*111320*Math.cos((next.bbox.south+next.bbox.north)*Math.PI/360)/100,dz=-lat*111320/100;
+        const shift=v=>[v[0]+dx,v[1],v[2]+dz];
+        options.initialView={...transition.view,zoom:transition.view.zoom*(options.scale??1)/transition.scale,position:shift(transition.view.position),target:shift(transition.view.target)};
+      }
       options.home=entry.viewer?.home||base.home;
       const separateParking=display.sameStartFinish===false;
       const original=entry.id==='beckwourth-peak'&&mode==='loop';
@@ -294,6 +322,7 @@ async function openRide(entry,rideTrack,token,animate=true){
       $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
       $('#map-labels').hidden=true;
       canvas.classList.add('ready');
+      captureRideTransition=()=>({view:viewer.captureHome(),frame:viewer.captureFrame(),map:options.data.map,scale:options.scale??1});
       if(map)returnToOverview=()=>{
         controls.inert=true;
         map.reset(false);

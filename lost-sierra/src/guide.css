@@ -56,6 +56,7 @@
 /* The shared original ride renderer lives in the same map and card. */
 #canvas .ride-scene{position:absolute;inset:0;width:100%;height:100%;touch-action:none;opacity:0;pointer-events:none}
 #canvas .ride-scene.ready{opacity:1;pointer-events:auto}
+#canvas .ride-transition-frame{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 .guide-page .stats strong{display:block;font:600 24px/1 Fraunces,Georgia,serif;color:#b95a37}
 @media(max-width:700px){.guide-page .stats strong{font-size:20px}}
 .ride-content{position:relative;isolation:isolate;min-height:220px}
