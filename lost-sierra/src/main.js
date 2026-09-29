@@ -1,5 +1,6 @@
 import './style.css';
 import './guide.css';
+import './ride-card.css';
 import { Diorama } from './diorama.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
 import { rideVariant, shuttleStartIndex } from './ride-variants.js';
@@ -277,7 +278,7 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
       const separateParking=display.sameStartFinish===false;
       const original=entry.id==='beckwourth-peak'&&mode==='loop';
       const climbing=original?'2,083':number(display.climbingFt??(mode==='loop'&&rideTrack.properties.ascentM!=null?rideTrack.properties.ascentM*3.28084:null));
-      $('#detail').innerHTML=`${mustRideBanner(entry)}<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.rideFamily?.name||entry.name)}</h2>
+      $('#detail').innerHTML=`${mustRideBanner(entry)}<div class="ride-meta-row"><button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p></div><h2>${escape(entry.rideFamily?.name||entry.name)}</h2>
         ${familyPicker(entry)}
         ${hasShuttle?`<div class="ride-mode" role="group" aria-label="Ride option"><button type="button" data-mode="loop" aria-pressed="${mode==='loop'}">↻ Loop</button><button type="button" data-mode="shuttle" aria-pressed="${mode==='shuttle'}">↗ Shuttle</button></div>`:''}
         ${intensityDisplay(display)}
