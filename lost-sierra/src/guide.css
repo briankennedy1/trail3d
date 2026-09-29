@@ -113,6 +113,7 @@
 
 .guide-page .highway-destination{font-size:10px;font-weight:600;pointer-events:none}
 @media(max-width:700px){.guide-page .map-caption{display:block;top:64px;bottom:auto;left:19px;z-index:2}.guide-page #credits-dialog{padding:24px}.credits-list{gap:12px}}
+@media(max-width:700px){.guide-page:has(.region-title:not([hidden])):not(.ride-open) .map-caption{top:86px}}
 
 .ride-mode{display:flex;gap:3px;padding:4px;margin:14px 0 2px;border:1px solid rgba(75,62,44,.18);border-radius:10px;background:rgba(110,87,51,.06)}
 .ride-mode button{flex:1;border:0;border-radius:7px;padding:9px 12px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:650;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s}
