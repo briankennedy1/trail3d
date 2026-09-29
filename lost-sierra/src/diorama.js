@@ -114,7 +114,7 @@ export class Diorama {
       }
       // Direction labels sit just inside the highway exits, so they remain readable
       // above the diorama edge instead of being clipped by the viewport.
-      for(const [route,name,axis,direction] of [[70,'To Reno',0,1],[89,'To Truckee',1,-1]]){
+      for(const [route,name,axis,direction] of [[70,'To Reno',0,1],[89,'To Truckee',1,-1],[89,'To Susanville',1,1]]){
         const points=data.features.filter(feature=>feature.properties.route===route).flatMap(feature=>feature.geometry.coordinates);
         const edge=points.reduce((a,b)=>direction*b[axis]>direction*a[axis]?b:a);
         const target=edge[axis]-direction*.025;
