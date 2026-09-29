@@ -1,4 +1,5 @@
 import { BECKWOURTH_VIEW } from '../../src/beckwourth-preset';
+import { PEAK_FLAG_COLOR } from '../../src/poi-colors';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const input=(name,label,value,type='number')=>`<label class="field">${label}<input name="${name}" type="${type}" ${type==='number'?'step="any"':''} value="${esc(value)}"></label>`;
 export function viewerEditor(entry){
@@ -27,7 +28,7 @@ export function wireViewer(entry,onChange){
   };
   draw();
   for(const id of ['custom-home','custom-flags','custom-beats'])form.querySelector('#'+id).onchange=()=>{sync();onChange();};
-  form.querySelector('#add-flag').onclick=()=>{flags=collectFlags();flags.push({name:'',color:'#c8613d',latitude:entry.coordinates.lat,longitude:entry.coordinates.lng});draw();onChange();};
+  form.querySelector('#add-flag').onclick=()=>{flags=collectFlags();flags.push({name:'',color:PEAK_FLAG_COLOR,latitude:entry.coordinates.lat,longitude:entry.coordinates.lng});draw();onChange();};
   return ()=>{
     const viewer={};
     for(const key of ['scale','baseElevation']){const value=form.elements[`viewer.${key}`].value;if(value.trim())viewer[key]=Number(value);}
