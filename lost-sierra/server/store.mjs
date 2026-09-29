@@ -51,7 +51,7 @@ export function rowEntry(row) {
 export function listEntries(db,admin=false) {
   return db.prepare(`SELECT e.*, EXISTS(SELECT 1 FROM tracks t WHERE t.entry_id=e.id) AS has_track FROM entries e ${admin?'':"WHERE e.status='published'"} ORDER BY area,name`).all().map(rowEntry);
 }
-const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl','sameStartFinish','climbingFt','descendingFt','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer'];
+const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl','sameStartFinish','climbingFt','descendingFt','movingMinutes','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer'];
 export function validateHome(home) {
   const vector=a=>Array.isArray(a)&&a.length===3&&a.every(n=>Number.isFinite(n)&&Math.abs(n)<100000);
   if(!home||!vector(home.position)||!vector(home.target)||!Number.isFinite(home.zoom)||home.zoom<.65||home.zoom>22)
@@ -70,7 +70,7 @@ export function validateEntry(input) {
   if(!Number.isFinite(lat)||!Number.isFinite(lng)||(input.status==='published'&&(lat<bounds.south||lat>bounds.north||lng<bounds.west||lng>bounds.east))||lat< -90||lat>90||lng< -180||lng>180) fail(`The location must be within this Lost Sierra map (${bounds.south}–${bounds.north}° N, ${-bounds.west}–${-bounds.east}° W).`);
   const result={id:input.id,kind:input.kind,name:input.name.trim(),area:input.area.trim(),status:input.status,coordinates:{lat,lng}};
   for(const f of fields) if(input[f]!==undefined) result[f]=input[f];
-  for(const f of ['driveMinutes','climbingFt','descendingFt']) if(result[f]!=null && (!Number.isFinite(result[f])||result[f]<0||result[f]>100000)) fail(`Invalid ${f}.`);
+  for(const f of ['driveMinutes','climbingFt','descendingFt','movingMinutes']) if(result[f]!=null && (!Number.isFinite(result[f])||result[f]<0||result[f]>100000)) fail(`Invalid ${f}.`);
   for(const f of ['bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl']) if(result[f]) {
     try { if(!['https:','http:'].includes(new URL(result[f]).protocol)) throw 0; } catch { fail(`Use a full http or https URL for ${f}.`); }
   }

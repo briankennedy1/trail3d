@@ -21,6 +21,12 @@ const accessLinks=e=>{
   return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking'));
 };
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
+const movingTime=e=>{
+  const value=e.movingMinutes??(e.id==='beckwourth-peak'?121:null);
+  if(value==null||!Number.isFinite(value))return '—';
+  const minutes=Math.round(value);
+  return `${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}`;
+};
 const surfaceKey=types=>{
   const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt road / doubletrack',unknown:'Unverified'};
   return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
@@ -112,7 +118,7 @@ async function openRide(entry,rideTrack,token,animate=true){
     const original=entry.id==='beckwourth-peak';
     const climbing=original?'2,083':number(entry.climbingFt??(rideTrack.properties.ascentM==null?null:rideTrack.properties.ascentM*3.28084));
     $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
-      <div class="stats"><div><strong id="ride-distance">—</strong><span>miles</span></div><div><strong>${climbing}</strong><span>ft climbing</span></div><div><strong>${original?'2:01':number(entry.descendingFt??(rideTrack.properties.descentM==null?null:rideTrack.properties.descentM*3.28084))}</strong><span>${original?'moving time':'ft descending'}</span></div></div>
+      <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(entry)}</strong><span>Moving Time</span></div></div>
       <div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
       <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
       ${surfaceKey(options.surfaceTypes)}
@@ -163,7 +169,7 @@ async function openRide(entry,rideTrack,token,animate=true){
 }
 function renderDetail(e){
   const distance='—';
-  const stats=e.kind==='ride'?`<div class="stats"><div><b>${distance}</b><span>MILES</span></div><div><b>${number(e.climbingFt)}</b><span>FT CLIMB · PLANNER</span></div><div><b>${number(e.descendingFt)}</b><span>FT DESCENT · PLANNER</span></div></div>`:'';
+  const stats=e.kind==='ride'?`<div class="stats"><div><b>${distance}</b><span>Miles</span></div><div><b>${number(e.climbingFt)}</b><span>Climbing Ft</span></div><div><b>${movingTime(e)}</b><span>Moving Time</span></div></div>`:'';
   $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.name)}</h1><div class="entry-meta">${escape(e.intensity||e.type||'Explore')}</div><div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
   ${e.notes||e.summary?`<h3>Field notes</h3><p class="detail-copy">${escape(e.notes||e.summary)}</p>`:''}
   <div class="facts">${e.season?`<div class="fact-row"><span>Season</span><b>${escape(e.season)}</b></div>`:''}${e.driveMinutes!=null?`<div class="fact-row"><span>Drive from Everstoke</span><b>~${e.driveMinutes} min</b></div>`:''}${e.shuttleOption&&e.shuttleOption!=='no'?`<div class="fact-row"><span>Shuttle option</span><b>${e.shuttleOption==='partial'?'Partial':'Yes'}</b></div>`:''}${e.ebikeRecommended?'<p class="small muted">The planner recommends an e-bike. Confirm current e-bike access for each trail.</p>':''}</div>
