@@ -57,3 +57,6 @@
 
 .guide-page .highway-marker{display:block;width:38px;height:40px;padding:0;background:none;border:0;border-radius:0;pointer-events:none;box-shadow:none;filter:drop-shadow(0 2px 2px #263c3340)}
 .highway-marker::after{display:none}.highway-marker svg{display:block;width:100%;height:100%;overflow:visible}
+
+.guide-page .river-marker{padding:3px 5px;background:#f6efe0b8;border:0;box-shadow:none;border-radius:4px;color:#286a80;font-size:10px;font-style:italic;pointer-events:none}
+.river-marker::after{display:none}

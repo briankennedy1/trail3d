@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { TERRAIN_VERT, TERRAIN_FRAG, SIDE_VERT, SIDE_FRAG } from './terrain-shaders.js';
 THREE.ColorManagement.enabled=false;
 import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -40,6 +42,7 @@ export class Diorama {
     this.home={target:new THREE.Vector3(0,3,0),position:new THREE.Vector3(-90,125,-160)};
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.controls.update();
     this.chunks=[];this.markers=[];this.crumble=0;this.crumbleTarget=0;this.active=null;
+    this.rivers=new THREE.Group();this.scene.add(this.rivers);this.riverMarkers=[];
     this.highways=new THREE.Group();this.scene.add(this.highways);this.highwayMarkers=[];
     this.overviewRoute=new THREE.Group();this.scene.add(this.overviewRoute);
     this.setupRoutePopup();
@@ -58,7 +61,36 @@ export class Diorama {
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;this.controls.update();this.projection();
     this.setEntries(entries);
     const beckwourth=entries.find(entry=>entry.id==='beckwourth-peak'&&entry.hasTrack);
-    await Promise.all([this.loadHighways(),beckwourth?this.loadOverviewRoute(beckwourth):Promise.resolve()]);
+    await Promise.all([this.loadHighways(),this.loadRiver(),beckwourth?this.loadOverviewRoute(beckwourth):Promise.resolve()]);
+  }
+  async loadRiver(){
+    try{
+      const response=await fetch('/terrain/feather-river.geojson');if(!response.ok)throw Error('River data unavailable');
+      const data=await response.json(),segments=[];
+      const point=(lon,lat)=>world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.006,0));
+      for(const feature of data.features){
+        const coordinates=feature.geometry.coordinates;
+        for(let i=0;i<coordinates.length-1;i++){
+          const a=coordinates[i],b=coordinates[i+1],steps=Math.max(1,Math.ceil(Math.hypot((b[0]-a[0])*X,(b[1]-a[1])*Z)/.025));
+          let previous=point(...a);
+          for(let j=1;j<=steps;j++){
+            const t=j/steps,next=point(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t);
+            segments.push(...previous,...next);previous=next;
+          }
+        }
+      }
+      // Batch the individual NHD reaches into two draws, preserving gaps between branches.
+      for(const [color,width,order] of [[0xb2d6db,4.5,6],[0x4b99b3,2.6,7]]){
+        const geometry=new LineSegmentsGeometry();geometry.setPositions(segments);
+        const line=new LineSegments2(geometry,new LineMaterial({color,linewidth:width,transparent:true,opacity:.94,depthTest:true,depthWrite:false}));
+        line.renderOrder=order;line.frustumCulled=false;this.rivers.add(line);
+      }
+      for(const label of data.labels){
+        const [lon,lat]=label.coordinates,element=document.createElement('span');
+        element.className='map-marker river-marker';element.textContent=label.name;this.labels.append(element);
+        this.riverMarkers.push({element,position:point(lon,lat)});
+      }
+    }catch(error){console.warn('Could not show the Feather River:',error);}
   }
   async loadHighways(){
     try{
@@ -304,7 +336,7 @@ export class Diorama {
   frame(now){requestAnimationFrame(this.frame);const dt=Math.min((now-this.last)/1000,.05);this.last=now;
     if(this.suspended){this.hideRoutePopup();return;}
     const speed=this.reduced?8:.57;this.crumble+=Math.sign(this.crumbleTarget-this.crumble)*Math.min(Math.abs(this.crumbleTarget-this.crumble),dt*speed);
-    this.highways.visible=!this.active&&this.crumble<.02;
+    this.highways.visible=!this.active&&this.crumble<.02;this.rivers.visible=this.highways.visible;
     this.overviewRoute.visible=!this.active&&this.crumble<.02&&this.entries?.some(entry=>entry.id===this.overviewRouteEntry);
     if(this.region){
       for(const c of this.chunks){const a=c.keep?0:ease(clamp((this.crumble-c.phase*.22)/.78));c.group.visible=a<.995;c.group.position.copy(c.home);c.group.position.y=-a*(85+c.phase*40);c.group.rotation.set(a*.3*(c.phase-.5),a*.12,a*.3*(.5-c.phase));c.group.scale.setScalar(1-a*.75);}
@@ -322,8 +354,8 @@ export class Diorama {
     if(!this.routePopup.hidden)this.positionRoutePopup();
     const needle=document.querySelector('#compass-needle');if(needle){const delta=this.camera.position.clone().sub(this.controls.target);needle.style.transform=`rotate(${Math.atan2(delta.x,delta.z)}rad)`;}
     const boxes=[];
-    for(const marker of [...this.markers,...this.highwayMarkers]){
-      if(this.active||(this.highwayMarkers.includes(marker)&&!this.highways.visible)){marker.element.style.display='none';continue;}
+    for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers]){
+      if(this.active||((this.highwayMarkers.includes(marker)||this.riverMarkers.includes(marker))&&!this.highways.visible)){marker.element.style.display='none';continue;}
       const p=marker.position.clone().project(this.camera);const w=this.element.clientWidth,h=this.element.clientHeight,x=(p.x*.5+.5)*w,y=(-p.y*.5+.5)*h;
       const visible=p.z>-1&&p.z<1&&x>20&&x<w-20&&y>45&&y<h-85;
       const width=marker.element.offsetWidth||90;const rect={x:x-width/2,y:y-25,w:width,h:32};const overlap=boxes.some(b=>rect.x<b.x+b.w&&rect.x+rect.w>b.x&&rect.y<b.y+b.h&&rect.y+rect.h>b.y);
