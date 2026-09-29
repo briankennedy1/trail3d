@@ -600,7 +600,11 @@ export async function mountRideViewer(options: RideViewerOptions) {
     if (playing && !transitioning) {
       playbackTime += dt;
       setProgress(progressAtTime(playbackTime));
-      if (progress >= 1) { playing = false; play.textContent = '↺ Replay Ride'; }
+    }
+    if (playing && progress >= 1) {
+      playing = false;
+      play.textContent = '↺ Replay Ride';
+      home();
     }
     if (!transitioning && playing) {
       positionFollowCamera();
