@@ -10,7 +10,7 @@ const external=(url,label,iconName)=>{
     const {protocol,hostname}=new URL(url);if(!['https:','http:'].includes(protocol))return '';
     const on=domain=>hostname===domain||hostname.endsWith(`.${domain}`);
     const brand=on('youtube.com')||on('youtu.be')?'youtube':on('trailforks.com')?'trailforks':null;
-    const icon=iconName==='parking'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>'
+    const icon=iconName==='parking'?'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="2" fill="#1769b5"/><path d="M9 18V6h4a3.5 3.5 0 0 1 0 7H9" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>'
       :brand?`<img class="link-brand-icon" src="/icons/${brand}.svg" alt="" aria-hidden="true" width="22" height="22">`
       :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3 10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg>';
     return `<a href="${escape(url)}" target="_blank" rel="noopener noreferrer" title="${escape(label)}" aria-label="${escape(label)}">${icon}</a>`;
