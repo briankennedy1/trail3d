@@ -87,6 +87,14 @@ export class Diorama {
     this.markers.push({element,area:null,position:world(-120.6121166,39.780746,sample(this.region,-120.6121166,39.780746)).add(new THREE.Vector3(0,2,0))});
   }
   move(target,position,duration=2.1){this.tween={start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
+  rideEntryView(map,viewScale=1){
+    // Match the current regional framing in the ride's local-meter coordinates.
+    const metersLon=111320*Math.cos((map.bbox.south+map.bbox.north)*Math.PI/360);
+    const anchor=world(map.bbox.west+map.widthM/2/metersLon,map.bbox.south+map.heightM/2/111320,1898);
+    const shift=new THREE.Vector3((this.camera.left+this.camera.right)/2,(this.camera.top+this.camera.bottom)/2,0).applyQuaternion(this.camera.quaternion);
+    const convert=point=>point.clone().add(shift).sub(anchor).multiplyScalar(10).toArray();
+    return {position:convert(this.camera.position),target:convert(this.controls.target),zoom:58*viewScale*this.camera.zoom/((this.camera.top-this.camera.bottom)*10)};
+  }
   async select(entry,track){
     this.active=entry;this.track=track;this.clearRoute();
     let center,span;

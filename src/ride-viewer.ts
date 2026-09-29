@@ -14,6 +14,7 @@ export type RideViewerOptions = {
   root?: ParentNode;
   data: { map: MapData; ride: Ride; heights: ArrayBuffer };
   home: HomeView;
+  entryView?: HomeView;
   homeStorageKey?: string | null;
   pointsOfInterest?: POI[];
   baseElevation?: number;
@@ -69,7 +70,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
   controls.zoomSpeed = 1.4;
   controls.screenSpacePanning = false;
   controls.zoomToCursor = true;
-  controls.minZoom = 0.65;
+  controls.minZoom = Math.min(0.65, options.entryView?.zoom ?? 0.65);
   controls.maxZoom = 22;
   controls.minPolarAngle = 0.55;
   controls.maxPolarAngle = 1.35;
@@ -185,7 +186,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     controls.update();
   }
   function positionFollowCamera() { applyCameraPose(followCameraPose()); }
-  function startCameraTransition(to = followCameraPose(), trackFollow = true) {
+  function startCameraTransition(to = followCameraPose(), trackFollow = true, durationOverride?: number) {
     const from: CameraPose = {
       position: camera.position.clone(), target: controls.target.clone(), zoom: camera.zoom,
       offsetX: camera.view?.enabled ? camera.view.offsetX : 0,
@@ -209,7 +210,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       controls.enableDamping = false;
       return;
     }
-    const duration = THREE.MathUtils.clamp(Math.max(Math.abs(turn) / 0.7, distance / 48), 1.2, 4.5);
+    const duration = durationOverride ?? THREE.MathUtils.clamp(Math.max(Math.abs(turn) / 0.7, distance / 48), 1.2, 4.5);
     cameraTransition = { from, to, elapsed: 0, duration, leadTime: Math.min(1.4, duration * 0.4),
       startAngle, turn, startRadius, trackFollow };
   }
@@ -250,6 +251,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     if (transition.elapsed >= transition.duration) {
       cameraTransition = null;
       controls.enableDamping = false;
+      controls.minZoom = 0.65;
       if (playing) play.textContent = 'Ⅱ Pause';
     }
   }
@@ -352,7 +354,12 @@ export async function mountRideViewer(options: RideViewerOptions) {
     else applyCameraPose(pose);
   }
   function home() { applyHome(savedHome ?? defaultHome); }
-  applyHome(savedHome ?? defaultHome, false);
+  applyHome(options.entryView ?? savedHome ?? defaultHome, false);
+  if (options.entryView) {
+    const view = savedHome ?? defaultHome;
+    startCameraTransition({ position: new THREE.Vector3(...view.position), target: new THREE.Vector3(...view.target),
+      zoom: view.zoom, offsetX: 0, offsetY: 0 }, false, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.25 : 2.7);
+  }
   setProgress(1, false);
   controls.addEventListener('start', pauseForManualView);
   on(play, 'click', () => {
