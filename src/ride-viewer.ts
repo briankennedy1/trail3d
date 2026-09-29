@@ -14,7 +14,7 @@ import { crumbleLandscape } from './ride-crumble';
 import { BANNER_HEIGHT, PENNANT_CENTER, buildPOIs, shapeBanner, type LoosePiece, type POI } from './pois';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
-type RegionContext = { group: THREE.Group; update(progress: number): void; dispose(): void };
+type RegionContext = { group: THREE.Group; update(progress: number): void; dispose(): void; preserve?(bounds: [number, number, number, number]): void };
 type HomeView = { position: [number, number, number]; target: [number, number, number]; zoom: number };
 
 export type RideViewerOptions = {
@@ -24,6 +24,7 @@ export type RideViewerOptions = {
   entryView?: HomeView;
   initialView?: HomeView;
   routeDeparture?: RegionContext;
+  sharedTerrain?: [number, number, number, number];
   entryContext?: RegionContext;
   onEntryComplete?: () => void;
   homeStorageKey?: string | null;
@@ -58,6 +59,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
   scene.add(landscape.group);
   let routeChangeElapsed = 0;
   const routeArrival = options.routeDeparture ? crumbleLandscape(landscape.group) : null;
+  if (options.sharedTerrain) { routeArrival?.preserve(options.sharedTerrain); options.routeDeparture?.preserve?.(options.sharedTerrain); }
   if (options.routeDeparture) { scene.add(options.routeDeparture.group); routeArrival!(1); }
   const rideContext = buildRideContext(terrain, options.contextFeatures ?? []);
   scene.add(rideContext.group);
@@ -762,8 +764,8 @@ export async function mountRideViewer(options: RideViewerOptions) {
   return {
     captureDeparture(): RegionContext {
       const copy = buildLandscape(terrain, { trees: false, baseElevation: options.baseElevation }).group;
-      const update = crumbleLandscape(copy); let released = false;
-      return { group: copy, update, dispose() {
+      const update = crumbleLandscape(copy, true); let released = false;
+      return { group: copy, update, preserve: update.preserve, dispose() {
         if (released) return; released = true; copy.removeFromParent();
         const textures = new Set<THREE.Texture>();
         for (const child of copy.children) {

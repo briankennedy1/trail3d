@@ -272,6 +272,10 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
         const shift=v=>[v[0]+dx,v[1],v[2]+dz];
         transition.departure.group.position.set(dx,0,dz);
         options.routeDeparture=transition.departure;
+        options.sharedTerrain=[
+          Math.max(-next.widthM/200,dx-old.widthM/200),Math.min(next.widthM/200,dx+old.widthM/200),
+          Math.max(-next.heightM/200,dz-old.heightM/200),Math.min(next.heightM/200,dz+old.heightM/200),
+        ];
         options.initialView={...transition.view,zoom:transition.view.zoom*(options.scale??1)/transition.scale,position:shift(transition.view.position),target:shift(transition.view.target)};
       }
       options.home=entry.viewer?.home||base.home;
