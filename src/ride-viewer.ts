@@ -525,6 +525,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
   }
   on(renderer.domElement, 'pointermove', event => {
     if (event.pointerType === 'touch') return;
+    if (pressedFlag >= 0) return;
     const index = hoveredFlagAt(event.clientX, event.clientY);
     hoveredFlag = index;
     renderer.domElement.style.cursor = index >= 0 ? 'pointer' : '';
@@ -533,26 +534,42 @@ export async function mountRideViewer(options: RideViewerOptions) {
     hoveredFlag = -1;
     renderer.domElement.style.cursor = '';
   });
-  let pressedFlag = -1;
+  let pressedFlag = -1, flagPointerId = -1, flagDragged = false;
   let pressedX = 0, pressedY = 0;
-  on(renderer.domElement, 'pointerdown', event => {
+  // Claim flag clicks before OrbitControls starts panning or changes the camera
+  // projection. A readable banner is clickable while its unfurl is finishing.
+  renderer.domElement.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || !event.isPrimary || entering) return;
     const index = hoveredFlagAt(event.clientX, event.clientY);
-    if (index >= 0 && revealProgress[index] >= 0.98 && pois.flags[index].url) {
+    if (index >= 0 && pois.flags[index].label.visible && !bannerGone[index] && pois.flags[index].url) {
       pressedFlag = index;
+      flagPointerId = event.pointerId;
+      flagDragged = false;
       pressedX = event.clientX;
       pressedY = event.clientY;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      renderer.domElement.setPointerCapture(event.pointerId);
       return;
     }
     if (event.pointerType !== 'mouse' && index >= 0) selectedFlag = index === selectedFlag ? -1 : index;
+  }, { capture: true, signal: lifecycle.signal });
+  on(renderer.domElement, 'pointermove', event => {
+    if (event.pointerId === flagPointerId && Math.hypot(event.clientX - pressedX, event.clientY - pressedY) >= 8) flagDragged = true;
   });
-  on(renderer.domElement, 'pointerup', event => {
-    if (pressedFlag >= 0 && Math.hypot(event.clientX - pressedX, event.clientY - pressedY) < 8
-      && hoveredFlagAt(event.clientX, event.clientY) === pressedFlag) {
-      window.open(pois.flags[pressedFlag].url!, '_blank', 'noopener,noreferrer');
-    }
-    pressedFlag = -1;
-  });
-  on(renderer.domElement, 'pointercancel', () => { pressedFlag = -1; });
+  const clearFlagPress = () => { pressedFlag = -1; flagPointerId = -1; flagDragged = false; };
+  renderer.domElement.addEventListener('pointerup', event => {
+    if (pressedFlag < 0 || event.pointerId !== flagPointerId) return;
+    const url = pois.flags[pressedFlag].url;
+    const click = !flagDragged && Math.hypot(event.clientX - pressedX, event.clientY - pressedY) < 8;
+    clearFlagPress();
+    event.preventDefault();event.stopImmediatePropagation();
+    if (renderer.domElement.hasPointerCapture(event.pointerId)) renderer.domElement.releasePointerCapture(event.pointerId);
+    // Use the flag chosen on press: the cloth may move between down and up.
+    if (click && url) window.open(url, '_blank', 'noopener,noreferrer');
+  }, { capture: true, signal: lifecycle.signal });
+  on(renderer.domElement, 'pointercancel', clearFlagPress);
+  on(renderer.domElement, 'lostpointercapture', clearFlagPress);
   if (options.manageLoading !== false) $('loading').remove();
   let disposed = false, animation = 0;
   function frame(now: number) {
@@ -597,7 +614,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     const viewerYaw = Math.hypot(toViewer.x, toViewer.z) > 1e-3 ? Math.atan2(toViewer.x, toViewer.z) : null;
     for (let i = 0; i < pois.flags.length; i++) {
       const { marker, pole, pennant, label, leaves, looseBanners, bannerWidth: width } = pois.flags[i];
-      const active = hoveredFlag === i || selectedFlag === i;
+      const active = hoveredFlag === i || selectedFlag === i || pressedFlag === i;
       if (viewerYaw !== null) {
         const turn = Math.atan2(Math.sin(viewerYaw - marker.rotation.y), Math.cos(viewerYaw - marker.rotation.y));
         // Swing round quickly while the big flag is out so its label reads straight on.
