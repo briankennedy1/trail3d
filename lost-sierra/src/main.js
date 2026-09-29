@@ -56,7 +56,7 @@ const movingTime=e=>{
 };
 const surfaceKey=types=>{
   const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt road / doubletrack',unknown:'Unverified'};
-  return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
+  return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap, with rider-confirmed corrections. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
 };
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
 let closeRide=()=>{};

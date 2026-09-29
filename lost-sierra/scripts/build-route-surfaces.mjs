@@ -30,6 +30,7 @@ for(const way of source.elements){
   }
 }
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')));
+const overrides=JSON.parse(fs.readFileSync(path.join(root,'data/route-surface-overrides.json')));
 const rides=[{id:'beckwourth-peak',track:'beckwourth-track.geojson'},...manifest];
 const output={source:'OpenStreetMap contributors',sourceUrl:'https://www.openstreetmap.org/copyright',retrievedAt:new Date().toISOString(),method:'Nearest mapped way within 25 m, heading-compatible; runs shorter than 30 m bridged only between matching classes. Asphalt includes mapped paved surfaces; motorway through tertiary road classes infer pavement. Tracks infer dirt roads; paths/footways/bridleways and narrow or MTB-tagged cycleways infer singletrack unless width is at least 2 m. Other explicitly unpaved roads infer dirt roads. Unmatched or insufficiently tagged segments remain unknown.',rides:{},ways:{}};
 for(const ride of rides){
@@ -52,10 +53,16 @@ for(const ride of rides){
   if(length<30&&start>0&&end<types.length&&types[start-1]===types[end])for(let i=start;i<end;i++)types[i]=types[start-1];
   start=end;
  }
+ const coordinatesSha256=createHash('sha256').update(JSON.stringify(coords)).digest('hex');
+ const confirmed=overrides[ride.id];
+ if(confirmed){
+  if(confirmed.coordinatesSha256!==coordinatesSha256)throw Error(`${ride.id}: review surface corrections after changing the GPS track.`);
+  for(const r of confirmed.ranges)types.fill(r.type,r.from,r.to);
+ }
  const ranges=[],totals={singletrack:0,asphalt:0,dirt:0,unknown:0},used=new Set();
  for(let i=0;i<types.length;i++){totals[types[i]]+=dist[i];if(ids[i])used.add(ids[i]);const last=ranges.at(-1);if(last?.type===types[i])last.to=i+1;else ranges.push({from:i,to:i+1,type:types[i]});}
  for(const id of used)output.ways[id]=sources[id];
- output.rides[ride.id]={coordinatesSha256:createHash('sha256').update(JSON.stringify(coords)).digest('hex'),pointCount:coords.length,ranges,meters:totals};
+ output.rides[ride.id]={coordinatesSha256,pointCount:coords.length,ranges,meters:totals,...(confirmed?{overrides:confirmed.ranges}:{})};
  console.log(ride.id,Object.fromEntries(Object.entries(totals).map(([k,v])=>[k,`${(v/1609.344).toFixed(2)} mi`])),ranges.length+' sections');
 }
 fs.writeFileSync(path.join(root,'public/terrain/route-surfaces.json'),JSON.stringify(output)+'\n');

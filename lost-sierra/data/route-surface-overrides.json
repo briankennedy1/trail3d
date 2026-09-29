@@ -1,0 +1,15 @@
+{
+  "buzzards-roost-ridge": {
+    "coordinatesSha256": "1289e6df71f2a9f9df9e18f11dbce193149726825b91b643fdba7bbfe4df290f",
+    "ranges": [
+      {
+        "from": 2131,
+        "to": 5569,
+        "type": "singletrack",
+        "fromMiles": 5.9,
+        "toMiles": 11.4,
+        "source": "Confirmed by Brian, 2026-09-28"
+      }
+    ]
+  }
+}
