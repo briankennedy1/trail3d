@@ -25,5 +25,16 @@
         "source": "Remaining unverified sections confirmed as singletrack by Brian, 2026-09-28"
       }
     ]
+  },
+  "beckwourth-peak": {
+    "coordinatesSha256": "279068af34086eacb8b2c55ac807a47b545dbf236d4c270dea015e71d6ca5374",
+    "ranges": [
+      {
+        "from": 0,
+        "to": 1650,
+        "type": "singletrack",
+        "source": "Entire route confirmed as singletrack by Brian, 2026-09-28"
+      }
+    ]
   }
 }
