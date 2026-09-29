@@ -50,8 +50,7 @@ const manifestFile=path.join(root,'data/curated-rides.json'),manifest=JSON.parse
 ride.details.coordinates={lat:recorded.at(-1)[1],lng:recorded.at(-1)[0]};
 ride.details.climbingFt=2894+Math.round(added.ascent/.3048);
 ride.details.descendingFt=4034+Math.round(added.descent/.3048);
-const note='The missing start has been reconstructed along La Porte Road from the finish back to where recording began. This adds about '+(added.distance/1609.344).toFixed(1)+' miles; elevation and climbing for that section are estimated from terrain. The recorded portion is unchanged.';
-ride.details.notes='https://youtu.be/1gO3Srs2T2U?si=wMG006hzNTOyXxWi\n\n'+note;
+// Repair provenance belongs in route.properties, not the public ride notes.
 const flag=ride.details.viewer.pointsOfInterest.find(p=>p.name==='Route start');flag.latitude=recorded.at(-1)[1];flag.longitude=recorded.at(-1)[0];
 const b=meta.bbox,scale=Math.max(.25,Math.max((b.east-b.west)*111320*Math.cos((b.north+b.south)*Math.PI/360),(b.north-b.south)*111320)/7338),cy=((meta.min+meta.max)/2-1898)/100*2.3;
 ride.details.viewer.home={position:[-73.69*scale,cy+71.64*scale,-153.78*scale],target:[-10*scale,cy,-7.33*scale],zoom:.85};

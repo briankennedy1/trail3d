@@ -21,8 +21,6 @@ try{
   after.coordinates=details.coordinates;
   if(before.climbingFt===2894)after.climbingFt=details.climbingFt;
   if(before.descendingFt===4034)after.descendingFt=details.descendingFt;
-  const note=details.notes.split('\n\n').at(-1);
-  if(!after.notes?.includes(note))after.notes=[after.notes,note].filter(Boolean).join('\n\n');
   for(const poi of after.viewer?.pointsOfInterest||[]){
    if(poi.name==='Route start'&&Math.abs(poi.longitude-previousGeometry.coordinates[0][0])<.00001&&Math.abs(poi.latitude-previousGeometry.coordinates[0][1])<.00001){poi.longitude=details.coordinates.lng;poi.latitude=details.coordinates.lat;}
   }
