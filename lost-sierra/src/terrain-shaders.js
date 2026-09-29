@@ -167,24 +167,16 @@ varying float vTop;
 ${NOISE}
 ${PAINT}
 void main() {
-  float along = vWorld.x + vWorld.z;
-  float depth = (vTop - vWorld.y);
-  float t = vWorld.y + (fbm(vec2(along * 0.08, vWorld.y * 0.3)) - 0.5) * 3.0;
-  // soil & rock strata
-  vec3 c1 = vec3(0.62, 0.47, 0.34);
-  vec3 c2 = vec3(0.74, 0.60, 0.43);
-  vec3 c3 = vec3(0.52, 0.44, 0.44);
-  float s = fract(t * 0.11);
-  vec3 col = mix(c1, c2, smoothstep(0.2, 0.5, s));
-  col = mix(col, c3, smoothstep(0.65, 0.9, s));
-  // a thin grassy lip right below the surface
-  col = mix(vec3(0.46, 0.55, 0.36), col, smoothstep(0.1, 0.9, depth));
-  col = paint(col, vNormal, vWorld.xz, fbm(vec2(along, vWorld.y) * 0.2));
-  col *= 0.95 + 0.1 * vnoise(vec2(along, vWorld.y) * 3.0);
-  // fade toward paper at the bottom, like a wash running out of pigment
-  float fade = smoothstep(uBase + 4.0, uBase, vWorld.y + (fbm(vec2(along * 0.1, 0.0)) - 0.5) * 3.0);
-  col = mix(col, vec3(0.965, 0.937, 0.878), fade * 0.85);
-  col = mix(col, mix(vec3(0.965, 0.937, 0.878), col, 0.55), uFocus * 0.7);
+  // Gray bedrock: irregular mineral patches and fine grain, without soil bands.
+  vec2 rockUV = vec2(vWorld.x + vWorld.z, vWorld.y);
+  float mineral = fbm(rockUV * 0.32);
+  vec3 col = mix(vec3(0.39, 0.41, 0.42), vec3(0.62, 0.63, 0.63), mineral);
+  float seams = 1.0 - smoothstep(0.015, 0.055, abs(fbm(rockUV * 0.65) - 0.48));
+  col *= 1.0 - seams * 0.12;
+  col *= 0.94 + 0.12 * vnoise(rockUV * 5.0);
+  float light = smoothstep(-0.35, 1.0, dot(normalize(vNormal), normalize(uLightDir)));
+  col *= mix(0.72, 1.14, light);
+  col = mix(col, mix(PAPER, col, 0.55), uFocus * 0.7);
   gl_FragColor = vec4(col, 1.0);
 }
 `;
