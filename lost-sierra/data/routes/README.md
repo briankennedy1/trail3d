@@ -116,3 +116,11 @@ seed the corrected route directly.
 Both were exported through Trailforks on September 28, 2026. The exports had zero elevations; XY positions were retained and elevation sampled from AWS terrain. Both are point-to-point routes, with independent terrain, tracks, and CMS records under family ID `downieville`. Their shared finish parking link is **39.559603, -120.830308**; that parking pin does not alter the recorded track endpoint.
 
 Rider-confirmed corrections in `../route-surface-overrides.json` mark Original after mile 15.2 as asphalt, and Adventure Mode's previously unverified segments between miles 8 and 16 as singletrack. Other classified segments are preserved. Incidental road/waterway labels are hidden on these ride views; geometry and endpoint flags remain.
+
+## Mills Peak Shuttle replacement
+
+`mills-peak-shuttle` replaces the old full-pedal Mills Peak ride in the public guide, per the owner's request. The old `mills-peak` entry is archived for recovery.
+
+[Trailforks plan 785873](https://www.trailforks.com/routeplan/view/785873/), exported September 29, 2026. All 1,353 XY points are preserved (12.44 miles calculated; Trailforks displays 12.43). Source totals: 1,007 ft climbing, 3,083 ft descending, estimated 2h 45m.
+
+The shuttle GPX contains zero elevation placeholders, replaced with AWS/USGS terrain samples. OSM matching identifies 9.64 miles singletrack, 2.12 dirt road, 0.40 asphalt and 0.29 unverified; this is map-derived classification, not rider confirmation. Start/finish Maps links use the route endpoints, not separately verified parking lots. Challenging intensity is inherited from the previous Mills Peak guide.

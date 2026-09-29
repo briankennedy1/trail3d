@@ -1,6 +1,10 @@
 {
   "id": "lost-sierra-core-v2",
-  "excludedEntries": ["gold-valley-rim-pauley-creek-dh", "cal-ida-trail"],
+  "excludedEntries": [
+    "gold-valley-rim-pauley-creek-dh",
+    "cal-ida-trail",
+    "mills-peak"
+  ],
   "excludedAreas": [
     "Nevada City",
     "Truckee",
