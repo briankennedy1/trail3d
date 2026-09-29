@@ -108,6 +108,25 @@ keeps an audit copy, preserves CMS edits, moves the original start flag and
 updates the home only if it still matches the imported default. Fresh databases
 seed the corrected route directly.
 
+## Lakes Basin Ridiculous Route loop and surfaces
+
+`lakes-basin-intense-explore` (public slug `lakes-basin-ridiculous`) retains all
+1,942 original points from Trailforks plan 601617 and appends its exact start
+point to close the approximately 34 m endpoint gap, per Brian on September 29,
+2026. The closure is a direct connection across that short recording gap.
+The route is explicitly a loop with one combined start/finish flag.
+
+Brian confirmed mile 14.4 through the finish as singletrack. The correction
+starts at original point 1840, displayed mile 14.3994 (within one meter of
+14.4), and includes the new closing segment. Earlier surface classifications
+remain intact. Track and surface hashes match the closed geometry.
+
+After a database backup, apply existing-installation changes with
+`node lost-sierra/scripts/apply-ridiculous-loop.mjs`. It checks the original
+track hash, saves the previous track and entry in audit history, and changes
+only the track and loop setting. CMS naming, notes, parking links and camera
+views are preserved. New databases use the corrected seeds directly.
+
 ## Downieville family
 
 - `downieville-original`: **Original**, Trailforks plan [785605](https://www.trailforks.com/routeplan/view/785605/), 1,442 points. Source totals: 16.18 miles, 781 ft climbing, 4,973 ft descending, estimated 2h 58m.

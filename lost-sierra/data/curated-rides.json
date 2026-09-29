@@ -568,7 +568,8 @@
           "zoom": 0.85
         }
       },
-      "descendingFt": 2863
+      "descendingFt": 2863,
+      "sameStartFinish": true
     }
   },
   {

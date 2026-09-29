@@ -180,5 +180,19 @@
         "source": "Miles 5–10.5 confirmed as singletrack by Brian, 2026-09-29; clipped to route finish where shorter."
       }
     ]
+  },
+  "lakes-basin-intense-explore": {
+    "coordinatesSha256": "81e5008e2ed5e4ada77219d374832423e7f44b70084c2ddfb3525ae8f87c188b",
+    "ranges": [
+      {
+        "from": 1840,
+        "to": 1942,
+        "type": "singletrack",
+        "fromMiles": 14.4,
+        "actualFromMiles": 14.399410250361322,
+        "toMiles": 14.949964700869584,
+        "source": "Mile 14.4 through the finish, including the loop closure, confirmed as singletrack by Brian, 2026-09-29"
+      }
+    ]
   }
 }
