@@ -37,7 +37,7 @@ export async function prepareRide(entry,track,signal){
   options.surfaceTypes=await surfaceTypesForTrack(surfaces?.rides?.[entry.id],track.geometry.coordinates);
   signal.throwIfAborted();
   if(entry.id==='buzzards-roost-ridge'){
-    const namedWaterways=new Set(['Dixon Creek','Middle Fork Feather River']);
+    const namedWaterways=new Set(['Nelson Creek','Middle Fork Feather River']);
     for(const feature of options.contextFeatures||[])if(feature.kind==='waterway')feature.showLabel=namedWaterways.has(feature.name);
     const dixon=options.contextFeatures?.find(feature=>feature.name==='Dixon Creek');
     if(dixon)dixon.labelCoordinates=[-120.8773506,39.8116425];
