@@ -4,7 +4,15 @@ import { Diorama } from './diorama.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
 const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const external=(url,label)=>{try{if(!['https:','http:'].includes(new URL(url).protocol))return '';return `<a href="${escape(url)}" target="_blank" rel="noopener">${escape(label)} ↗</a>`;}catch{return '';}};
+const external=(url,label)=>{
+  try{
+    const {protocol,hostname}=new URL(url);if(!['https:','http:'].includes(protocol))return '';
+    const on=domain=>hostname===domain||hostname.endsWith(`.${domain}`);
+    const brand=on('youtube.com')||on('youtu.be')?'youtube':on('trailforks.com')?'trailforks':null;
+    const icon=brand?`<img class="link-brand-icon" src="/icons/${brand}.svg" alt="" aria-hidden="true" width="22" height="22">`:'';
+    return `<a href="${escape(url)}" target="_blank" rel="noopener">${icon}<span>${escape(label)} ↗</span></a>`;
+  }catch{return '';}
+};
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
 let closeRide=()=>{};

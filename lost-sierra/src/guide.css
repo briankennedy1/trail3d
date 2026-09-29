@@ -21,6 +21,8 @@
 .guide-page .profile{height:96px;background:#f1eadb;border-radius:8px}.guide-page .profile-labels{font-size:10px;font-weight:600;color:#7b8177}
 .guide-page #play{border:0;border-radius:9px;background:#315653;color:white;padding:11px 16px;font-size:13px;font-weight:700}.guide-page #play:hover{background:#244540}
 .guide-page .detail-links a{color:#9b5a37;font-size:12px;font-weight:700}.guide-page .detail-copy{font-size:13px;color:#68716c;line-height:1.5}
+.guide-page .detail-links a{display:flex;align-items:center;gap:8px;width:fit-content;min-height:24px}
+.link-brand-icon{display:block;flex:0 0 22px;width:22px;height:22px;object-fit:contain}
 .guide-page .notice{background:#f1eadb}.guide-page #loading{background:#f6efe0;font:22px Fraunces,Georgia,serif;color:#315653}
 .guide-page .map-caption{position:fixed;left:38px;bottom:24px;right:auto;color:#777a6d;font-size:10px}.guide-page .map-caption #map-status{display:none}.guide-page .attribution{font-size:10px}
 .guide-page .map-marker{background:#fffaf0e8;color:#315653;border-color:#b6b69b;border-radius:6px}.guide-page .map-marker:hover{background:#315653;color:#fffaf0}
