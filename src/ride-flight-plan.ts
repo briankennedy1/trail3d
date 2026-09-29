@@ -13,8 +13,8 @@ type FlightOptions = {
   angleBeats?: [number, number][];
 };
 
-// Lakes Basin Blue's 15.8 miles in 22.5 seconds sets the shared preview pace.
-const metersPerPlaybackSecond = 15.8 * 1609.344 / 22.5;
+// Shared preview pace: 10 miles in 7 seconds, independent of recorded ride speed.
+const metersPerPlaybackSecond = 1609.344 / 0.7;
 
 // The original helicopter planner: precompute a smooth course and adapt the
 // rider's pacing to it. No DOM or live camera corrections are needed here.

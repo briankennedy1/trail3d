@@ -22,7 +22,7 @@ test('default follow keeps the home heading while following terrain and the rout
   checkHeading();
   assert.ok(clearanceChecks>0);
   assert.ok(plan.flightShot(1).center.distanceTo(plan.flightShot(0).center)>20,'Camera stopped following');
-  assert.equal(plan.timeAtProgress(1),16000/(15.8*1609.344/22.5));
+  assert.equal(plan.timeAtProgress(1),16000/(1609.344/0.7));
   home={...home,position:[130,70,90]};
   plan.invalidate();
   checkHeading();
@@ -35,18 +35,18 @@ test('explicit ride camera angles still control the flight',()=>{
     angleBeats:[[0,-155.6],[.44,-20],[.54,0],[.60,75],[.72,120],[.85,170],[1,170]],
   });
   assert.ok(plan.flightShot(1).angle-plan.flightShot(0).angle>5,'Custom visibility orbit was lost');
-  assert.equal(plan.timeAtProgress(1),16000/(15.8*1609.344/22.5));
+  assert.equal(plan.timeAtProgress(1),16000/(1609.344/0.7));
 });
 
 test('ride length scales playback duration while timeline scrubbing stays reversible',()=>{
-  const plans=[.5,1,2].map(factor=>createFlightPlan({
-    total:15.8*1609.344*factor,orbitRadius:90,viewScale:1,introEnd:.25,
+  const plans=[10,20,30].map(miles=>createFlightPlan({
+    total:miles*1609.344,orbitRadius:90,viewScale:1,introEnd:.25,
     getHome:()=>({position:[-80,70,-140],target:[0,0,0],zoom:1.2}),
     routePoint:d=>new THREE.Vector3(d/300,0,0),clearSightHeight:()=>0,
   }));
-  for(const [i,duration] of [11.25,22.5,45].entries()){
+  for(const [i,duration] of [7,14,21].entries()){
     const plan=plans[i];
-    assert.equal(plan.timeAtProgress(1),duration);
+    assert.ok(Math.abs(plan.timeAtProgress(1)-duration)<1e-10);
     assert.equal(plan.progressAtTime(duration),1);
     for(const progress of [.1,.5,.9])assert.ok(Math.abs(plan.progressAtTime(plan.timeAtProgress(progress))-progress)<.000001);
   }
