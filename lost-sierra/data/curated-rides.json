@@ -337,7 +337,9 @@
       "descendingFt": 3600,
       "startMapsUrl": "https://maps.app.goo.gl/dMWgUQ9zvk9EmSez5",
       "finishMapsUrl": null,
-      "sameStartFinish": true
+      "sameStartFinish": true,
+      "movingMinutes": 85,
+      "movingTimeEstimated": true
     }
   },
   {
