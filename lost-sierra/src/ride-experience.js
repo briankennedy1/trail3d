@@ -36,6 +36,10 @@ export async function prepareRide(entry,track,signal){
   const surfaces=await surfacesRequest;signal.throwIfAborted();
   options.surfaceTypes=await surfaceTypesForTrack(surfaces?.rides?.[entry.id],track.geometry.coordinates);
   signal.throwIfAborted();
+  if(entry.id==='beckwourth-peak'){
+    const hiddenLabels=new Set(['Carman Creek','West Street','Commercial Street']);
+    for(const feature of options.contextFeatures||[])if(hiddenLabels.has(feature.name))feature.showLabel=false;
+  }
   if(entry.id==='mt-elwell-hard-way'||entry.rideFamily?.id==='mt-elwell'){
     const names=new Set(['Gray Eagle Creek','Frazier Falls Road','Gold Lake Highway','Smith Creek']);
     for(const feature of options.contextFeatures||[])feature.showLabel=names.has(feature.name);
