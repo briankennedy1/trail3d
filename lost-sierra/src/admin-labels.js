@@ -1,5 +1,7 @@
-// Preview the context names likely to be available on a ride's terrain crop.
-// The crop uses the same padding as regionalRideData; detailed terrain can vary.
+import {restrictContextLabelsToRoute} from './context-labels.js';
+
+// Match the guide's geographic contact rule, rather than offering every name
+// inside the padded terrain crop.
 const roadNumber=/^(?:Forest (?:Road|Route) )?\d+[A-Z]\d+[A-Z\d.]*$/i;
 
 function clippedLength(points,box){
@@ -28,6 +30,8 @@ export function availableContextLabels(source,track,entry){
   const west=Math.min(...lons),east=Math.max(...lons),south=Math.min(...lats),north=Math.max(...lats);
   const padX=Math.max(.008,(east-west)*.16),padY=Math.max(.006,(north-south)*.16);
   const box={west:west-padX,east:east+padX,south:south-padY,north:north+padY};
+  const metersLon=111320*Math.cos((south+north)*Math.PI/360);
+  const project=([lon,lat])=>[(lon-box.west)*metersLon,(lat-box.south)*111320];
   const groups=new Map();
   for(const feature of source.features){
     const p=feature.properties,points=feature.geometry?.coordinates;
@@ -36,13 +40,12 @@ export function availableContextLabels(source,track,entry){
     if(!length)continue;
     const importance=p.kind==='waterway'?(p.class==='river'?3:1):['motorway','trunk','primary','secondary','tertiary'].includes(p.class)?3:p.class==='track'?0:1;
     const key=`${p.kind}:${p.name}`,existing=groups.get(key);
-    groups.set(key,{name:p.name,kind:p.kind,importance:Math.max(existing?.importance??0,importance),length:(existing?.length??0)+length});
+    groups.set(key,{name:p.name,kind:p.kind,importance:Math.max(existing?.importance??0,importance),length:(existing?.length??0)+length,lines:[...(existing?.lines||[]),points.map(project)]});
   }
   const ranked=[...groups.values()].filter(f=>f.length>=(f.importance===3?250:f.importance===0?1800:900)).sort((a,b)=>b.importance-a.importance||b.length-a.length);
+  restrictContextLabelsToRoute(ranked,coords.map(project),{bbox:box,widthM:(box.east-box.west)*metersLon,heightM:(box.north-box.south)*111320});
   const counts={road:0,waterway:0},names=[];
-  for(const feature of ranked)if(counts[feature.kind]++<12)names.push(feature.name);
-  if(entry?.rideFamily?.id==='mt-elwell'||entry?.id==='mt-elwell-hard-way')names.push('Mill Pond');
-  if(entry?.id==='buzzards-roost-ridge')names.push('To Laporte','To Quincy');
+  for(const feature of ranked)if(feature.showLabel&&counts[feature.kind]++<12)names.push(feature.name);
   return [...new Set(names)].sort((a,b)=>a.localeCompare(b));
 }
 

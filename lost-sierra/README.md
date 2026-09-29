@@ -41,6 +41,7 @@ Build outputs go to `lost-sierra/dist/`. The root package builds the separate st
 - The stats line displays miles, climbing feet, and moving time (`1h 25m`, with one `~` for estimates). Distance comes from the displayed geometry.
 - Route and profile surfaces share colors: singletrack yellow, asphalt dark gray, dirt road brown, unverified gray. Rider-confirmed corrections override mapped estimates.
 - Ride notes expand through the book icon. Intensity and Must Ride have dedicated displays. Roads and waterways can remain visible while their labels are hidden per ride.
+- Ride maps show context labels only for features the GPS route touches, using a 10 m tolerance for mapped/GPS alignment and segment intersections between recorded points. This restriction also applies after CMS selections, including **Show all route labels**. Existing hide selections still apply; terrain linework and endpoint/POI flags remain intact.
 
 ## CMS and shared home views
 

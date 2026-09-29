@@ -7,7 +7,7 @@ import { projectTrack, regionalRideData } from './ride-data.js';
 import { rideContextForMap, roadEdgePoint } from '../../src/ride-context-data';
 import { surfaceTypesForTrack } from '../../src/route-surfaces';
 import { routeEndpointFlags } from './ride-access.js';
-import { applyContextLabels } from './context-labels.js';
+import { applyContextLabels, restrictContextLabelsToRoute } from './context-labels.js';
 
 export async function prepareRide(entry,track,signal){
   const contextRequest=fetch('/terrain/ride-context.geojson',{signal}).then(r=>r.ok?r.json():null).catch(()=>null);
@@ -70,6 +70,7 @@ export async function prepareRide(entry,track,signal){
     }
   }
   applyContextLabels(options.contextFeatures,config.contextLabels);
+  restrictContextLabelsToRoute(options.contextFeatures,options.data.ride.points,options.data.map);
   return {...options,homeStorageKey:null,manageLoading:false};
 }
 
