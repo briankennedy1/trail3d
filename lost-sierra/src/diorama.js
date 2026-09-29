@@ -240,7 +240,19 @@ export class Diorama {
     }
     return parent;
   }
+  highlightOverviewRoute(id){
+    const selected=this.overviewRoute.children.find(group=>group.userData.entry.id===id);
+    for(const group of this.overviewRoute.children){
+      const highlighted=group===selected;
+      const [halo,line]=group.children;
+      halo.material.linewidth=highlighted?8:5.25;
+      line.material.linewidth=highlighted?5:3.375;
+      line.material.color.setHex(highlighted?0xa34e36:0xedaa29);
+      for(const stroke of group.children)stroke.material.opacity=selected&&!highlighted ? .3 : .99;
+    }
+  }
   setEntries(entries){
+    this.highlightOverviewRoute(null);
     this.entries=entries;this.markers.forEach(m=>m.element.remove());this.markers=[];
     const areas=new Map();for(const e of entries){if(!areas.has(e.area))areas.set(e.area,[]);areas.get(e.area).push(e);}
     for(const [area,rows] of areas){const lon=rows.reduce((s,e)=>s+e.coordinates.lng,0)/rows.length,lat=rows.reduce((s,e)=>s+e.coordinates.lat,0)/rows.length;
