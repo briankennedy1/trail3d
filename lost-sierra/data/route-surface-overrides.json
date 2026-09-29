@@ -17,6 +17,12 @@
         "fromMiles": 11.5,
         "toMiles": 11.8,
         "source": "Confirmed by Brian, 2026-09-28"
+      },
+      {
+        "from": 2038,
+        "to": 2082,
+        "type": "singletrack",
+        "source": "Remaining unverified sections confirmed as singletrack by Brian, 2026-09-28"
       }
     ]
   }
