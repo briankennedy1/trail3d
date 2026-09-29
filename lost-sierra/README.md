@@ -28,7 +28,7 @@ The original Beckwourth site and its existing server are unchanged. The regional
 - Regional relief from actual AWS Terrarium elevation tiles; no API key needed at runtime.
 - Select a ride to break away surrounding terrain and smoothly move into its area. Return to rebuild the regional map.
 - The curated Beckwourth route has its own detailed terrain, elevation scrubbing, and a 45-second orbit playback. Playback ignores accidental profile scrubbing. The green rider only appears after interaction.
-- 19 rides and 10 off-bike adventures in the active guide, selected from 22 rides and 10 adventures imported from the public Everstoke planner. Search, area/effort filters, external route/video links, and favorites stored on each visitor’s device.
+- 19 rides and 10 off-bike adventures in the active guide, selected from 22 rides and 10 adventures imported from the public Everstoke planner. Search, area/effort filters, and external route/video links.
 - Route-specific URLs (`/?ride=beckwourth-peak`). Local links work only on this computer until hosted.
 - Username/password admin. Create/edit entries, draft/publish/archive, import GPX/GeoJSON, export structured content, and change the admin password.
 - SQLite persistence with source snapshots, version conflicts, sessions, and an audit trail of edits and replaced tracks.
@@ -38,7 +38,7 @@ The original Beckwourth site and its existing server are unchanged. The regional
 
 The first server startup prints a **one-time admin setup URL**. Open it, keep or change the `admin` username, and choose a password of at least 12 characters. The setup key is generated locally in `.data/setup-token`; it is removed after setup. Do not commit or share the key. The admin workshop is `/admin.html`.
 
-Visitors do not have accounts. Admin writes require authentication and a matching Origin header. Passwords are hashed with salted scrypt. Session tokens are stored hashed in SQLite and sent in HttpOnly, SameSite=Strict cookies; HTTPS origins additionally set Secure. Sessions expire after 12 hours. Login/setup have a per-IP limit. The app binds only to loopback by default.
+Visitors do not have accounts or saved favorites. The public guide has no admin link; access the admin workshop directly at `/admin.html`. Admin writes require authentication and a matching Origin header. Passwords are hashed with salted scrypt. Session tokens are stored hashed in SQLite and sent in HttpOnly, SameSite=Strict cookies; HTTPS origins additionally set Secure. Sessions expire after 12 hours. Login/setup have a per-IP limit. The app binds only to loopback by default.
 
 ## Data and provenance
 
