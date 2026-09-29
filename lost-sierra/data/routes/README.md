@@ -142,3 +142,9 @@ The existing `lower-lakes-basin-loop` guide now uses [Trailforks plan 785884, La
 Zero GPX elevations were replaced with AWS/USGS terrain samples. Detailed terrain was rebuilt for the new bounds. Map-derived surfaces total about 7.43 miles singletrack, 4.51 asphalt, 2.41 dirt road and 1.87 unverified; none of those classifications is rider-confirmed yet. The old imported camera default is cleared so the new route is fitted automatically; custom CMS home views are preserved.
 
 For existing databases, back up first (`npm run backup --prefix lost-sierra`), then run `node lost-sierra/scripts/apply-lower-lakes-replacement.mjs`. It guards against an unexpected track, retains the prior entry and track in audit history, and preserves unrelated CMS settings. Fresh databases seed the replacement directly.
+
+### Lower Lakes junction detour cleanup
+
+The requested old miles 12.51–12.91 contain a northbound road excursion and return. The repair joins original points 1124 (mile 12.491) and 1165 (mile 12.959), following OSM path 310893493 into the junction and the short 310893494 connector south to the continuing trail. All GPS points outside that splice remain exact. The slightly wider splice reaches the actual junction connections instead of cutting across terrain.
+
+`lower-lakes-basin-loop-before-detour-cleanup.geojson` preserves the original plan; `lower-lakes-basin-loop-junction-ways.json` records mapped geometry used for the repair. Rebuild with `node lost-sierra/scripts/clean-lower-lakes-detour.mjs`; after backing up the database, add `--apply` to apply it with a track hash guard and audit history. Resample surfaces afterward with the usual single-ride command. Approximately 0.394 miles of detour are removed; the cleaned route is about 15.82 miles. Climbing and estimated moving time retain the source plan's processed totals. The original source statistics remain in GPX provenance.
