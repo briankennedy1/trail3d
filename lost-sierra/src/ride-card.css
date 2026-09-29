@@ -7,6 +7,10 @@
 .ride-meta-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .guide-page #detail .back-button{display:inline-flex;align-items:center;min-height:36px;padding:0;color:var(--card-muted);font-size:11px;line-height:1.5;font-weight:500}
 .guide-page #detail .detail-area{margin:0;font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--card-muted)}
+.guide-page #detail .detail-region{border:0;background:none;padding:8px 0;min-height:36px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.guide-page #detail>.detail-region{display:block}
+.guide-page #detail .detail-region:hover{color:var(--card-ink)}
+.guide-page #detail .detail-region:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:3px}
 .guide-page #detail>h2{font:600 32px/1.12 Fraunces,Georgia,serif;letter-spacing:-.035em;color:var(--card-ink);margin:0 0 16px}
 #detail .must-ride-banner{margin:-22px -22px 16px;padding:9px 22px 12px;background:#e9d69a;color:#665027;gap:9px}
 #detail .must-ride-banner strong{font-size:10px;letter-spacing:.15em;font-weight:700}
