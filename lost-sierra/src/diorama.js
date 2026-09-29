@@ -84,11 +84,6 @@ export class Diorama {
         const line=new LineSegments2(geometry,new LineMaterial({color,linewidth:width,transparent:true,opacity:.94,depthTest:true,depthWrite:false}));
         line.renderOrder=order;line.frustumCulled=false;this.rivers.add(line);
       }
-      for(const label of data.labels){
-        const [lon,lat]=label.coordinates,element=document.createElement('span');
-        element.className='map-marker river-marker';element.textContent=label.name;this.labels.append(element);
-        this.riverMarkers.push({element,position:point(lon,lat),offsetX:label.offsetX||0});
-      }
     }catch(error){console.warn('Could not show the Feather River:',error);}
   }
   async loadHighways(){
