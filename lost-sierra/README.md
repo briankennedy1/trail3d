@@ -190,3 +190,15 @@ The guide has no ChatGPT Sites hosting dependency. It needs a Node host with per
 - Before public launch, finish operational monitoring, admin recovery, and content/access review.
 
 Local links at `127.0.0.1:5318` work only on the computer running the server.
+
+### Editable public URL slugs
+
+The CMS **URL slug** field controls public links such as `/?ride=lakes-basin-blue`.
+Change it and save normally. Each entry retains a permanent internal ID for its
+GPS track, terrain, surface data, audit history, and saved camera settings.
+Previous slugs and original ID links continue to resolve to the entry and open
+its current URL. Slugs must be lowercase words separated by hyphens; IDs and
+current or historical slugs belonging to another entry cannot be reused.
+
+Lakes Basin Blue uses the public slug `lakes-basin-blue`; its internal ID and
+asset filenames remain `lower-lakes-basin-loop`.

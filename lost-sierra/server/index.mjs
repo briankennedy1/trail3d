@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomBytes, createHash, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { openStore, listEntries, validateEntry, validateHome, saveTrack, root } from './store.mjs';
+import { openStore, listEntries, validateEntry, validateHome, saveTrack, root, assertEntrySlugAvailable, reserveEntrySlug, publicSlugAliases } from './store.mjs';
 const derive=promisify(scrypt), sha=s=>createHash('sha256').update(s).digest('hex');
 const error=(status,message)=>Object.assign(new Error(message),{status});
 async function passwordHash(password) {
@@ -123,7 +123,7 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
           if(user) db.prepare('DELETE FROM sessions WHERE token_hash=?').run(user.token_hash);
           res.setHeader('Set-Cookie',`sierra_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure?'; Secure':''}`);return json(200,{ok:true});
         }
-        if(p==='/api/catalog'&&method==='GET') return json(200,{entries:listEntries(db),settings:Object.fromEntries(db.prepare('SELECT key,value_json FROM settings').all().map(r=>[r.key,JSON.parse(r.value_json)])),sources:db.prepare('SELECT id,url,imported_at FROM sources').all()});
+        if(p==='/api/catalog'&&method==='GET') return json(200,{entries:listEntries(db),slugAliases:publicSlugAliases(db),settings:Object.fromEntries(db.prepare('SELECT key,value_json FROM settings').all().map(r=>[r.key,JSON.parse(r.value_json)])),sources:db.prepare('SELECT id,url,imported_at FROM sources').all()});
         const publicTrack=p.match(/^\/api\/tracks\/([a-z0-9-]+)$/);
         if(publicTrack&&method==='GET') {
           const row=db.prepare(`SELECT t.* FROM tracks t JOIN entries e ON e.id=t.entry_id WHERE e.id=? ${user?'':"AND e.status='published'"}`).get(publicTrack[1]);
@@ -178,10 +178,21 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
             const entry=validateEntry(body);
             if(before&&body.version!==before.version) throw error(409,'Someone saved a newer version. Reload before saving.');
             if(!before&&body.version) throw error(409,'This entry no longer exists.');
-            db.exec('BEGIN');try {
-              if(before) db.prepare('UPDATE entries SET name=?,area=?,latitude=?,longitude=?,status=?,content_json=?,version=version+1,updated_at=? WHERE id=?').run(entry.name,entry.area,entry.coordinates.lat,entry.coordinates.lng,entry.status,JSON.stringify(entry),new Date().toISOString(),id);
-              else db.prepare('INSERT INTO entries(id,kind,name,area,latitude,longitude,status,content_json,updated_at) VALUES(?,?,?,?,?,?,?,?,?)').run(id,entry.kind,entry.name,entry.area,entry.coordinates.lat,entry.coordinates.lng,entry.status,JSON.stringify(entry),new Date().toISOString());
-              if(before&&before.kind!==entry.kind) throw error(400,'Entry type cannot change. Create a new entry instead.');
+            if(before&&before.kind!==entry.kind) throw error(400,'Entry type cannot change. Create a new entry instead.');
+            const oldSlug=before?(JSON.parse(before.content_json).slug||id):id,newSlug=entry.slug||id;
+            db.exec('BEGIN IMMEDIATE');try {
+              assertEntrySlugAvailable(db,id,id);
+              assertEntrySlugAvailable(db,newSlug,id);
+              if(before){
+                reserveEntrySlug(db,id,id);
+                reserveEntrySlug(db,oldSlug,id);
+                reserveEntrySlug(db,newSlug,id);
+                db.prepare('UPDATE entries SET name=?,area=?,latitude=?,longitude=?,status=?,content_json=?,version=version+1,updated_at=? WHERE id=?').run(entry.name,entry.area,entry.coordinates.lat,entry.coordinates.lng,entry.status,JSON.stringify(entry),new Date().toISOString(),id);
+              }else{
+                db.prepare('INSERT INTO entries(id,kind,name,area,latitude,longitude,status,content_json,updated_at) VALUES(?,?,?,?,?,?,?,?,?)').run(id,entry.kind,entry.name,entry.area,entry.coordinates.lat,entry.coordinates.lng,entry.status,JSON.stringify(entry),new Date().toISOString());
+                reserveEntrySlug(db,id,id);
+                reserveEntrySlug(db,newSlug,id);
+              }
               audit(user,before?'entry-update':'entry-create',id,before?JSON.parse(before.content_json):null,entry);db.exec('COMMIT');
             }catch(e){db.exec('ROLLBACK');throw e;}
             return json(before?200:201,{entry:listEntries(db,true).find(e=>e.id===id)});

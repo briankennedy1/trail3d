@@ -16,6 +16,11 @@ CREATE TABLE IF NOT EXISTS entries (
   version INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL
 ) STRICT;
 CREATE INDEX IF NOT EXISTS entries_browse ON entries(status,kind,area);
+CREATE TABLE IF NOT EXISTS entry_slug_aliases (
+  slug TEXT PRIMARY KEY,
+  entry_id TEXT NOT NULL REFERENCES entries(id)
+) STRICT;
+CREATE INDEX IF NOT EXISTS entry_slug_aliases_entry ON entry_slug_aliases(entry_id);
 CREATE TABLE IF NOT EXISTS tracks (
   entry_id TEXT PRIMARY KEY REFERENCES entries(id),
   geojson TEXT NOT NULL CHECK(json_valid(geojson)), source_label TEXT NOT NULL, source_url TEXT,

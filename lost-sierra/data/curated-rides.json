@@ -232,7 +232,8 @@
       "movingTimeEstimated": true,
       "sameStartFinish": true,
       "startMapsUrl": "https://www.google.com/maps?q=39.76599,-120.61788",
-      "finishMapsUrl": ""
+      "finishMapsUrl": "",
+      "slug": "lakes-basin-blue"
     }
   },
   {

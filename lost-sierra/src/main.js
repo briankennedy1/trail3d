@@ -6,6 +6,7 @@ import {overviewRouteColor} from './overview-route-colors.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
 import { rideVariant, shuttleStartIndex } from './ride-variants.js';
 import { groupRideEntries, familyOptions } from './ride-families.js';
+import { publicSlug, entryForSlug } from './entry-slugs.js';
 import { SURFACE_COLORS } from '../../src/route-surfaces';
 const $=s=>document.querySelector(s);
 const creditsDialog=$('#credits-dialog');
@@ -95,6 +96,7 @@ const surfaceKey=types=>{
   return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap, with rider-confirmed corrections. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
 };
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
+let slugAliases={};
 let closeRide=()=>{},captureRideTransition=null,returnToOverview=null,returning=false;
 let trackRequest=null;
 let settingsContext=null,overviewHome={version:0};
@@ -199,8 +201,9 @@ async function reset(push=true){
 }
 
 async function selectEntry(id,push=true,animate=true){
-  if(id==='mt-elwell'){id='mt-elwell-hard-way';history.replaceState({},'',`/?ride=${id}`);}
-  const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
+  if(id==='mt-elwell')id='mt-elwell-hard-way';
+  const entry=entryForSlug(entries,id,slugAliases);if(!entry){toast('That ride is not published.');return;}
+  id=entry.id;
   if(returning){
     returning=false;
     document.body.classList.remove('returning-overview','overview-card-ready');
@@ -217,7 +220,9 @@ async function selectEntry(id,push=true,animate=true){
   $('#browse').hidden=true;$('#detail').hidden=false;$('#detail').setAttribute('aria-busy','true');
   if(!transition)$('#detail').innerHTML='<p class="muted" role="status">Opening the ride…</p>';
   else for(const button of document.querySelectorAll('[data-route-option]'))button.disabled=true;
-  if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
+  const publicUrl=`/?ride=${encodeURIComponent(publicSlug(entry))}`;
+  if(push)history.pushState({},'',publicUrl);
+  else if(new URLSearchParams(location.search).get('ride')!==publicSlug(entry))history.replaceState({},'',publicUrl);
   let trackUnavailable=false;
   if(entry.hasTrack){
     const request=new AbortController();trackRequest=request;
@@ -405,7 +410,7 @@ for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
 try{
-  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');const catalog=await response.json();entries=catalog.entries;overviewHome=catalog.settings.overviewHome||{version:0};
+  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');const catalog=await response.json();entries=catalog.entries;slugAliases=catalog.slugAliases||{};overviewHome=catalog.settings.overviewHome||{version:0};
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
   const initial=new URLSearchParams(location.search).get('ride');

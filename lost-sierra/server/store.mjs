@@ -58,14 +58,42 @@ export function openStore(dir) {
       db.exec('COMMIT');
     }catch(error){db.exec('ROLLBACK');throw error;}
   }
+  // Reserve immutable entry IDs and current public slugs on both new and old DBs.
+  // The alias table retains every earlier canonical slug across later saves.
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    for(const row of db.prepare('SELECT id,content_json FROM entries').all()){
+      reserveEntrySlug(db,row.id,row.id);
+      reserveEntrySlug(db,JSON.parse(row.content_json).slug||row.id,row.id);
+    }
+    // The old Mt. Elwell public link predates the stable-ID migration.
+    if(db.prepare('SELECT id FROM entries WHERE id=?').get('mt-elwell-hard-way')&&
+       !db.prepare('SELECT id FROM entries WHERE id=?').get('mt-elwell'))reserveEntrySlug(db,'mt-elwell','mt-elwell-hard-way');
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
   return db;
 }
 export function rowEntry(row) {
   if(!row) return null;
-  return {...JSON.parse(row.content_json),id:row.id,kind:row.kind,name:row.name,area:row.area,coordinates:{lat:row.latitude,lng:row.longitude},status:row.status,version:row.version,updatedAt:row.updated_at,hasTrack:!!row.has_track};
+  const content=JSON.parse(row.content_json);
+  return {...content,id:row.id,slug:content.slug||row.id,kind:row.kind,name:row.name,area:row.area,coordinates:{lat:row.latitude,lng:row.longitude},status:row.status,version:row.version,updatedAt:row.updated_at,hasTrack:!!row.has_track};
 }
 export function listEntries(db,admin=false) {
   return db.prepare(`SELECT e.*, EXISTS(SELECT 1 FROM tracks t WHERE t.entry_id=e.id) AS has_track FROM entries e ${admin?'':"WHERE e.status='published'"} ORDER BY area,name`).all().map(rowEntry);
+}
+const slugConflict=()=>Object.assign(new Error('That public URL slug is already reserved by another entry.'),{status:409});
+export function assertEntrySlugAvailable(db,slug,id){
+  const alias=db.prepare('SELECT entry_id FROM entry_slug_aliases WHERE slug=?').get(slug);
+  if(alias&&alias.entry_id!==id)throw slugConflict();
+  const primary=db.prepare('SELECT id FROM entries WHERE id=?').get(slug);
+  if(primary&&primary.id!==id)throw slugConflict();
+}
+export function reserveEntrySlug(db,slug,id){
+  assertEntrySlugAvailable(db,slug,id);
+  db.prepare('INSERT OR IGNORE INTO entry_slug_aliases(slug,entry_id) VALUES(?,?)').run(slug,id);
+}
+export function publicSlugAliases(db){
+  return Object.fromEntries(db.prepare("SELECT a.slug,a.entry_id FROM entry_slug_aliases a JOIN entries e ON e.id=a.entry_id WHERE e.status='published'").all().map(row=>[row.slug,row.entry_id]));
 }
 const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl','sameStartFinish','climbingFt','descendingFt','movingMinutes','movingTimeEstimated','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer','shuttle','rideFamily','mustRide'];
 export function validateHome(home) {
@@ -78,6 +106,7 @@ export function validateEntry(input) {
   const fail=message=>{throw Object.assign(new Error(message),{status:400});};
   if (!input || typeof input!=='object') fail('Entry is required.');
   if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.id||'') || input.id.length>100) fail('Use a short lowercase ID with hyphens.');
+  if(input.slug!=null&&input.slug!==''&&(typeof input.slug!=='string'||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.slug)||input.slug.length>100))fail('Use a short lowercase public URL slug with hyphens.');
   if(!['ride','adventure'].includes(input.kind)) fail('Choose a ride or adventure.');
   if(typeof input.name!=='string'||!input.name.trim()||input.name.length>200) fail('A name of 1–200 characters is required.');
   if(typeof input.area!=='string'||!input.area.trim()||input.area.length>100) fail('An area is required.');
@@ -85,6 +114,7 @@ export function validateEntry(input) {
   const {lat,lng}=input.coordinates||{};
   if(!Number.isFinite(lat)||!Number.isFinite(lng)||(input.status==='published'&&(lat<bounds.south||lat>bounds.north||lng<bounds.west||lng>bounds.east))||lat< -90||lat>90||lng< -180||lng>180) fail(`The location must be within this Lost Sierra map (${bounds.south}–${bounds.north}° N, ${-bounds.west}–${-bounds.east}° W).`);
   const result={id:input.id,kind:input.kind,name:input.name.trim(),area:input.area.trim(),status:input.status,coordinates:{lat,lng}};
+  if(input.slug)result.slug=input.slug;
   for(const f of fields) if(input[f]!==undefined) result[f]=input[f];
   for(const f of ['driveMinutes','climbingFt','descendingFt','movingMinutes']) if(result[f]!=null && (!Number.isFinite(result[f])||result[f]<0||result[f]>100000)) fail(`Invalid ${f}.`);
   for(const f of ['bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl']) if(result[f]) {
