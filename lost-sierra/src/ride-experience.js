@@ -36,6 +36,10 @@ export async function prepareRide(entry,track,signal){
   const surfaces=await surfacesRequest;signal.throwIfAborted();
   options.surfaceTypes=await surfaceTypesForTrack(surfaces?.rides?.[entry.id],track.geometry.coordinates);
   signal.throwIfAborted();
+  if(entry.id==='mt-elwell'){
+    const names=new Set(['Gray Eagle Creek','Frazier Falls Road','Gold Lake Highway','Smith Creek']);
+    for(const feature of options.contextFeatures||[])feature.showLabel=names.has(feature.name);
+  }
   if(entry.id==='buzzards-roost-ridge'){
     const namedWaterways=new Set(['Nelson Creek','Middle Fork Feather River']);
     for(const feature of options.contextFeatures||[])if(feature.kind==='waterway')feature.showLabel=namedWaterways.has(feature.name);
