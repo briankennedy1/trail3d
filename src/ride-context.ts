@@ -48,9 +48,9 @@ export function buildRideContext(terrain: Terrain, features: ContextFeature[]) {
       group.add(new Line2(geometry, material));
       if (length > longestLength) { longest = line; longestLength = length; }
     }
-    if (longestLength < 100 || feature.showLabel === false) continue;
+    if ((longestLength < 100 && !feature.labelCoordinates) || feature.showLabel === false) continue;
     // A stable geographic anchor at the midpoint of the longest local section.
-    let remaining = longestLength / 2, anchor = longest[0];
+    let remaining = longestLength / 2, anchor = longest[0] ?? [0, 0] as XY;
     for (let i = 1; i < longest.length; i++) {
       const a = longest[i - 1], b = longest[i], length = Math.hypot(b[0] - a[0], b[1] - a[1]);
       if (remaining <= length) { anchor = [a[0] + (b[0] - a[0]) * remaining / length, a[1] + (b[1] - a[1]) * remaining / length]; break; }

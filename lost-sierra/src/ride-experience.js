@@ -31,6 +31,11 @@ export async function prepareRide(entry,track,signal){
     for(const feature of options.contextFeatures||[])if(feature.kind==='waterway')feature.showLabel=namedWaterways.has(feature.name);
     const dixon=options.contextFeatures?.find(feature=>feature.name==='Dixon Creek');
     if(dixon)dixon.labelCoordinates=[-120.8773506,39.8116425];
+    // Anchor directions on the road toward each exit, visible from the saved home view.
+    if(options.contextFeatures)options.contextFeatures.push(
+      {name:'To Laporte',kind:'road',importance:3,length:0,lines:[],labelCoordinates:[-120.8835023,39.7939973]},
+      {name:'To Quincy',kind:'road',importance:3,length:0,lines:[],labelCoordinates:[-120.8681629,39.8504472]},
+    );
   }
   return {...options,homeStorageKey:null,manageLoading:false};
 }
