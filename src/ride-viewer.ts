@@ -1,6 +1,7 @@
 import './setup';
 import { createFlightPlan } from './ride-flight-plan';
 import { frameApproachTarget } from './ride-approach';
+import { flagClearanceHeight } from './flag-clearance';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRideRoute } from './ride-route';
@@ -480,6 +481,13 @@ export async function mountRideViewer(options: RideViewerOptions) {
   });
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const revealProgress = pois.flags.map(() => 0);
+  const raisedHeights = pois.flags.map(() => 3.2);
+  const clearanceChecked = pois.flags.map(() => -Infinity);
+  const flagGround = (x: number, z: number) => {
+    const mx = x * WORLD_SCALE + map.widthM / 2, my = map.heightM / 2 - z * WORLD_SCALE;
+    if (mx < 0 || mx > map.widthM || my < 0 || my > map.heightM) return null;
+    return (terrain.heightAt(mx, my) - LAKE_LEVEL) / WORLD_SCALE * EXAGGERATION;
+  };
   // Hovering blows the small pennant off like a leaf; it regrows once the pole is back down.
   const pennantGrowth = pois.flags.map(() => 1);
   // Moving off a flag blows its banner away too, while the pole drops and the pennant regrows.
@@ -615,6 +623,20 @@ export async function mountRideViewer(options: RideViewerOptions) {
     for (let i = 0; i < pois.flags.length; i++) {
       const { marker, pole, pennant, label, leaves, looseBanners, bannerWidth: width } = pois.flags[i];
       const active = hoveredFlag === i || selectedFlag === i || pressedFlag === i;
+      if (!active && revealProgress[i] === 0) {
+        raisedHeights[i] = 3.2;
+        clearanceChecked[i] = -Infinity;
+      }
+      if (active && now - clearanceChecked[i] > 180) {
+        // Hold the highest required clearance until closing, avoiding a bobbing
+        // label as the camera or fabric turns. Sample only while a flag is open.
+        raisedHeights[i] = Math.max(raisedHeights[i], flagClearanceHeight(
+          marker.position, width, BANNER_HEIGHT, viewerYaw ?? marker.rotation.y,
+          toViewer, flagGround, Math.hypot(map.widthM, map.heightM) / WORLD_SCALE,
+          Math.max(0.3, map.grid.spacing / WORLD_SCALE),
+        ));
+        clearanceChecked[i] = now;
+      }
       if (viewerYaw !== null) {
         const turn = Math.atan2(Math.sin(viewerYaw - marker.rotation.y), Math.cos(viewerYaw - marker.rotation.y));
         // Swing round quickly while the big flag is out so its label reads straight on.
@@ -646,7 +668,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       for (const leaf of leaves) leaf.update(dt, now / 1000);
 
       const raised = easeOutBack(THREE.MathUtils.clamp((revealProgress[i] - 0.05) / 0.35, 0, 1), 1.1);
-      const poleHeight = 1.75 + 1.45 * raised;
+      const poleHeight = 1.75 + (raisedHeights[i] - 1.75) * raised;
       pole.scale.y = poleHeight;
       pole.position.y = poleHeight / 2;
       const unfurl = THREE.MathUtils.clamp((revealProgress[i] - 0.25) / 0.75, 0, 1);
