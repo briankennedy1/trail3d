@@ -869,5 +869,37 @@
       "startMapsUrl": "https://www.google.com/maps?q=40.04475,-120.97031",
       "finishMapsUrl": ""
     }
+  },
+  {
+    "id": "indian-falls-backcountry-epic",
+    "entry": {
+      "name": "Indian Falls Backcountry Epic",
+      "kind": "ride",
+      "area": "Quincy",
+      "status": "published"
+    },
+    "terrain": "/terrain/indian-falls-backcountry-epic",
+    "track": "routes/indian-falls-backcountry-epic.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 40.04552,
+        "lng": -120.88597
+      },
+      "routeUrl": "https://www.trailforks.com/routeplan/view/786047/",
+      "incomplete": false,
+      "summary": "A long point-to-point ride from Mt. Hough through Indian Falls and Acorn Grotto.",
+      "notes": "Start near Mt. Hough and ride Indian Falls Ridge, Indian Fins, Lower Indian Falls Ridge, and the Acorn Grotto trails.\nThe route finishes near Quincy after its road connections. Arrange transport between the separate start and finish.\nIndian Fins includes black diamond terrain.",
+      "viewer": {
+        "pointsOfInterest": []
+      },
+      "climbingFt": 2008,
+      "descendingFt": 5763,
+      "movingMinutes": 247,
+      "movingTimeEstimated": true,
+      "intensity": "Intense",
+      "sameStartFinish": false,
+      "startMapsUrl": "https://www.google.com/maps?q=40.04552,-120.88597",
+      "finishMapsUrl": "https://www.google.com/maps?q=39.9758,-120.93687"
+    }
   }
 ]

@@ -642,5 +642,90 @@
         "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
       }
     ]
+  },
+  "indian-falls-backcountry-epic": {
+    "coordinatesSha256": "dd4cd4ef27e1bd45e4911e30e4ede9e4d8cec86f1942df4ee23745ae52b6d106",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/786047/",
+    "ranges": [
+      {
+        "from": 0,
+        "to": 1,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Start gaps on Mt Hough Tippy Top, listed as singletrack in Trailforks and included first in the plan."
+      },
+      {
+        "from": 5,
+        "to": 37,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Start gaps on Mt Hough Tippy Top, listed as singletrack in Trailforks and included first in the plan."
+      },
+      {
+        "from": 747,
+        "to": 904,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-indian-falls-ridge/",
+        "rationale": "Descent gaps on Lower Indian Falls Ridge, listed as singletrack in the supplied plan and Trailforks trail page."
+      },
+      {
+        "from": 918,
+        "to": 927,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-indian-falls-ridge/",
+        "rationale": "Descent gaps on Lower Indian Falls Ridge, listed as singletrack in the supplied plan and Trailforks trail page."
+      },
+      {
+        "from": 929,
+        "to": 1019,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-indian-falls-ridge/",
+        "rationale": "Descent gaps on Lower Indian Falls Ridge, listed as singletrack in the supplied plan and Trailforks trail page."
+      },
+      {
+        "from": 1024,
+        "to": 1030,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-indian-falls-ridge/",
+        "rationale": "Descent gaps on Lower Indian Falls Ridge, listed as singletrack in the supplied plan and Trailforks trail page."
+      },
+      {
+        "from": 1157,
+        "to": 1226,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-acorn-grotto-trail/",
+        "rationale": "Traverse gaps through Upper Acorn Grotto, listed as singletrack; route directions follow this trail between Quarry Road crossings."
+      },
+      {
+        "from": 1245,
+        "to": 1510,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-acorn-grotto-trail/",
+        "rationale": "Traverse gaps through Upper Acorn Grotto, listed as singletrack; route directions follow this trail between Quarry Road crossings."
+      },
+      {
+        "from": 1598,
+        "to": 1911,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-acorn-grotto/",
+        "rationale": "Long gap in the Lower Acorn Grotto descent, listed as singletrack in Trailforks and the supplied plan."
+      },
+      {
+        "from": 1914,
+        "to": 1918,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786047/",
+        "rationale": "Short transition at the bottom of the descent onto Oakland Camp Road; continue the adjoining mapped asphalt surface (OSM way 993492652), matching the plan road directions."
+      },
+      {
+        "from": 2161,
+        "to": 2166,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786047/",
+        "rationale": "Finish on Barlow Road after the plan turns off Oakland Camp Road. Infer pavement from the residential road and continuous paved approach; Barlow Road has no explicit OSM surface tag."
+      }
+    ]
   }
 }

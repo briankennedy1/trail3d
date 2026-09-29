@@ -96,6 +96,14 @@ The GPX contained zero elevation placeholders; AWS/USGS terrain samples supply t
 
 The normal one-time curated import adds this ride to existing and fresh databases without changing existing entries. Its default home view fits the route automatically.
 
+## Indian Falls Backcountry Epic — September 29, 2026
+
+Added as another separate Quincy ride from [Trailforks plan 786047](https://www.trailforks.com/routeplan/view/786047/), preserving all 2,167 exported XY points. Trailforks reports 26.07 miles, 2,008 ft climbing, 5,763 ft descending and an estimated 4h 7m. The guide calculates mileage from the actual polyline. It is point-to-point: start 40.04552, -120.88597 (the plan's driving-directions pin); finish 39.9758, -120.93687 (the GPX endpoint on Barlow Road). Endpoint links identify route access, not separately verified parking lots.
+
+Zero GPX elevations were replaced with AWS/USGS terrain samples. OSM provides mapped surface estimates; unmatched sections on Mt Hough Tippy Top, Lower Indian Falls Ridge, Upper Acorn Grotto and Lower Acorn Grotto are estimated as singletrack from the plan's trail list and the corresponding Trailforks trail types. Short gaps in the Oakland Camp Road/Barlow Road finish are estimated as pavement from the route directions and adjacent mapped asphalt. Barlow Road's residential classification has no explicit OSM surface tag. Surface estimates remain separate from rider confirmations. Intense is an initial editorial estimate based on the long ride, climbing, and Indian Fins' black diamond terrain.
+
+The normal one-time curated import adds the entry without modifying existing rides. The viewer fits its initial home automatically and provides separate start and finish flags.
+
 ## Buzzards Roost missing start repair
 
 The rider confirmed recording began late and requested the existing finish as
