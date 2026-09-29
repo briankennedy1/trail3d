@@ -78,5 +78,18 @@
         "source": "Confirmed by Brian, 2026-09-28"
       }
     ]
+  },
+  "mt-elwell-not-so-easy": {
+    "coordinatesSha256": "fa11f608106fab9cf6a7cd519306fdcf4a3ce77e9b1028b8e2c60a6639353a50",
+    "ranges": [
+      {
+        "from": 1425,
+        "to": 1451,
+        "type": "singletrack",
+        "fromMiles": 10,
+        "toMiles": 10.5,
+        "source": "Confirmed by Brian, 2026-09-28"
+      }
+    ]
   }
 }
