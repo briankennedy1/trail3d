@@ -26,7 +26,7 @@ const external=(url,label,iconName,visibleLabel)=>{
 };
 const accessLinks=e=>{
   const same=e.sameStartFinish||(e.startMapsUrl&&e.startMapsUrl===e.finishMapsUrl);
-  return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking',same?'Parking':'Start Parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking','Finish Parking'));
+  return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking',same?undefined:'Start Parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking','Finish Parking'));
 };
 const ridePanels=(entry,content,links,parkingRow='')=>`<div class="ride-content">
   <div id="ride-profile-panel" class="ride-content-panel">${content}</div>
