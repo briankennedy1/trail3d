@@ -1,0 +1,132 @@
+[
+  {
+    "id": "sierra-valley-preserve",
+    "area": "Beckwourth",
+    "driveMinutes": 15,
+    "type": "learn",
+    "name": "Sierra Valley Preserve Nature Center",
+    "summary": null,
+    "routeUrl": null,
+    "coordinates": {
+      "lat": 39.853,
+      "lng": -120.378
+    }
+  },
+  {
+    "id": "cuccias-river-access",
+    "area": "Graeagle",
+    "driveMinutes": 5,
+    "type": "swim",
+    "name": "Cuccia's River Access",
+    "summary": null,
+    "routeUrl": null,
+    "coordinates": {
+      "lat": 39.757,
+      "lng": -120.54
+    }
+  },
+  {
+    "id": "johnsville-swimming-hole",
+    "area": "Johnsville",
+    "driveMinutes": 15,
+    "type": "swim",
+    "name": "Johnsville Swimming Hole",
+    "summary": "Intense hike down to swimming hole at the bottom of Jamison Creek. Wear proper footwear. Unsanctioned swim hole.",
+    "routeUrl": "https://maps.app.goo.gl/2FNNfhESdmtF86R97",
+    "coordinates": {
+      "lat": 39.755,
+      "lng": -120.68
+    }
+  },
+  {
+    "id": "plumas-eureka-state-park",
+    "area": "Johnsville",
+    "driveMinutes": 15,
+    "type": "hike-learn",
+    "name": "Plumas Eureka State Park",
+    "summary": "Museum with scheduled events. Great spot to start a hike to access swim holes and beautiful waterfalls. Parking area has a campground with bathrooms.",
+    "routeUrl": null,
+    "coordinates": {
+      "lat": 39.755,
+      "lng": -120.687
+    }
+  },
+  {
+    "id": "eureka-peak-hike",
+    "area": "Johnsville",
+    "driveMinutes": 15,
+    "type": "hike",
+    "name": "Eureka Peak Hike",
+    "summary": null,
+    "routeUrl": "https://www.trailforks.com/ridelog/view/94371495/",
+    "coordinates": {
+      "lat": 39.755,
+      "lng": -120.687
+    }
+  },
+  {
+    "id": "lower-sardine-sand-lake",
+    "area": "Lakes Basin",
+    "driveMinutes": 10,
+    "type": "hike",
+    "name": "Lower Sardine & Sand Lake Hike",
+    "summary": "Lower sardine and sand lake, hike to upper sardine.",
+    "routeUrl": null,
+    "coordinates": {
+      "lat": 39.685,
+      "lng": -120.66
+    }
+  },
+  {
+    "id": "frazier-falls",
+    "area": "Lakes Basin",
+    "driveMinutes": 10,
+    "type": "hike",
+    "name": "Frazier Falls Trail",
+    "summary": null,
+    "routeUrl": null,
+    "coordinates": {
+      "lat": 39.685,
+      "lng": -120.66
+    }
+  },
+  {
+    "id": "smith-lake",
+    "area": "Lakes Basin",
+    "driveMinutes": 10,
+    "type": "hike-swim",
+    "name": "Smith Lake",
+    "summary": "Park at trailhead. Hike 1 mile to lake. Swim and/or extend hike around the lake.",
+    "routeUrl": "https://maps.app.goo.gl/Ta3zJaeNDu4HjEuS8",
+    "coordinates": {
+      "lat": 39.685,
+      "lng": -120.66
+    }
+  },
+  {
+    "id": "salmon-lake",
+    "area": "Lakes Basin",
+    "driveMinutes": 10,
+    "type": "hike-swim",
+    "name": "Salmon Lake Hike + Watercraft Playing",
+    "summary": "Bring a floatation device — beachfronts are only accessible by swimming/paddling. Expect lots of car traffic, park far back and walk in. Bathroom at trailhead.",
+    "routeUrl": "https://www.trailforks.com/ridelog/planner/view/600811/",
+    "coordinates": {
+      "lat": 39.685,
+      "lng": -120.672
+    }
+  },
+  {
+    "id": "western-pacific-railroad-museum",
+    "area": "Portola",
+    "driveMinutes": 15,
+    "type": "learn",
+    "name": "Western Pacific Railroad Museum",
+    "summary": null,
+    "routeUrl": null,
+    "coordinates": {
+      "lat": 39.81,
+      "lng": -120.47
+    }
+  }
+]

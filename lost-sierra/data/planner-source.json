@@ -1,0 +1,11 @@
+{
+  "source": "https://everstokeplanner.netlify.app/",
+  "asset": "https://everstokeplanner.netlify.app/assets/index-BmeEHyE4.js",
+  "importedAt": "2026-09-29T00:35:25.192647+00:00",
+  "sha256": "4c31c125c59499711cbe06da8d84a4f8ad81f785d4e1d1c9c17d3e3ea86949c3",
+  "counts": {
+    "rides": 22,
+    "adventures": 10
+  },
+  "scope": "Publicly shipped planner data; unsaved admin edits are not included."
+}

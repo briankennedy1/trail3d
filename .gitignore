@@ -3,3 +3,9 @@ dist
 .cache
 .DS_Store
 renders
+
+# Local application state and secrets; use the database backup command.
+lost-sierra/.data/
+lost-sierra/.env
+lost-sierra/.env.*
+lost-sierra/backups/

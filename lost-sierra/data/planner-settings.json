@@ -1,0 +1,58 @@
+{
+  "towns": [
+    {
+      "name": "Graeagle",
+      "lat": 39.7674,
+      "lng": -120.6043
+    },
+    {
+      "name": "Portola",
+      "lat": 39.8104,
+      "lng": -120.4694
+    },
+    {
+      "name": "Quincy",
+      "lat": 39.9368,
+      "lng": -120.9455
+    },
+    {
+      "name": "Downieville",
+      "lat": 39.5588,
+      "lng": -120.8277
+    },
+    {
+      "name": "Sierra City",
+      "lat": 39.5677,
+      "lng": -120.636
+    },
+    {
+      "name": "Truckee",
+      "lat": 39.328,
+      "lng": -120.1833
+    },
+    {
+      "name": "Nevada City",
+      "lat": 39.2616,
+      "lng": -121.0161
+    },
+    {
+      "name": "Susanville",
+      "lat": 40.4163,
+      "lng": -120.653
+    }
+  ],
+  "defaultDriveMinutes": {
+    "Lakes Basin": 10,
+    "Portola": 20,
+    "Quincy": 30,
+    "Graeagle": 45,
+    "Downieville": 60,
+    "Truckee": 75,
+    "Susanville": 90,
+    "Nevada City": 120
+  },
+  "everstoke": {
+    "lat": 39.78074596510399,
+    "lng": -120.61211655564142
+  }
+}

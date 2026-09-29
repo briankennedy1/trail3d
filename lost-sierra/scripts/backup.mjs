@@ -1,0 +1,11 @@
+import { DatabaseSync, backup } from 'node:sqlite';
+import fs from 'node:fs';
+import path from 'node:path';
+const root=path.resolve(import.meta.dirname,'..');
+const dir=process.env.DATA_DIR||path.join(root,'.data');
+const file=path.join(dir,'guide.sqlite');
+if(!fs.existsSync(file)) throw new Error('Start the app once to create its database.');
+const db=new DatabaseSync(file,{readOnly:true});
+const out=path.join(root,'backups');fs.mkdirSync(out,{recursive:true,mode:0o700});
+const dest=path.join(out,`guide-${new Date().toISOString().replaceAll(':','-')}.sqlite`);
+await backup(db,dest);fs.chmodSync(dest,0o600);db.close();console.log(dest);
