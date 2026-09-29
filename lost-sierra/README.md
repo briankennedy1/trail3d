@@ -22,6 +22,8 @@ npm run build
 npm start
 ```
 
+The footer version follows the Git commit count (uncommitted work counts as the next revision). Hover it for the build timestamp and source commit. Rebuilding an unchanged revision keeps its number and updates the timestamp.
+
 Build outputs go to `lost-sierra/dist/`. The root package builds the separate standalone Beckwourth app.
 
 ## Public ride experience
