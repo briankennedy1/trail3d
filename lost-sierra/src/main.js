@@ -85,7 +85,7 @@ const intensityDisplay=entry=>{
   const symbol=level===4?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="#000"/></svg>'
     :level===3?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="#000" stroke="#fff" stroke-width="1.8"/></svg>'
     :level===2?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" fill="#376782" stroke="#fff" stroke-width="1.8"/></svg>':'';
-  return `<div class="ride-intensity intensity-${level}" aria-label="Intensity: ${escape(label)}">${symbol}<strong>${escape(label)}</strong></div>`;
+  return `<div class="ride-intensity intensity-${level}" aria-label="${entry.mustRide?'Must Ride · ':''}Intensity: ${escape(label)}">${entry.mustRide?'<span class="must-ride"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2L5.8 21 7 14.2 2 9.3l6.9-1Z"/></svg><strong>MUST RIDE</strong></span>':''}<span class="intensity-rating">${symbol}<strong>${escape(label)}</strong></span></div>`;
 };
 const surfaceKey=types=>{
   const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt Road',unknown:'Unverified'};

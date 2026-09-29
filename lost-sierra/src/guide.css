@@ -151,3 +151,9 @@
 .family-eyebrow{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#68716c}
 .ride-family-option strong{font-size:15px;color:#315653}
 .ride-family-option select{width:100%;border:1px solid #ded7c7;border-radius:6px;background:#fffaf0;color:#315653;padding:7px;font:600 14px 'DM Sans',sans-serif}
+
+.intensity-rating,.must-ride{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+.must-ride{color:#f5cd62;padding-right:12px;margin-right:2px;border-right:1px solid #ffffff45}
+.must-ride svg{width:20px;height:20px;fill:currentColor;flex:none}
+.ride-intensity:has(.must-ride){gap:8px;padding-inline:10px}
+.ride-intensity:has(.must-ride) strong{font-size:10px;letter-spacing:.08em;overflow-wrap:normal}
