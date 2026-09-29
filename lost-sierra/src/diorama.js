@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import {overviewRouteColor} from './overview-route-colors.js';
+import lakeDavisWaterSource from '../data/routes/lake-davis-water.geojson?raw';
+const lakeDavisWater=JSON.parse(lakeDavisWaterSource);
 import { TERRAIN_VERT, TERRAIN_FRAG, SIDE_VERT, SIDE_FRAG } from './terrain-shaders.js';
 THREE.ColorManagement.enabled=false;
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -220,6 +222,26 @@ export class Diorama {
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
   buildTerrain(d,step,detail){
     const parent=new THREE.Group();this.scene.add(parent);
+    const topMaterial=detail?this.topMat:this.topMat.clone();
+    if(!detail){
+      // Paint the mapped shoreline directly into the terrain so water follows
+      // the same occlusion and crumble animation, including its island holes.
+      const canvas=document.createElement('canvas');canvas.width=canvas.height=2048;
+      const ctx=canvas.getContext('2d');ctx.fillStyle='rgb(0,0,255)';ctx.fillRect(0,0,2048,2048);
+      ctx.fillStyle='rgb(255,110,255)';
+      for(const feature of lakeDavisWater.features){
+        ctx.beginPath();
+        for(const ring of feature.geometry.coordinates){
+          ring.forEach(([lon,lat],i)=>{
+            const x=(lon-d.bbox.west)/(d.bbox.east-d.bbox.west)*2048,y=(d.bbox.north-lat)/(d.bbox.north-d.bbox.south)*2048;
+            if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+          });ctx.closePath();
+        }
+        ctx.fill('evenodd');
+      }
+      const mask=new THREE.CanvasTexture(canvas);
+      topMaterial.uniforms.uMask.value=mask;
+    }
     const minBase=(detail?1350:150)/1000*EX;
     const wallMaterial=new THREE.ShaderMaterial({vertexShader:SIDE_VERT,fragmentShader:SIDE_FRAG,side:THREE.DoubleSide,uniforms:{uBase:{value:minBase*10},uLightDir:{value:new THREE.Vector3(-.55,.9,-.45).normalize()},uFocus:{value:0}}});
     const dx=(d.bbox.east-d.bbox.west)/(d.width-1)*X,dz=(d.bbox.north-d.bbox.south)/(d.height-1)*Z;
@@ -237,7 +259,7 @@ export class Diorama {
         if(i<w-1&&j<h-1){const a=j*w+i;indices.push(a,a+w,a+1,a+1,a+w,a+w+1);}
       }
       const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geometry.setAttribute('aEle',new THREE.Float32BufferAttribute(elevations,1));geometry.setAttribute('aDepth',new THREE.Float32BufferAttribute(elevations.map(()=>0),1));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeBoundingSphere();
-      g.add(new THREE.Mesh(geometry,this.topMat));
+      g.add(new THREE.Mesh(geometry,topMaterial));
       const sides=[],tops=[];
       function edge(a,b){const p=new THREE.Vector3(...positions.slice(a*3,a*3+3)),q=new THREE.Vector3(...positions.slice(b*3,b*3+3));const vertices=[p,q,new THREE.Vector3(p.x,minBase,p.z),q,new THREE.Vector3(q.x,minBase,q.z),new THREE.Vector3(p.x,minBase,p.z)];for(const v of vertices){sides.push(...v);tops.push(Math.max(p.y,q.y));}}
       for(let i=0;i<w-1;i++){edge(i+1,i);edge((h-1)*w+i,(h-1)*w+i+1);}for(let j=0;j<h-1;j++){edge(j*w,(j+1)*w);edge((j+1)*w+w-1,j*w+w-1);}
