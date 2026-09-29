@@ -81,9 +81,9 @@ export class Diorama {
         }
       }
       // Batch the individual NHD reaches into two draws, preserving gaps between branches.
-      for(const [color,width,order] of [[0xb2d6db,4.5,6],[0x4b99b3,2.6,7]]){
+      for(const [color,width,order] of [[0xb6c8c8,4.5,6],[0x78999f,2.6,7]]){
         const geometry=new LineSegmentsGeometry();geometry.setPositions(segments);
-        const line=new LineSegments2(geometry,new LineMaterial({color,linewidth:width,transparent:true,opacity:.94,depthTest:true,depthWrite:false}));
+        const line=new LineSegments2(geometry,new LineMaterial({color,linewidth:width,transparent:true,opacity:.82,depthTest:true,depthWrite:false}));
         line.renderOrder=order;line.frustumCulled=false;this.rivers.add(line);
       }
     }catch(error){console.warn('Could not show the Feather River:',error);}
