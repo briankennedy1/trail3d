@@ -50,8 +50,8 @@
 .ride-settings summary::-webkit-details-marker{display:none}.ride-settings summary:hover,.ride-settings[open] summary{background:#e7eee8}
 .ride-settings summary:focus-visible{outline:2px solid #b95a37;outline-offset:2px}.ride-settings summary svg{width:20px;height:20px}
 .ride-settings-menu{position:absolute;right:0;bottom:42px;width:235px;padding:8px;border:1px solid #ddd7c7;border-radius:12px;background:#fffaf0;box-shadow:0 8px 25px #30362924}
-.ride-settings-menu button{display:block;width:100%;border:0;border-radius:7px;background:none;text-align:left;padding:10px;color:#315653;font-size:12px;font-weight:600}
-.ride-settings-menu button:hover{background:#e7eee8}.ride-settings-menu p{margin:8px 10px 5px;font-size:10px;line-height:1.5;color:#68716c}
+.ride-settings-menu button,.ride-settings-menu a{display:block;width:100%;border:0;border-radius:7px;background:none;text-align:left;padding:10px;color:#315653;font-size:12px;font-weight:600;text-decoration:none}
+.ride-settings-menu button:hover,.ride-settings-menu a:hover{background:#e7eee8}.ride-settings-menu p{margin:8px 10px 5px;font-size:10px;line-height:1.5;color:#68716c}
 
 @media(max-width:700px){.ride-settings{right:14px;bottom:14px}}
 

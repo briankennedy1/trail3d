@@ -31,6 +31,10 @@ function renderSettings(){
   const settings=document.createElement('details');settings.className='ride-settings';
   settings.innerHTML='<summary aria-label="Ride settings" title="Ride settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.1-2 .9-2.1-.5-2 3.5 1.5 1.6v2.3L2.3 15l2 3.5 2.1-.5 2 .9L9 21h4l.6-2.1 2-.9 2.1.5 2-3.5-1.5-1.6v-2.3L19.7 9l-2-3.5-2.1.5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></summary><div class="ride-settings-menu"><button type="button" id="set-home" disabled>Set current view as home</button><button type="button" id="go-home" disabled>Go to home view</button><p>Saves the default view for everyone.</p></div>';
   const summary=settings.querySelector('summary');summary.ariaLabel=context.label;summary.title=context.label;
+  if(context.entryId){
+    const edit=document.createElement('a');edit.href=`/admin.html?entry=${encodeURIComponent(context.entryId)}`;
+    edit.textContent='Edit current route';settings.querySelector('.ride-settings-menu').prepend(edit);
+  }
   document.body.append(settings);
   for(const button of settings.querySelectorAll('button'))button.disabled=!context.ready();
   settings.querySelector('#go-home').onclick=()=>{context.goHome();settings.open=false;};
@@ -109,7 +113,7 @@ async function openRide(entry,rideTrack,token,animate=true){
     $('#back').onclick=()=>reset();
     let ready=false;
     settingsContext={
-      label:'Ride settings',ready:()=>ready,
+      label:'Ride settings',entryId:entry.id,ready:()=>ready,
       capture:()=>viewer.captureHome(),goHome:()=>viewer.goHome(),
       async save(home){
         const response=await fetch(`/api/ride-home/${entry.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:entry.version,home})});
