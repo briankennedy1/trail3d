@@ -4,6 +4,7 @@ import path from 'node:path';
 import {migrateRideSlugs} from './ride-slugs.mjs';
 import {importCuratedRides} from './curated-rides.mjs';
 import {correctBeckwourthLoop} from './beckwourth-loop.mjs';
+import {simplifyRideSignage} from './ride-signage.mjs';
 export const root = path.resolve(import.meta.dirname, '..');
 const scope=JSON.parse(fs.readFileSync(path.join(root,'data/guide-scope.json'),'utf8'));
 const bounds=scope.bbox;
@@ -46,6 +47,7 @@ export function openStore(dir) {
   migrateRideSlugs(db);
   importCuratedRides(db,root,saveTrack);
   correctBeckwourthLoop(db);
+  simplifyRideSignage(db);
   for(const id of scope.excludedEntries||[]){
     const key=`guide-archive-v1:${id}`;
     if(db.prepare('SELECT key FROM settings WHERE key=?').get(key))continue;
