@@ -81,7 +81,9 @@ export class Diorama {
       for(const label of data.labels){
         const [lon,lat]=label.coordinates,element=document.createElement('span');
         element.className='map-marker highway-marker';element.setAttribute('aria-label',`Highway ${label.route}`);
-        element.innerHTML=`<small>CA</small><b>${label.route}</b>`;this.labels.append(element);
+        // California G28-2 marker: domed shield, green field, white border and legend.
+        const arcId=`highway-legend-${this.highwayMarkers.length}`;
+        element.innerHTML=`<svg viewBox="0 0 100 104" aria-hidden="true"><defs><path id="${arcId}" d="M17 42 Q50 23 83 42"/></defs><path d="M50 3 C26 7 4 32 4 65 L4 85 Q4 96 16 98 Q50 104 84 98 Q96 96 96 85 L96 65 C96 32 74 7 50 3Z" fill="#006b42" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><text fill="#fff" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing=".4"><textPath href="#${arcId}" startOffset="50%" text-anchor="middle">CALIFORNIA</textPath></text><text x="50" y="88" fill="#fff" font-family="Arial, sans-serif" font-size="55" font-weight="600" letter-spacing="-2" text-anchor="middle">${label.route}</text></svg>`;this.labels.append(element);
         this.highwayMarkers.push({element,position:world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.4,0))});
       }
     }catch(error){console.warn('Could not show the overview highways:',error);}
