@@ -261,7 +261,9 @@ export class Diorama {
     this.highlightOverviewRoute(null);
     this.entries=entries;this.markers.forEach(m=>m.element.remove());this.markers=[];
     const areas=new Map();for(const e of entries){if(!areas.has(e.area))areas.set(e.area,[]);areas.get(e.area).push(e);}
-    for(const [area,rows] of areas){const lon=rows.reduce((s,e)=>s+e.coordinates.lng,0)/rows.length,lat=rows.reduce((s,e)=>s+e.coordinates.lat,0)/rows.length;
+    for(const [area,rows] of areas){
+      if(rows.length<2)continue;
+      const lon=rows.reduce((s,e)=>s+e.coordinates.lng,0)/rows.length,lat=rows.reduce((s,e)=>s+e.coordinates.lat,0)/rows.length;
       const element=document.createElement('button');element.className='map-marker';element.textContent=area;
       const count=document.createElement('span');count.className='marker-count';count.textContent=rows.length;element.append(count);element.ariaLabel=`Explore ${rows.length} places in ${area}`;element.onclick=()=>this.onArea(area);this.labels.append(element);
       this.markers.push({element,area,position:world(lon,lat,sample(this.region,lon,lat)).add(new THREE.Vector3(0,2,0))});
