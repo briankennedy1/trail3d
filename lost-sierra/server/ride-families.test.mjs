@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {groupRideEntries,familyOptions} from '../src/ride-families.js';
 import {validateEntry} from './store.mjs';
-const hard={id:'mt-elwell',kind:'ride',name:'Mt Elwell',area:'Lakes Basin',status:'published',coordinates:{lat:39.76,lng:-120.62},rideFamily:{id:'mt-elwell',name:'Mt. Elwell',option:'The Hard Way',order:0},shuttle:{enabled:false}};
+const hard={id:'mt-elwell-hard-way',kind:'ride',name:'Mt Elwell',area:'Lakes Basin',status:'published',coordinates:{lat:39.76,lng:-120.62},rideFamily:{id:'mt-elwell',name:'Mt. Elwell',option:'The Hard Way',order:0},shuttle:{enabled:false}};
 const easy={...hard,id:'mt-elwell-not-so-easy',rideFamily:{...hard.rideFamily,option:'The Not So Easy Way',order:1}};
 test('independent routes group into one family without merging their ride modes',()=>{
  const standalone={...hard,id:'beckwourth',name:'Beckwourth',rideFamily:null};

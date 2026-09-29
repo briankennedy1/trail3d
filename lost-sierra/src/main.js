@@ -185,6 +185,7 @@ async function reset(push=true){
 }
 
 async function selectEntry(id,push=true,animate=true){
+  if(id==='mt-elwell'){id='mt-elwell-hard-way';history.replaceState({},'',`/?ride=${id}`);}
   const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
   map?.highlightOverviewRoute(null);
   const transition=!animate?captureRideTransition?.():null;

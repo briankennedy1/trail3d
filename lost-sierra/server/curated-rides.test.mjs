@@ -35,9 +35,9 @@ test('curated imports preserve CMS edits, existing tracks and saved home on repe
  }finally{db.close();fs.rmSync(dir,{recursive:true,force:true});}
 });
 test('all imported tracks fit detailed terrain and have usable profiles',()=>{
- const expectedMiles={'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell':23.64,'mt-elwell-not-so-easy':14.0,'buzzards-roost-ridge':12.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
- for(const {id,terrain} of JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')))){
-  const route=JSON.parse(fs.readFileSync(path.join(root,`data/routes/${id}.geojson`)));
+ const expectedMiles={'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell-hard-way':23.64,'mt-elwell-not-so-easy':14.0,'buzzards-roost-ridge':12.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
+ for(const {id,terrain,track} of JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')))){
+  const route=JSON.parse(fs.readFileSync(path.join(root,`data/${track}`)));
   assert.ok(Math.abs(trackStats(route).distance/1609.344-expectedMiles[id])<.1,id);
   assert.ok(route.geometry.coordinates.every(p=>p.length===3&&p[2]>500),`${id} needs usable elevation values`);
   assert.match(route.properties.sourceUrl,/^https:\/\/www\.trailforks\.com\//);

@@ -1,7 +1,7 @@
 # Mt. Elwell ride family
 
 - Family ID: `mt-elwell`; public family name: **Mt. Elwell**.
-- Existing entry and URL `mt-elwell` remain the **The Hard Way** option, order 0.
+- Entry and URL `mt-elwell-hard-way` identify the **The Hard Way** option, order 0.
 - Each future route option is a separate CMS ride entry with the same family ID/name, its own option name/order, GPS track, notes, stats, home view, and Loop/Shuttle settings. Only published entries appear in the public option selector. The Not So Easy Way is entry `mt-elwell-not-so-easy`, order 1: the Trailforks Elwell to Mill Pond route (59729). It is a point-to-point shuttle from Round Lake trailhead to Mill Pond, with its own GPX elevations, start/finish parking, summit flag and surface classifications. Trailforks reports 14 miles, 2,081 ft climbing and 4,327 ft descending. Moving time is estimated at 2h 35m using the Hard Way effort calibration (distance plus one mile-equivalent per 1,000 ft climb), rounded to five minutes.
 - The Hard Way shuttle drop-off, supplied by Brian: **39.693133, -120.655957**. Nearest track point is index 691, about 5 m from the pin, roughly 8.4 miles into the full loop. It follows the remaining track to the loop parking/start.
 - Shuttle distance: approximately 15.3 miles. Climbing estimate: 2,100 ft, using the share of positive elevation gain remaining after smoothing the DEM profile over a 200 m window, scaled to Trailforks' 4,560 ft full-loop climb. Moving time estimate: 2h 50m, proportional to distance plus 1 mile-equivalent per 1,000 ft climb, calibrated to the full plan's 4h 35m. Both shuttle fields are editable in the CMS; moving time is explicitly marked estimated.
