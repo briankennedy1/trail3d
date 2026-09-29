@@ -50,6 +50,12 @@ export function listEntries(db,admin=false) {
   return db.prepare(`SELECT e.*, EXISTS(SELECT 1 FROM tracks t WHERE t.entry_id=e.id) AS has_track FROM entries e ${admin?'':"WHERE e.status='published'"} ORDER BY area,name`).all().map(rowEntry);
 }
 const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','climbingFt','descendingFt','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer'];
+export function validateHome(home) {
+  const vector=a=>Array.isArray(a)&&a.length===3&&a.every(n=>Number.isFinite(n)&&Math.abs(n)<100000);
+  if(!home||!vector(home.position)||!vector(home.target)||!Number.isFinite(home.zoom)||home.zoom<.65||home.zoom>22)
+    throw Object.assign(new Error('Invalid home view.'),{status:400});
+  return {position:home.position,target:home.target,zoom:home.zoom};
+}
 export function validateEntry(input) {
   const fail=message=>{throw Object.assign(new Error(message),{status:400});};
   if (!input || typeof input!=='object') fail('Entry is required.');
@@ -74,8 +80,7 @@ export function validateEntry(input) {
     const v=result.viewer;
     if(typeof v!=='object'||Array.isArray(v)||Object.keys(v).some(k=>!['home','pointsOfInterest','baseElevation','scale','angleBeats'].includes(k)))fail('Invalid ride viewer settings.');
     if(v.home){
-      const h=v.home,vector=a=>Array.isArray(a)&&a.length===3&&a.every(n=>Number.isFinite(n)&&Math.abs(n)<100000);
-      if(!vector(h.position)||!vector(h.target)||!Number.isFinite(h.zoom)||h.zoom<.65||h.zoom>22)fail('Invalid ride home view.');
+      validateHome(v.home);
     }
     if(v.scale!=null&&(!Number.isFinite(v.scale)||v.scale<.1||v.scale>25))fail('Invalid viewer scale.');
     if(v.baseElevation!=null&&(!Number.isFinite(v.baseElevation)||v.baseElevation< -1000||v.baseElevation>9000))fail('Invalid terrain base.');

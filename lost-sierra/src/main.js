@@ -8,16 +8,56 @@ const external=(url,label)=>{try{if(!['https:','http:'].includes(new URL(url).pr
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
 let closeRide=()=>{};
+let settingsContext=null,overviewHome={version:0};
 const regionalControls=$('.map-controls');
 $('.masthead').id='masthead';$('.sidebar').id='ride-card';
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),3000);}
+
+function renderSettings(){
+  document.querySelector('.ride-settings')?.remove();
+  const context=settingsContext;if(!canSetHome||!context)return;
+  const settings=document.createElement('details');settings.className='ride-settings';
+  settings.innerHTML='<summary aria-label="Ride settings" title="Ride settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.1-2 .9-2.1-.5-2 3.5 1.5 1.6v2.3L2.3 15l2 3.5 2.1-.5 2 .9L9 21h4l.6-2.1 2-.9 2.1.5 2-3.5-1.5-1.6v-2.3L19.7 9l-2-3.5-2.1.5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></summary><div class="ride-settings-menu"><button type="button" id="set-home" disabled>Set current view as home</button><button type="button" id="go-home" disabled>Go to home view</button><p>Saves the default view for everyone.</p></div>';
+  const summary=settings.querySelector('summary');summary.ariaLabel=context.label;summary.title=context.label;
+  document.body.append(settings);
+  for(const button of settings.querySelectorAll('button'))button.disabled=!context.ready();
+  settings.querySelector('#go-home').onclick=()=>{context.goHome();settings.open=false;};
+  settings.querySelector('#set-home').onclick=async()=>{
+    const button=settings.querySelector('#set-home');button.disabled=true;button.textContent='Saving…';
+    try{await context.save(context.capture());settings.open=false;toast('Home view saved for everyone.');}
+    catch(error){toast(error.message);}
+    finally{button.disabled=false;button.textContent='Set current view as home';}
+  };
+}
+function showOverviewSettings(){
+  if(!map)return;
+  settingsContext={label:'Map settings',ready:()=>true,capture:()=>map.captureHome(),goHome:()=>map.reset(),async save(home){
+    const response=await fetch('/api/overview-home',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:overviewHome.version,home})});
+    const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the home view.');
+    overviewHome=result;map.setHome(result.home);
+  }};
+  renderSettings();
+}
+let sessionRequest;
+async function refreshSession(){
+  if(sessionRequest)return sessionRequest;
+  sessionRequest=(async()=>{
+    try{const response=await fetch('/api/session',{cache:'no-store'});const session=response.ok?await response.json():null;
+      const allowed=!!session?.user&&!!session?.canSetHome;if(allowed!==canSetHome){canSetHome=allowed;renderSettings();}
+    }catch{}finally{sessionRequest=null;}
+  })();return sessionRequest;
+}
+window.addEventListener('focus',refreshSession);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSession();});
+setInterval(()=>{if(!document.hidden)refreshSession();},30000);
+
 function filtered(){const query=$('#search').value.toLowerCase().trim(),area=$('#area').value,intensity=$('#intensity').value;return entries.filter(e=>e.kind===kind&&(!area||e.area===area)&&(!intensity||e.intensity===intensity)&&`${e.name} ${e.area} ${e.notes||''} ${e.summary||''}`.toLowerCase().includes(query));}
 function renderList(){const rows=filtered().sort((a,b)=>Number(b.hasTrack)-Number(a.hasTrack));$('#result-count').textContent=`${rows.length} ${kind==='ride'?(rows.length===1?'ride':'rides'):(rows.length===1?'adventure':'adventures')}`;$('#clear').hidden=!($('#search').value||$('#area').value||$('#intensity').value);$('#entries').innerHTML=rows.length?rows.map(e=>`<article class="entry-card"><button class="entry-open" data-id="${escape(e.id)}"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(e.name)}</h3><div class="entry-meta">${e.kind==='ride'?`<span>${escape(e.intensity||'Effort not listed')}</span>${e.climbingFt!=null?`<span>·</span><span>↑ ${number(e.climbingFt)} ft</span>`:''}`:`<span>${escape((e.type||'Explore').replaceAll('-',' + '))}</span>`}${e.hasTrack?'<span class="track-tag">· 3D route</span>':''}</div></button></article>`).join(''):'<p class="empty">No places match your search. Try another filter.</p>';for(const b of document.querySelectorAll('[data-id]'))b.onclick=()=>selectEntry(b.dataset.id);map?.setEntries(rows);}
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
-function reset(push=true){selection++;closeRide();track=null;map?.reset();$('#browse').hidden=false;$('#detail').hidden=true;$('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';$('#map-status').textContent='Pick a ride. Watch the landscape open up.';if(push)history.pushState({},'','/');renderList();}
+function reset(push=true){selection++;closeRide();track=null;map?.reset();$('#browse').hidden=false;$('#detail').hidden=true;$('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';$('#map-status').textContent='Pick a ride. Watch the landscape open up.';if(push)history.pushState({},'','/');renderList();showOverviewSettings();}
 async function selectEntry(id,push=true,animate=true){
   const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
-  const token=++selection;closeRide();track=null;
+  const token=++selection;closeRide();settingsContext=null;renderSettings();track=null;
   $('#browse').hidden=true;$('#detail').hidden=false;$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
   if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
   if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection)return;track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
@@ -28,9 +68,9 @@ async function selectEntry(id,push=true,animate=true){
   $('.sidebar').scrollTop=0;
 }
 async function openRide(entry,rideTrack,token,animate=true){
-  const controller=new AbortController();let viewer,canvas,controls,context,settings;
+  const controller=new AbortController();let viewer,canvas,controls,context;
   closeRide=()=>{
-    controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settings?.remove();
+    controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
     controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
     $('#map-labels').hidden=false;
@@ -49,21 +89,18 @@ async function openRide(entry,rideTrack,token,animate=true){
       <div class="detail-links">${external(rideTrack.properties.sourceUrl,'View original ride')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}</div>
       ${entry.notes||entry.summary?`<details class="ride-notes"><summary>Ride notes</summary><p class="detail-copy">${escape(entry.notes||entry.summary)}</p></details>`:''}`;
     $('#back').onclick=()=>reset();
-    if(canSetHome){
-      settings=document.createElement('details');settings.className='ride-settings';
-      settings.innerHTML='<summary aria-label="Ride settings" title="Ride settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.1-2 .9-2.1-.5-2 3.5 1.5 1.6v2.3L2.3 15l2 3.5 2.1-.5 2 .9L9 21h4l.6-2.1 2-.9 2.1.5 2-3.5-1.5-1.6v-2.3L19.7 9l-2-3.5-2.1.5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></summary><div class="ride-settings-menu"><button type="button" id="set-home" disabled>Set current view as home</button><button type="button" id="go-home" disabled>Go to home view</button><p>Saves the default view for everyone.</p></div>';
-      document.body.append(settings);
-      $('#set-home').onclick=async()=>{
-        const button=$('#set-home'),home=viewer.captureHome();button.disabled=true;button.textContent='Saving…';
-        try{
-          const response=await fetch(`/api/ride-home/${entry.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:entry.version,home})});
-          const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the home view.');
-          Object.assign(entry,result.entry);
-          if(token===selection){viewer.setHome(result.entry.viewer.home);settings.open=false;toast('Home view saved for this ride.');}
-        }catch(error){toast(error.message);}finally{button.disabled=false;button.textContent='Set current view as home';}
-      };
-      $('#go-home').onclick=()=>{viewer.goHome();settings.open=false;};
-    }
+    let ready=false;
+    settingsContext={
+      label:'Ride settings',ready:()=>ready,
+      capture:()=>viewer.captureHome(),goHome:()=>viewer.goHome(),
+      async save(home){
+        const response=await fetch(`/api/ride-home/${entry.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:entry.version,home})});
+        const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the home view.');
+        Object.assign(entry,result.entry);
+        if(token===selection)viewer.setHome(result.entry.viewer.home);
+      }
+    };
+    renderSettings();
     controls=regionalControls.cloneNode(true);regionalControls.replaceWith(controls);
     canvas=document.createElement('canvas');canvas.id='scene';canvas.className='ride-scene';
     canvas.setAttribute('aria-label',`3D terrain map of ${entry.name}. Hover or tap a flag to reveal its place name.`);
@@ -77,7 +114,7 @@ async function openRide(entry,rideTrack,token,animate=true){
     }
     const enableRide=()=>{
       if(token!==selection)return;
-      controls.inert=false;$('#play').disabled=false;
+      ready=true;controls.inert=false;$('#play').disabled=false;
       for(const button of document.querySelectorAll('.ride-settings button'))button.disabled=false;
     };
     controls.inert=true;options.onEntryComplete=enableRide;
@@ -113,11 +150,11 @@ for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
 try{
-  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');entries=(await response.json()).entries;
+  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');const catalog=await response.json();entries=catalog.entries;overviewHome=catalog.settings.overviewHome||{version:0};
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
   const initial=new URLSearchParams(location.search).get('ride');
-  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},});await map.init(filtered());if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
+  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},});await map.init(filtered(),overviewHome.home);if(!initial)showOverviewSettings();if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
   if(initial){
     // Shared links and refreshes open at the saved home view, with no overview
     // flash or crumble. Only an in-page ride selection makes the approach.

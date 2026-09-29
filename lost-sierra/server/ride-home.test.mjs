@@ -15,9 +15,11 @@ test('home authoring requires admin login even locally and persists as the publi
   t.after(async()=>{await app?.close();fs.rmSync(dir,{recursive:true,force:true});});
   const read=async route=>(await fetch(origin+'/api/'+route,{headers:{Cookie:cookie}})).json();
   const save=(body,requestOrigin=origin)=>fetch(origin+'/api/ride-home/beckwourth-peak',{method:'PUT',headers:{Origin:requestOrigin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const saveOverview=(body,requestOrigin=origin)=>fetch(origin+'/api/overview-home',{method:'PUT',headers:{Origin:requestOrigin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)});
   await start();
   assert.equal((await read('session')).canSetHome,false);
   assert.equal((await save({})).status,401);
+  assert.equal((await saveOverview({})).status,401);
   const setup=await fetch(origin+'/api/setup',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:app.setupToken,username:'admin',password:'test-only-password'})});
   assert.equal(setup.status,201);cookie=setup.headers.get('set-cookie').split(';')[0];
   assert.equal((await read('session')).canSetHome,true);
@@ -27,9 +29,15 @@ test('home authoring requires admin login even locally and persists as the publi
   assert.equal((await save({version:before.version,home:{...home,zoom:0}})).status,400);
   assert.equal((await save({version:before.version,home})).status,200);
   assert.equal((await save({version:before.version,home})).status,409);
+  assert.equal((await saveOverview({version:0,home},'https://elsewhere.example')).status,403);
+  assert.equal((await saveOverview({version:0,home:{...home,position:[0]}})).status,400);
+  assert.equal((await saveOverview({version:0,home})).status,200);
+  assert.equal((await saveOverview({version:0,home})).status,409);
   await app.close();await start();
   const after=(await read('catalog')).entries.find(e=>e.id==='beckwourth-peak');
   assert.deepEqual(after.viewer.home,home);
+  const publicCatalog=await (await fetch(origin+'/api/catalog')).json();
+  assert.deepEqual(publicCatalog.settings.overviewHome,{version:1,home});
   assert.equal(after.version,before.version+1);
   assert.equal(after.notes,before.notes);
   assert.equal(after.status,before.status);
@@ -38,4 +46,5 @@ test('home authoring requires admin login even locally and persists as the publi
   assert.equal(logout.status,200);
   assert.equal((await read('session')).canSetHome,false);
   assert.equal((await save({version:after.version,home})).status,401);
+  assert.equal((await saveOverview({version:1,home})).status,401);
 });

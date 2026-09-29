@@ -4,7 +4,7 @@ import path from 'node:path';
 import { randomBytes, createHash, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { openStore, listEntries, validateEntry, saveTrack, root } from './store.mjs';
+import { openStore, listEntries, validateEntry, validateHome, saveTrack, root } from './store.mjs';
 const derive=promisify(scrypt), sha=s=>createHash('sha256').update(s).digest('hex');
 const error=(status,message)=>Object.assign(new Error(message),{status});
 async function passwordHash(password) {
@@ -72,6 +72,19 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
         const user=currentUser(req);
         const canSetHome=!!user;
         if(p==='/api/session'&&method==='GET') return json(200,{user:user?{username:user.username}:null,needsSetup:!db.prepare('SELECT id FROM users LIMIT 1').get(),canSetHome});
+        if(p==='/api/overview-home'&&method==='PUT'){
+          if(!canSetHome)throw error(401,'Sign in as an admin to set the map home view.');
+          const body=await readBody(req);
+          const row=db.prepare('SELECT value_json FROM settings WHERE key=?').get('overviewHome');
+          const before=row?JSON.parse(row.value_json):{version:0};
+          if(body.version!==before.version)throw error(409,'The home view changed. Reload before saving.');
+          const next={version:before.version+1,home:validateHome(body.home)};
+          db.exec('BEGIN');try{
+            db.prepare('INSERT INTO settings VALUES(?,?,NULL) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json').run('overviewHome',JSON.stringify(next));
+            audit(user,'overview-home-update',null,before,next);db.exec('COMMIT');
+          }catch(e){db.exec('ROLLBACK');throw e;}
+          return json(200,next);
+        }
         const homeRoute=p.match(/^\/api\/ride-home\/([a-z0-9-]+)$/);
         if(homeRoute&&method==='PUT'){
           if(!canSetHome)throw error(401,'Sign in as an admin to set the ride home view.');

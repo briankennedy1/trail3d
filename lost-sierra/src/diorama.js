@@ -39,11 +39,13 @@ export class Diorama {
   }
   projection(){const w=this.element.clientWidth,h=this.element.clientHeight||1;const height=this.camera.position.distanceTo(this.controls.target)*.62*(w>700?1:1.45),width=height*w/h;const sx=w>700?width*180/w:0,sy=w>700?0:-height*.20;this.camera.left=-width/2+sx;this.camera.right=width/2+sx;this.camera.top=height/2+sy;this.camera.bottom=-height/2+sy;this.camera.updateProjectionMatrix();}
   resize(){const {width,height}=this.element.getBoundingClientRect();this.renderer.setSize(width,height);this.projection();}
-  async init(entries){
+  async init(entries,savedHome){
     [this.region,this.beck]=await Promise.all([dataset('region'),dataset('beckwourth')]);
     const rb=this.region.bbox;const center=world((rb.west+rb.east)/2,(rb.south+rb.north)/2,1400);this.home.target.copy(center);this.home.position.copy(center).add(new THREE.Vector3(-75,105,-135).multiplyScalar(Math.max((rb.north-rb.south)*Z,(rb.east-rb.west)*X)/111.32));this.camera.position.copy(this.home.position);this.controls.target.copy(center);
     this.buildTerrain(this.region,16,false);
     this.detailTerrain=this.buildTerrain(this.beck,Math.max(this.beck.width,this.beck.height),true);this.detailTerrain.visible=false;
+    if(savedHome)this.setHome(savedHome);
+    this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;this.controls.update();this.projection();
     this.setEntries(entries);
   }
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
@@ -86,7 +88,7 @@ export class Diorama {
     const element=document.createElement('span');element.className='map-marker everstoke';element.textContent='EVERSTOKE';this.labels.append(element);
     this.markers.push({element,area:null,position:world(-120.6121166,39.780746,sample(this.region,-120.6121166,39.780746)).add(new THREE.Vector3(0,2,0))});
   }
-  move(target,position,duration=2.1){this.tween={start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
+  move(target,position,duration=2.1,zoom=1){this.tween={zoom,start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
   rideAnchor(map){
     const metersLon=111320*Math.cos((map.bbox.south+map.bbox.north)*Math.PI/360);
     return world(map.bbox.west+map.widthM/2/metersLon,map.bbox.south+map.heightM/2/111320,1898);
@@ -165,8 +167,10 @@ export class Diorama {
     }
   }
   clearRoute(){for(const c of [...this.routeGroup.children]){c.geometry.dispose();c.material.dispose();this.routeGroup.remove(c);}this.route=null;}
-  reset(){this.active=null;this.points=null;this.track=null;this.clearRoute();this.crumbleTarget=0;this.move(this.home.target,this.home.position,2.5);}
-  north(){const offset=this.camera.position.clone().sub(this.controls.target),radius=offset.length();if(Math.abs(Math.atan2(offset.x,offset.z))<.02){const pose=this.active?this.focusPose:this.home;this.move(pose.target,pose.position,1.5);}else this.move(this.controls.target,this.controls.target.clone().add(new THREE.Vector3(0,radius*.68,radius*.733)),1.5);}
+  captureHome(){return {position:this.camera.position.toArray(),target:this.controls.target.toArray(),zoom:this.camera.zoom};}
+  setHome(home){this.home={position:new THREE.Vector3(...home.position),target:new THREE.Vector3(...home.target),zoom:home.zoom};}
+  reset(){this.active=null;this.points=null;this.track=null;this.clearRoute();this.crumbleTarget=0;this.move(this.home.target,this.home.position,2.5,this.home.zoom||1);}
+  north(){const offset=this.camera.position.clone().sub(this.controls.target),radius=offset.length();if(Math.abs(Math.atan2(offset.x,offset.z))<.02){const pose=this.active?this.focusPose:this.home;this.move(pose.target,pose.position,1.5,pose.zoom||1);}else this.move(this.controls.target,this.controls.target.clone().add(new THREE.Vector3(0,radius*.68,radius*.733)),1.5);}
   control(action,dt){this.tween=null;const offset=this.camera.position.clone().sub(this.controls.target);if(action==='left'||action==='right')offset.applyAxisAngle(new THREE.Vector3(0,1,0),(action==='left'?1:-1)*dt*.8);else{const spherical=new THREE.Spherical().setFromVector3(offset);spherical.phi=clamp(spherical.phi+(action==='up'?-1:1)*dt*.6,.55,1.35);offset.setFromSpherical(spherical);}this.camera.position.copy(this.controls.target).add(offset);}
   frame(now){requestAnimationFrame(this.frame);const dt=Math.min((now-this.last)/1000,.05);this.last=now;
     if(this.suspended)return;
@@ -176,7 +180,7 @@ export class Diorama {
       if(!this.active&&this.crumble<.02)this.detailTerrain.visible=false;
     }
     if(this.held)this.control(this.held,dt);
-    if(this.tween){const t=this.tween,p=clamp((now-t.start)/1000/t.duration),s=ease(p);this.camera.zoom=THREE.MathUtils.lerp(t.fromZoom,1,s);this.camera.position.lerpVectors(t.from,t.to,s);this.controls.target.lerpVectors(t.fromTarget,t.target,s);if(p>=1)this.tween=null;}
+    if(this.tween){const t=this.tween,p=clamp((now-t.start)/1000/t.duration),s=ease(p);this.camera.zoom=THREE.MathUtils.lerp(t.fromZoom,t.zoom,s);this.camera.position.lerpVectors(t.from,t.to,s);this.controls.target.lerpVectors(t.fromTarget,t.target,s);if(p>=1)this.tween=null;}
     this.controls.update();this.projection();
     const needle=document.querySelector('#compass-needle');if(needle){const delta=this.camera.position.clone().sub(this.controls.target);needle.style.transform=`rotate(${Math.atan2(delta.x,delta.z)}rad)`;}
     const boxes=[];
