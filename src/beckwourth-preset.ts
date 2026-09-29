@@ -15,6 +15,5 @@ export const BECKWOURTH_VIEW: Omit<RideViewerOptions, 'data'> = {
   pointsOfInterest: [
     // Lidar summit southwest of the older GNIS waypoint; park from Sierra Trails' plan.
     { name: 'Beckwourth Peak', latitude: 39.7725, longitude: -120.43315, elevationFt: 7267, color: PEAK_FLAG_COLOR, url: 'https://www.peakbagger.com/peak.aspx?pid=2554' },
-    { name: 'Portola City Park', latitude: 39.80559, longitude: -120.46534, color: '#34877b', url: 'https://maps.app.goo.gl/hbWBTh69hicjwSwB6' },
   ],
 };
