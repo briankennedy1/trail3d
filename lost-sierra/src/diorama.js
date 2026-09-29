@@ -148,7 +148,9 @@ export class Diorama {
     if(!this.routePopupPoint)return;
     const p=this.routePopupPoint.clone().project(this.camera),w=this.element.clientWidth,h=this.element.clientHeight;
     this.routePopup.style.left=`${(p.x*.5+.5)*w}px`;
-    this.routePopup.style.top=`${(-.5*p.y+.5)*h}px`;
+    // The map-marker stem is 15 CSS pixels long. Its tip, not the label box,
+    // must land on the projected route start at every zoom and camera angle.
+    this.routePopup.style.top=`${(-.5*p.y+.5)*h-15}px`;
   }
   async loadOverviewRoute(entry){
     try{
@@ -171,8 +173,8 @@ export class Diorama {
       this.routePopup.href=`/?ride=${encodeURIComponent(entry.id)}`;
       this.routePopup.textContent=entry.name;
       this.routePopup.setAttribute('aria-label',`Explore ${entry.name}`);
-      // Anchor the label above the route's start, independent of pointer position.
-      this.routeLabelAnchor=new THREE.Vector3(...positions.slice(0,3)).add(new THREE.Vector3(0,2,0));
+      // Use the exact rendered start point; a world-space lift drifts on orbit/zoom.
+      this.routeLabelAnchor=new THREE.Vector3(...positions.slice(0,3));
     }catch(error){console.warn('Could not show Beckwourth Peak on the overview:',error);}
   }
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
