@@ -718,5 +718,35 @@
         "pointsOfInterest": []
       }
     }
+  },
+  {
+    "id": "jamison-creek-big-way",
+    "entry": {
+      "name": "Jamison Creek Big Way",
+      "kind": "ride",
+      "area": "Lakes Basin"
+    },
+    "terrain": "/terrain/jamison-creek-big-way",
+    "track": "routes/jamison-creek-big-way.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.76818,
+        "lng": -120.61954
+      },
+      "routeUrl": "https://www.trailforks.com/routeplan/view/785635/",
+      "startMapsUrl": "https://www.google.com/maps?q=39.76818,-120.61954",
+      "finishMapsUrl": "",
+      "sameStartFinish": true,
+      "climbingFt": 3986,
+      "descendingFt": 3977,
+      "movingMinutes": 270,
+      "movingTimeEstimated": true,
+      "incomplete": false,
+      "summary": "A longer Jamison Creek route through Gold Valley, Grass Lake and Smith Creek.",
+      "notes": "The route links Jamison Mine Road, Jamison Campground Road and Sloat McRae Road with the Gold Valley OHV trail.\n\nContinue through the upper Jamison Creek trail, its rock garden and Grass Lake section, then Smith Lake Trail and Smith Creek Trail.",
+      "viewer": {
+        "pointsOfInterest": []
+      }
+    }
   }
 ]
