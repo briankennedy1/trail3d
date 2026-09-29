@@ -11,5 +11,20 @@
       </div>
 
     </nav></div>
-<section id="map" aria-label="Interactive three dimensional map of the Lost Sierra"><div id="canvas"></div><div id="map-labels"></div><div class="map-heading"><span class="eyebrow" id="map-kicker">NORTHERN CALIFORNIA · 3D FIELD GUIDE</span><h2 id="map-title">A little further<br>from the ordinary.</h2></div><div id="loading" role="status">Painting the mountains…</div><div class="map-caption"><span id="map-status">Pick a ride. Watch the landscape open up.</span><span class="attribution"><span class="site-version">v%GUIDE_VERSION%</span> · Elevation: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS / USGS</a> · Water: <a href="https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer" target="_blank" rel="noopener">USGS</a> · Roads: <a href="https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/SHN_Lines/FeatureServer/0" target="_blank" rel="noopener">Caltrans</a> · Routes: <a href="https://www.trailforks.com/" target="_blank" rel="noopener">Trailforks</a> contributors · Map detail: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a> · Inspired by <a href="https://github.com/kneath/tahoe-trails" target="_blank" rel="noopener">Tahoe Trails</a></span></div></section></main>
+<section id="map" aria-label="Interactive three dimensional map of the Lost Sierra"><div id="canvas"></div><div id="map-labels"></div><div class="map-heading"><span class="eyebrow" id="map-kicker">NORTHERN CALIFORNIA · 3D FIELD GUIDE</span><h2 id="map-title">A little further<br>from the ordinary.</h2></div><div id="loading" role="status">Painting the mountains…</div><div class="map-caption"><span id="map-status">Pick a ride. Watch the landscape open up.</span><span class="attribution"><span class="site-version">v%GUIDE_VERSION%</span> · <button type="button" id="credits-open" aria-haspopup="dialog" aria-controls="credits-dialog">Credits</button></span></div></section></main>
+<dialog id="credits-dialog" aria-labelledby="credits-title">
+  <form method="dialog"><button class="dialog-close" aria-label="Close credits" autofocus>×</button></form>
+  <h2 id="credits-title">Credits</h2>
+  <p class="credits-intro">The people, projects, and map data behind Ride The Lost Sierra.</p>
+  <dl class="credits-list">
+    <div><dt>Inspiration</dt><dd><a href="https://github.com/kneath/tahoe-trails" target="_blank" rel="noopener">Tahoe Trails</a></dd></div>
+    <div><dt>Original 3D viewer</dt><dd><a href="https://github.com/briankennedy1/trail3d" target="_blank" rel="noopener">Trail3D</a></dd></div>
+    <div><dt>Ride guide &amp; local knowledge</dt><dd><a href="https://everstokeplanner.netlify.app/" target="_blank" rel="noopener">Everstoke Planner</a></dd></div>
+    <div><dt>Elevation</dt><dd><a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">AWS Terrain Tiles</a> · USGS 3DEP &amp; SRTM</dd></div>
+    <div><dt>Waterways &amp; lakes</dt><dd><a href="https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer" target="_blank" rel="noopener">USGS National Hydrography Dataset</a></dd></div>
+    <div><dt>California highways</dt><dd><a href="https://caltrans-gis.dot.ca.gov/arcgis/rest/services/CHhighway/SHN_Lines/FeatureServer/0" target="_blank" rel="noopener">Caltrans</a></dd></div>
+    <div><dt>Routes &amp; ride recordings</dt><dd><a href="https://www.trailforks.com/" target="_blank" rel="noopener">Trailforks</a> and its contributors</dd></div>
+    <div><dt>Roads, trails &amp; surface estimates</dt><dd>© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · ODbL</dd></div>
+  </dl>
+</dialog>
 <div id="toast" role="status"></div><script type="module" src="/src/main.js"></script></body></html>

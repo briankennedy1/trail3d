@@ -28,6 +28,16 @@
 .link-brand-icon{display:block;flex:0 0 22px;width:22px;height:22px;object-fit:contain}
 .guide-page .notice{background:#f1eadb}.guide-page #loading{background:#f6efe0;font:22px Fraunces,Georgia,serif;color:#315653}
 .guide-page .map-caption{position:fixed;left:38px;bottom:24px;right:auto;color:#777a6d;font-size:10px}.guide-page .map-caption #map-status{display:none}.guide-page .attribution{font-size:10px}
+.guide-page #credits-open{pointer-events:auto;border:0;background:none;padding:5px 0;color:inherit;font:inherit;text-decoration:underline;text-underline-offset:3px}
+.guide-page #credits-open:hover{color:#315653}
+.guide-page #credits-dialog{width:480px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 48px);padding:30px;border-radius:18px;background:#fffaf0;color:#315653}
+.guide-page #credits-dialog h2{font-size:30px;margin:0 0 10px}
+.guide-page #credits-dialog .credits-intro{font-size:12px;line-height:1.5;margin:0 24px 20px 0;color:#68716c}
+.credits-list{margin:0;display:grid;gap:14px}
+.credits-list dt{font-size:10px;font-weight:700;color:#68716c;margin-bottom:4px}
+.credits-list dd{font-size:13px;line-height:1.5;margin:0}
+.credits-list a{color:#9b5a37;text-decoration-thickness:1px}
+.guide-page #credits-dialog .dialog-close{width:36px;height:36px;right:10px;top:10px;line-height:1}
 .guide-page .map-marker{background:#fffaf0e8;color:#315653;border-color:#b6b69b;border-radius:6px}.guide-page .map-marker:hover{background:#315653;color:#fffaf0}
 .guide-page a.map-marker{text-decoration:none}
 .ride-context-labels{position:fixed;inset:0;z-index:1;pointer-events:none}
@@ -83,3 +93,4 @@
 }
 
 .guide-page .highway-destination{font-size:10px;font-weight:600;pointer-events:none}
+@media(max-width:700px){.guide-page .map-caption{display:block;top:64px;bottom:auto;left:19px;z-index:2}.guide-page #credits-dialog{padding:24px}.credits-list{gap:12px}}

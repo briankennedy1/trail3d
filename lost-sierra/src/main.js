@@ -4,6 +4,13 @@ import { Diorama } from './diorama.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
 import { SURFACE_COLORS } from '../../src/route-surfaces';
 const $=s=>document.querySelector(s);
+const creditsDialog=$('#credits-dialog');
+$('#credits-open').onclick=()=>creditsDialog.showModal();
+creditsDialog.addEventListener('click',event=>{
+  if(event.target!==creditsDialog)return;
+  const r=creditsDialog.getBoundingClientRect();
+  if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)creditsDialog.close();
+});
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const external=(url,label,iconName)=>{
   try{
