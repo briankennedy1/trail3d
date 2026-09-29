@@ -1,0 +1,582 @@
+{
+  "downieville-adventure-mode": {
+    "coordinatesSha256": "b37b5ec1681468d6f9287ff383e0c1d753dffc211f86a801b8548a7f36174978",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/785607/",
+    "ranges": [
+      {
+        "from": 1909,
+        "to": 1917,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-first-divide/",
+        "rationale": "Gap on the First Divide singletrack corridor in the source route; extend the adjoining trail surface."
+      },
+      {
+        "from": 1945,
+        "to": 1950,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-first-divide/",
+        "rationale": "Gap on the First Divide singletrack corridor in the source route; extend the adjoining trail surface."
+      },
+      {
+        "from": 1994,
+        "to": 2001,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-first-divide/",
+        "rationale": "Gap on the First Divide singletrack corridor in the source route; extend the adjoining trail surface."
+      },
+      {
+        "from": 2036,
+        "to": 2056,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-first-divide/",
+        "rationale": "Gap on the First Divide singletrack corridor in the source route; extend the adjoining trail surface."
+      },
+      {
+        "from": 2158,
+        "to": 2162,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-first-divide/",
+        "rationale": "Gap on Lower First Divide, listed as singletrack by Trailforks."
+      },
+      {
+        "from": 2192,
+        "to": 2196,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-first-divide/",
+        "rationale": "Gap on Lower First Divide, listed as singletrack by Trailforks."
+      },
+      {
+        "from": 2294,
+        "to": 2298,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/trails/main-st/",
+        "rationale": "Downtown finish on the Main Street road portion of the source route; infer pavement from the street alignment and adjoining paved segments."
+      },
+      {
+        "from": 2303,
+        "to": 2311,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/trails/main-st/",
+        "rationale": "Downtown finish on the Main Street road portion of the source route; infer pavement from the street alignment and adjoining paved segments."
+      }
+    ]
+  },
+  "haskell-peak": {
+    "coordinatesSha256": "0333f5aaad3c36f9a247522507274363a7d99291fb2a31295f3d9648f011aeaf",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/route/yuba-expeditions-haskell-peak-out-and-back/",
+    "ranges": [
+      {
+        "from": 106,
+        "to": 116,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      },
+      {
+        "from": 124,
+        "to": 128,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      },
+      {
+        "from": 139,
+        "to": 188,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      },
+      {
+        "from": 201,
+        "to": 206,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      },
+      {
+        "from": 384,
+        "to": 388,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      },
+      {
+        "from": 402,
+        "to": 451,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      },
+      {
+        "from": 461,
+        "to": 465,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      },
+      {
+        "from": 473,
+        "to": 483,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/haskell-peak-chapman-creek-conector/",
+        "rationale": "Outbound and return gaps on the Haskell Peak\u2013Chapman Creek connector; Trailforks lists this connector as singletrack."
+      }
+    ]
+  },
+  "lower-lakes-basin-loop": {
+    "coordinatesSha256": "7d7376e1c39b63f4dceb2a7f1c752277c279e619ca18918df7955293bb45e6e7",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/785884/",
+    "ranges": [
+      {
+        "from": 0,
+        "to": 2,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/trails/frazier-falls-road-paved/",
+        "rationale": "Short start access on the Frazier Falls paved road portion of the source route."
+      },
+      {
+        "from": 16,
+        "to": 112,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/trails/frazier-falls-road-paved/",
+        "rationale": "Gap follows Frazier Falls Road, explicitly listed as a paved path."
+      },
+      {
+        "from": 466,
+        "to": 512,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/trails/lakes-basin-campground-road/",
+        "rationale": "Starts at the Trailforks campground-road trailhead (39.70509, -120.65955), then follows the road to Grassy Lake Trail; the road is listed as paved."
+      },
+      {
+        "from": 1366,
+        "to": 1367,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/trails/frazier-falls-road-paved/",
+        "rationale": "Short finish connector at Frazier Falls Road; infer pavement from the road alignment and adjacent paved segment."
+      }
+    ]
+  },
+  "mt-elwell-hard-way": {
+    "coordinatesSha256": "7d2d45cf6eb0dbc1cd77429b894e2be5a3f626a43885b6ed591590c775bd8769",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/785580/",
+    "ranges": [
+      {
+        "from": 2343,
+        "to": 2344,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lakes-basin-trail-access/",
+        "rationale": "Short gap at the end of the singletrack approach before the dirt access section; best estimate from the source trail list and preceding surface."
+      }
+    ]
+  },
+  "jamison-creek-loop": {
+    "coordinatesSha256": "e8cf3fa9699a047fb666a78e7e771dc42a65d2c3d703304d495607331ebfbc6b",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/785988/",
+    "ranges": [
+      {
+        "from": 285,
+        "to": 292,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/sloat-mcrae-road/",
+        "rationale": "Small gap on the Sloat McRae/Gold Valley access corridor; Sloat McRae is listed as doubletrack."
+      },
+      {
+        "from": 384,
+        "to": 413,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/gold-valley-ohv-trail-jamison-to-lavezzola/",
+        "rationale": "Gap on Gold Valley OHV, listed as doubletrack; represented as Dirt Road."
+      },
+      {
+        "from": 855,
+        "to": 862,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mount-washington-trail/",
+        "rationale": "Short gap on Mount Washington Trail, listed as singletrack despite neighboring OSM dirt classifications."
+      },
+      {
+        "from": 1043,
+        "to": 1049,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/jamison-creek-trail-top/",
+        "rationale": "Small gap in the Jamison Creek descent, listed as singletrack."
+      }
+    ]
+  },
+  "lakes-basin-intense-explore": {
+    "coordinatesSha256": "81e5008e2ed5e4ada77219d374832423e7f44b70084c2ddfb3525ae8f87c188b",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/ridelog/planner/view/601617/",
+    "ranges": [
+      {
+        "from": 0,
+        "to": 2,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/planner/view/601617/",
+        "rationale": "Very short trailhead access before the Grassy Lake/Bear Lake singletrack network. Best guess is dirt access; the source lists an overwhelmingly trail-based ride and no snapped paved sections."
+      }
+    ]
+  },
+  "jamison-creek-big-way": {
+    "coordinatesSha256": "6eeea12a803a6cf0bb984352d314463b770bc44ef25df6f39946333228e97010",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/785635/",
+    "ranges": [
+      {
+        "from": 489,
+        "to": 495,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/sloat-mcrae-road/",
+        "rationale": "Gap on the Sloat McRae access road, listed as doubletrack."
+      },
+      {
+        "from": 522,
+        "to": 526,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/sloat-mcrae-road/",
+        "rationale": "Gap on the Sloat McRae access road, listed as doubletrack."
+      },
+      {
+        "from": 1989,
+        "to": 2036,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/smith-creek-trail-12e22/",
+        "rationale": "Final descent follows Smith Creek in the source route; Trailforks lists it as singletrack up to the paved-road exit."
+      }
+    ]
+  },
+  "mills-peak-shuttle": {
+    "coordinatesSha256": "494ef3a376b17a97785f6232448210068cdb3a0ce4c8aacf575b11b001821ba8",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/785873/",
+    "ranges": [
+      {
+        "from": 51,
+        "to": 53,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mills-peak-trail/",
+        "rationale": "Very short road-to-trail junction gap; infer the start of Mills Peak singletrack from the adjoining trail."
+      },
+      {
+        "from": 1230,
+        "to": 1236,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/785873/",
+        "rationale": "Gap on the lower paved-road finish after Mills Peak Lower; infer asphalt from the route alignment and paved segments on both sides."
+      }
+    ]
+  },
+  "mills-peak-shuttle-from-the-top": {
+    "coordinatesSha256": "17bfa6e5068bb3844524aad4f13067443814849aa4e64d1edd0317242cd59603",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/785881/",
+    "ranges": [
+      {
+        "from": 243,
+        "to": 247,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mills-peak-trail/",
+        "rationale": "Small gap in the Mills Peak descent, listed as singletrack."
+      },
+      {
+        "from": 414,
+        "to": 419,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mills-peak-trail/",
+        "rationale": "Small gap in the Mills Peak descent, listed as singletrack."
+      }
+    ]
+  },
+  "lake-davis-loop": {
+    "coordinatesSha256": "bccb727d8db050c4bdb99e09941968165795b85b73f0dcb5b31e62d40e60cca0",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/route/yuba-expeditions-lake-davis-loop/",
+    "ranges": [
+      {
+        "from": 2,
+        "to": 56,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/route/yuba-expeditions-lake-davis-loop/",
+        "rationale": "Eastern lakeshore section follows Lake Davis Trail; the source describes the loop as a mix of singletrack and gravel roads."
+      },
+      {
+        "from": 57,
+        "to": 231,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/route/yuba-expeditions-lake-davis-loop/",
+        "rationale": "Eastern lakeshore section follows Lake Davis Trail; the source describes the loop as a mix of singletrack and gravel roads."
+      },
+      {
+        "from": 327,
+        "to": 386,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/route/yuba-expeditions-lake-davis-loop/",
+        "rationale": "Western/southern loop follows Delleker Forest Road. The source directions identify this as the road portion of the singletrack/gravel loop."
+      },
+      {
+        "from": 477,
+        "to": 520,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/route/yuba-expeditions-lake-davis-loop/",
+        "rationale": "Return on the eastern Lake Davis Trail per the source directions; best estimate is singletrack."
+      }
+    ]
+  },
+  "hough-classic": {
+    "coordinatesSha256": "d054228ed3a94a72cee2a3dc7108d57d741096cb5b2a70af46c40fa3eb89b938",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/ridelog/view/111153927/",
+    "ranges": [
+      {
+        "from": 0,
+        "to": 38,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/111153927/",
+        "rationale": "Short trailhead/parking movement at the start of the ride; infer dirt access from the adjacent unpaved approach."
+      },
+      {
+        "from": 3561,
+        "to": 3784,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Gap follows the Tippy Top summit spur shown in this ride log; Trailforks lists it as singletrack."
+      },
+      {
+        "from": 3803,
+        "to": 3845,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Return gap on the same Tippy Top singletrack summit spur."
+      },
+      {
+        "from": 6051,
+        "to": 6890,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-acorn-grotto/",
+        "rationale": "Long gap aligns with Lower Acorn Grotto in the ride log; Trailforks lists this trail as singletrack."
+      }
+    ]
+  },
+  "hough-tollgate": {
+    "coordinatesSha256": "ac40546004819f07b6b032713e2b990ecd36c41817b55ae793cc41b00f5889a0",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+    "ranges": [
+      {
+        "from": 5,
+        "to": 12,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Short lower access-road gap in the ride log; infer pavement from the road alignment and classified asphalt on both sides."
+      },
+      {
+        "from": 68,
+        "to": 75,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Short lower access-road gap in the ride log; infer pavement from the road alignment and classified asphalt on both sides."
+      },
+      {
+        "from": 93,
+        "to": 98,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Short lower access-road gap in the ride log; infer pavement from the road alignment and classified asphalt on both sides."
+      },
+      {
+        "from": 309,
+        "to": 325,
+        "type": "asphalt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Short lower access-road gap in the ride log; infer pavement from the road alignment and classified asphalt on both sides."
+      },
+      {
+        "from": 425,
+        "to": 437,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Short unpaved access connector before the Taylor Creek climb; infer dirt from the adjoining access road."
+      },
+      {
+        "from": 1294,
+        "to": 1346,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Gap along the Taylor Creek / Upper Taylor Creek climb shown in the ride log; continue the adjoining singletrack surface."
+      },
+      {
+        "from": 2364,
+        "to": 2376,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Gap along the Taylor Creek / Upper Taylor Creek climb shown in the ride log; continue the adjoining singletrack surface."
+      },
+      {
+        "from": 5131,
+        "to": 5134,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Gap along the Taylor Creek / Upper Taylor Creek climb shown in the ride log; continue the adjoining singletrack surface."
+      },
+      {
+        "from": 5263,
+        "to": 5271,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Gap along the Taylor Creek / Upper Taylor Creek climb shown in the ride log; continue the adjoining singletrack surface."
+      },
+      {
+        "from": 6389,
+        "to": 6582,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Gap follows the Tippy Top summit spur shown in this ride log; Trailforks lists it as singletrack."
+      },
+      {
+        "from": 6715,
+        "to": 6730,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/crystal-lake-road-694907/",
+        "rationale": "Outbound/return gap on Crystal Lake Road, listed as a dirt/gravel road."
+      },
+      {
+        "from": 6734,
+        "to": 6823,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/crystal-lake-road-694907/",
+        "rationale": "Outbound/return gap on Crystal Lake Road, listed as a dirt/gravel road."
+      },
+      {
+        "from": 6880,
+        "to": 6959,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/crystal-lake-road-694907/",
+        "rationale": "Outbound/return gap on Crystal Lake Road, listed as a dirt/gravel road."
+      },
+      {
+        "from": 7064,
+        "to": 7081,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-trailhead-access/",
+        "rationale": "Short summit trailhead-access gap, listed as a dirt/gravel road."
+      },
+      {
+        "from": 8152,
+        "to": 8159,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Small descent gap in the Mt Hough / Tollgate singletrack corridor shown in the ride log."
+      },
+      {
+        "from": 8220,
+        "to": 8228,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/93704187/",
+        "rationale": "Small descent gap in the Mt Hough / Tollgate singletrack corridor shown in the ride log."
+      }
+    ]
+  },
+  "indian-falls-acorn-grotto": {
+    "coordinatesSha256": "a7c05b875351636f06168a935ee5033700ffdadd1764e0077377ab0f9f019b7a",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/ridelog/view/89050236/",
+    "ranges": [
+      {
+        "from": 140,
+        "to": 244,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/89050236/",
+        "rationale": "Short trailhead-access spur before the Lower Indian Falls Ridge climb; infer dirt from the adjoining access segments."
+      },
+      {
+        "from": 277,
+        "to": 866,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-indian-falls-ridge/",
+        "rationale": "Gap on Lower Indian Falls Ridge in the ride log, listed as singletrack."
+      },
+      {
+        "from": 970,
+        "to": 2185,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-indian-falls-ridge/",
+        "rationale": "Continuation of the Lower Indian Falls Ridge climb, listed as singletrack."
+      },
+      {
+        "from": 2446,
+        "to": 2664,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-acorn-grotto-trail/",
+        "rationale": "Traverse gap beyond Indian Falls Ridge toward Upper Acorn Grotto; infer singletrack from the route alignment and source trail list."
+      },
+      {
+        "from": 2740,
+        "to": 2750,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/89050236/",
+        "rationale": "Very short forest-road crossing/connector between trail sections; continue the adjoining dirt access surface."
+      },
+      {
+        "from": 2776,
+        "to": 3765,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/upper-acorn-grotto-trail/",
+        "rationale": "Long traverse gap toward Acorn Grotto. Trailforks lists Upper Acorn Grotto as singletrack and describes it as the trail alternative to the forest road."
+      },
+      {
+        "from": 4053,
+        "to": 4895,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-acorn-grotto/",
+        "rationale": "Long descent gap aligns with Lower Acorn Grotto in the ride log; Trailforks lists it as singletrack."
+      },
+      {
+        "from": 5314,
+        "to": 5322,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/berry-creek-86877/",
+        "rationale": "Small gap in the Berry Creek portion of the ride log; Trailforks lists it as singletrack."
+      },
+      {
+        "from": 5828,
+        "to": 5838,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/berry-creek-86877/",
+        "rationale": "Small gap in the Berry Creek portion of the ride log; Trailforks lists it as singletrack."
+      },
+      {
+        "from": 8244,
+        "to": 8466,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/lower-indian-falls-ridge/",
+        "rationale": "Return on the same Lower Indian Falls Ridge singletrack corridor as the outward climb."
+      },
+      {
+        "from": 8475,
+        "to": 8518,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/ridelog/view/89050236/",
+        "rationale": "Return on the same short dirt trailhead-access spur at the start of the ride."
+      }
+    ]
+  }
+}

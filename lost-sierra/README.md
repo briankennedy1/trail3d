@@ -138,6 +138,7 @@ Source pages provide processed climbing/descent and moving-time estimates. Raw G
 ### Surface corrections
 
 - `data/route-surface-overrides.json`: confirmed ranges bound to the track’s coordinate SHA-256.
+- `data/route-surface-estimates.json`: Trailforks-based best estimates for previously unverified sections, with source links, reasoning, review date, and the coordinate SHA-256. These are not rider confirmations.
 - `public/terrain/route-surfaces.json`: generated classifications consumed by both map and elevation profile.
 - Ranges use segment indices `[from, to)`. Convert mile boundaries using the same projected geometry as the viewer.
 
@@ -145,7 +146,9 @@ Source pages provide processed climbing/descent and moving-time estimates. Raw G
 node scripts/build-route-surfaces.mjs /absolute/path/to/cached-overpass-ways.json --ride downieville-original
 ```
 
-The input is a cached Overpass response with highway ways and geometry. A single-ride build preserves every other generated record. The builder rejects corrections whose coordinate hash no longer matches. After replacing a track, review and remap its corrections. A deliberate catalog rebuild requires `--all --confirm-replace-catalog`; zero-match input is rejected unless `--allow-all-unknown` is explicitly provided.
+The input is a cached Overpass response with highway ways and geometry. A single-ride build preserves every other generated record. Rider-confirmed corrections take priority; reviewed Trailforks estimates fill only remaining unknown segments. The generated record keeps applied estimates separate from confirmed overrides. The builder rejects corrections or estimates whose coordinate hash no longer matches. After replacing a track, review and remap both. A deliberate catalog rebuild requires `--all --confirm-replace-catalog`; zero-match input is rejected unless `--allow-all-unknown` is explicitly provided.
+
+The September 29, 2026 Trailforks review fills 33.9 previously unverified miles across 13 published rides. Named singletrack, paved paths, and dirt/gravel roads inform the classifications; doubletrack is represented as Dirt Road. Short parking and junction connectors use a best estimate from the route and adjoining surfaces. Already classified sections and rider-confirmed corrections are preserved.
 
 Recent Downieville corrections: Original is asphalt after mile 15.2; Adventure Mode’s previously unverified sections between miles 8 and 16 are singletrack. Existing classified sections in that Adventure Mode interval remain unchanged.
 

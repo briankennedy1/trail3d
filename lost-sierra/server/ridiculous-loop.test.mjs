@@ -44,7 +44,8 @@ test('Ridiculous Route seeds as a loop with singletrack from displayed mile 14.4
     const types=await surfaceTypesForTrack(read('public/terrain/route-surfaces.json').rides[id],c);
     const correction=read('data/route-surface-overrides.json')[id].ranges[0];
     assert.ok(types.slice(correction.from).every(type=>type==='singletrack'));
-    assert.equal(types[0],'unknown');assert.equal(types[1264],'dirt');
+    // Trailforks review fills the short start access; the confirmed tail still wins.
+    assert.equal(types[0],'dirt');assert.equal(types[1264],'dirt');
     const meta=read(`public/terrain/${id}/terrain.json`),bytes=fs.readFileSync(path.join(root,`public/terrain/${id}/terrain.bin`));
     const points=regionalRideData(track,meta,new Uint16Array(bytes.buffer,bytes.byteOffset,bytes.length/2)).data.ride.points;
     let meters=0;for(let i=1;i<=correction.from;i++)meters+=Math.hypot(points[i][0]-points[i-1][0],points[i][1]-points[i-1][1]);

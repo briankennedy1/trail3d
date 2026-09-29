@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {applySurfaceEstimates} from './surface-estimates.mjs';
 const args=process.argv.slice(2),sourceFile=args[0];
 const option=name=>{const i=args.indexOf(name);return i<0?null:args[i+1];};
 const rideId=option('--ride'),all=args.includes('--all');
@@ -38,6 +39,8 @@ for(const way of source.elements){
 }
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')));
 const overrides=JSON.parse(fs.readFileSync(path.join(root,'data/route-surface-overrides.json')));
+const estimatesFile=path.join(root,'data/route-surface-estimates.json');
+const estimates=fs.existsSync(estimatesFile)?JSON.parse(fs.readFileSync(estimatesFile)):{};
 const catalog=[{id:'beckwourth-peak',track:'beckwourth-track.geojson'},...manifest];
 const rides=rideId?catalog.filter(r=>r.id===rideId):catalog;
 if(!rides.length)throw Error(`Ride ${rideId} is missing from curated-rides.json.`);
@@ -71,12 +74,15 @@ for(const ride of rides){
   if(confirmed.coordinatesSha256!==coordinatesSha256)throw Error(`${ride.id}: review surface corrections after changing the GPS track.`);
   for(const r of confirmed.ranges)types.fill(r.type,r.from,r.to);
  }
+ const estimated=applySurfaceEstimates(types,coordinatesSha256,estimates[ride.id],ride.id);
  const ranges=[],totals={singletrack:0,asphalt:0,dirt:0,unknown:0},used=new Set();
  for(let i=0;i<types.length;i++){totals[types[i]]+=dist[i];if(ids[i])used.add(ids[i]);const last=ranges.at(-1);if(last?.type===types[i])last.to=i+1;else ranges.push({from:i,to:i+1,type:types[i]});}
  if(!used.size&&!args.includes('--allow-all-unknown'))throw Error(`${ride.id}: no mapped ways matched the track; check the Overpass export or pass --allow-all-unknown after review.`);
  for(const id of used)output.ways[id]=sources[id];
- output.rides[ride.id]={coordinatesSha256,pointCount:coords.length,ranges,meters:totals,...(confirmed?{overrides:confirmed.ranges}:{}),...(rideId?{retrievedAt:new Date().toISOString()}:{})};
+ output.rides[ride.id]={coordinatesSha256,pointCount:coords.length,ranges,meters:totals,...(confirmed?{overrides:confirmed.ranges}:{}),...(estimated?{estimates:estimated}:{}),...(rideId?{retrievedAt:new Date().toISOString()}:{})};
  console.log(ride.id,Object.fromEntries(Object.entries(totals).map(([k,v])=>[k,`${(v/1609.344).toFixed(2)} mi`])),ranges.length+' sections');
 }
 const temporary=`${outputFile}.${process.pid}.tmp`;
+const estimateMethod=' Reviewed Trailforks estimates fill remaining unknown segments after rider-confirmed corrections; their source links and reasoning are recorded separately.';
+if(Object.values(output.rides).some(ride=>ride.estimates)&&!output.method?.includes(estimateMethod.trim()))output.method=(output.method||'')+estimateMethod;
 try{fs.writeFileSync(temporary,JSON.stringify(output)+'\n',{flag:'wx'});fs.renameSync(temporary,outputFile);}catch(error){try{fs.unlinkSync(temporary);}catch{}throw error;}
