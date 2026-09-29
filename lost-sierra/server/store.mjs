@@ -32,7 +32,7 @@ export function openStore(dir) {
     db.exec('BEGIN');
     try {
       for(const area of scope.excludedAreas) {
-        db.prepare("UPDATE entries SET status='archived',version=version+1,updated_at=? WHERE area=?").run(new Date().toISOString(),area);
+        db.prepare("UPDATE entries SET status='archived',version=version+1,updated_at=? WHERE area=? AND status!='archived'").run(new Date().toISOString(),area);
       }
       db.prepare('UPDATE settings SET value_json=? WHERE key=?').run(JSON.stringify(settings.towns.filter(t=>!scope.excludedAreas.includes(t.name))),'towns');
       db.prepare('INSERT INTO settings VALUES(?,?,NULL)').run(scope.id,JSON.stringify(scope));
@@ -59,7 +59,7 @@ export function validateEntry(input) {
   if(typeof input.area!=='string'||!input.area.trim()||input.area.length>100) fail('An area is required.');
   if(!['draft','published','archived'].includes(input.status)) fail('Choose draft, published, or archived.');
   const {lat,lng}=input.coordinates||{};
-  if(!Number.isFinite(lat)||!Number.isFinite(lng)||(input.status==='published'&&(lat<bounds.south||lat>bounds.north||lng<bounds.west||lng>bounds.east))||lat< -90||lat>90||lng< -180||lng>180) fail('The location must be within this Lost Sierra map (39.49–40.49° N, 121.04–120.28° W).');
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||(input.status==='published'&&(lat<bounds.south||lat>bounds.north||lng<bounds.west||lng>bounds.east))||lat< -90||lat>90||lng< -180||lng>180) fail(`The location must be within this Lost Sierra map (${bounds.south}–${bounds.north}° N, ${-bounds.west}–${-bounds.east}° W).`);
   const result={id:input.id,kind:input.kind,name:input.name.trim(),area:input.area.trim(),status:input.status,coordinates:{lat,lng}};
   for(const f of fields) if(input[f]!==undefined) result[f]=input[f];
   for(const f of ['driveMinutes','climbingFt','descendingFt']) if(result[f]!=null && (!Number.isFinite(result[f])||result[f]<0||result[f]>100000)) fail(`Invalid ${f}.`);

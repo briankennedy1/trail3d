@@ -1,1 +1,1 @@
-{"bbox":{"west":-121.04,"east":-120.28,"south":39.49,"north":40.49},"width":257,"height":417,"scale":4,"min":694.7237022600465,"max":2530.3228459549678,"source":"AWS Terrain Tiles (USGS 3DEP and SRTM)","sourceUrl":"https://registry.opendata.aws/terrain-tiles/","zoom":10}
+{"bbox":{"west":-121.04,"east":-120.28,"south":39.49,"north":40.2},"width":257,"height":417,"scale":4,"min":694.5903955820272,"max":2548.619677653978,"source":"AWS Terrain Tiles (USGS 3DEP and SRTM)","sourceUrl":"https://registry.opendata.aws/terrain-tiles/","zoom":10}

@@ -1,5 +1,14 @@
 {
-  "id": "lost-sierra-core-v1",
-  "excludedAreas": ["Nevada City", "Truckee"],
-  "bbox": { "west": -121.04, "east": -120.28, "south": 39.49, "north": 40.49 }
+  "id": "lost-sierra-core-v2",
+  "excludedAreas": [
+    "Nevada City",
+    "Truckee",
+    "Susanville"
+  ],
+  "bbox": {
+    "west": -121.04,
+    "east": -120.28,
+    "south": 39.49,
+    "north": 40.2
+  }
 }

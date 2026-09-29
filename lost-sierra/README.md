@@ -28,7 +28,7 @@ The original Beckwourth site and its existing server are unchanged. The regional
 - Regional relief from actual AWS Terrarium elevation tiles; no API key needed at runtime.
 - Select a ride to break away surrounding terrain and smoothly move into its area. Return to rebuild the regional map.
 - The curated Beckwourth route has its own detailed terrain, elevation scrubbing, and a 45-second orbit playback. Playback ignores accidental profile scrubbing. The green rider only appears after interaction.
-- 20 rides and 10 off-bike adventures in the active guide, selected from 22 rides and 10 adventures imported from the public Everstoke planner. Search, area/effort filters, external route/video links, and favorites stored on each visitor’s device.
+- 19 rides and 10 off-bike adventures in the active guide, selected from 22 rides and 10 adventures imported from the public Everstoke planner. Search, area/effort filters, external route/video links, and favorites stored on each visitor’s device.
 - Route-specific URLs (`/?ride=beckwourth-peak`). Local links work only on this computer until hosted.
 - Username/password admin. Create/edit entries, draft/publish/archive, import GPX/GeoJSON, export structured content, and change the admin password.
 - SQLite persistence with source snapshots, version conflicts, sessions, and an audit trail of edits and replaced tracks.
@@ -52,13 +52,13 @@ python3 scripts/import-planner.py /path/to/planner.js
 
 The importer refreshes the **source snapshot files**, not live admin edits. The database seeds these snapshots only once on its first launch. Subsequent restarts never overwrite edits. Review/diff future source imports before applying changes to existing records.
 
-The planner ships **location pins and external links, not GPS tracks**. Its coordinates are approximate area pins, often repeated for several rides. 19 active rides currently need a GPX/GeoJSON track before their actual route can be rendered. A direct request to the linked Trailforks ridelog returned HTTP 403; no access controls were bypassed. Export accessible GPX files normally and add them through the admin workshop.
+The planner ships **location pins and external links, not GPS tracks**. Its coordinates are approximate area pins, often repeated for several rides. 18 active rides currently need a GPX/GeoJSON track before their actual route can be rendered. A direct request to the linked Trailforks ridelog returned HTTP 403; no access controls were bypassed. Export accessible GPX files normally and add them through the admin workshop.
 
 The bundled Beckwourth track is the cleaned September 25, 2026 recording (Trailforks `124349783`) from the original diorama. It differs from the planner’s linked ride (`92464225`), and the UI labels this distinction. Imported climb/descent values remain marked as planner values; displayed distance comes from the shown track. Missing source statistics are never guessed. E-bike recommendations do not establish access permission. Current conditions are not tracked yet.
 
 ### Geographic coverage
 
-The current terrain covers 39.49–40.49 N, 121.04–120.28 W. Nevada City and Truckee are archived and excluded from the guide; the untouched import snapshots preserve their original records. `data/guide-scope.json` defines this coverage. Uploads outside that region are rejected with an explanation. GPX accepts one continuous track segment or route; GeoJSON accepts one LineString with 2–30,000 points. Gaps longer than 5 km and nonfinite coordinates are rejected. Tracks without elevation are displayed on sampled terrain.
+The current terrain covers 39.49–40.20 N, 121.04–120.28 W. Nevada City, Truckee, and Susanville are archived and excluded from the guide; the untouched import snapshots preserve their original records. `data/guide-scope.json` defines this coverage. Uploads outside that region are rejected with an explanation. GPX accepts one continuous track segment or route; GeoJSON accepts one LineString with 2–30,000 points. Gaps longer than 5 km and nonfinite coordinates are rejected. Tracks without elevation are displayed on sampled terrain.
 
 Regenerate elevation assets with `npm run terrain` (requires Internet access). The current script also copies the curated track/terrain from the sibling original Beckwourth app. The generated assets are checked in, so the app runs independently without regeneration. Terrain source: https://registry.opendata.aws/terrain-tiles/.
 
@@ -94,6 +94,6 @@ Tests use a temporary database and localhost port 19531. They cover unauthentica
 
 Use a Node host/container with a **persistent disk** for SQLite. Build assets first, then run `npm start`; this is not a static-only deployment. Set `DATA_DIR` to the persistent disk, `PORT` to the service port, `HOST=0.0.0.0` inside a container, and `APP_ORIGIN=https://your-domain.example`. Put HTTPS in front and preserve the original Host header. Keep a single server instance with SQLite; migrate to Postgres if multiple instances or editors require it. Arrange scheduled off-host database backups before public launch.
 
-No domain, hosting account, live deployment, spending, public registration, or external messaging has been created. The next content milestone is obtaining/reviewing the other 19 GPS tracks and correcting the repeated approximate pins. Before launch, add password recovery/another admin provisioning workflow, operational monitoring, and a review of trail access and seasonal notes. The present admin can change their password after signing in; there is no email-based reset.
+No domain, hosting account, live deployment, spending, public registration, or external messaging has been created. The next content milestone is obtaining/reviewing the other 18 GPS tracks and correcting the repeated approximate pins. Before launch, add password recovery/another admin provisioning workflow, operational monitoring, and a review of trail access and seasonal notes. The present admin can change their password after signing in; there is no email-based reset.
 
 Technical references: [Node SQLite](https://nodejs.org/api/sqlite.html), [Vite backend integration](https://vite.dev/guide/backend-integration.html).

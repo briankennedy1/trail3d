@@ -43,7 +43,7 @@ export class Diorama {
   resize(){const {width,height}=this.element.getBoundingClientRect();this.renderer.setSize(width,height);this.projection();}
   async init(entries){
     [this.region,this.beck]=await Promise.all([dataset('region'),dataset('beckwourth')]);
-    const rb=this.region.bbox;const center=world((rb.west+rb.east)/2,(rb.south+rb.north)/2,1400);this.home.target.copy(center);this.home.position.copy(center).add(new THREE.Vector3(-75,105,-135));this.camera.position.copy(this.home.position);this.controls.target.copy(center);
+    const rb=this.region.bbox;const center=world((rb.west+rb.east)/2,(rb.south+rb.north)/2,1400);this.home.target.copy(center);this.home.position.copy(center).add(new THREE.Vector3(-75,105,-135).multiplyScalar(Math.max((rb.north-rb.south)*Z,(rb.east-rb.west)*X)/111.32));this.camera.position.copy(this.home.position);this.controls.target.copy(center);
     this.buildTerrain(this.region,16,false);
     this.detailTerrain=this.buildTerrain(this.beck,Math.max(this.beck.width,this.beck.height),true);this.detailTerrain.visible=false;
     this.setEntries(entries);
