@@ -43,8 +43,8 @@ function wireRideNotes(onOpen=()=>{}){
     content.classList.toggle('show-notes',open);button.setAttribute('aria-pressed',String(open));
     profile.inert=open;notes.inert=!open;
     profile.setAttribute('aria-hidden',String(open));notes.setAttribute('aria-hidden',String(!open));
-    if(open){notes.scrollTop=0;$('.sidebar').scrollTop=0;}
-    else button.focus({preventScroll:true});
+    $('.sidebar').scrollTop=0;window.scrollTo({top:0,behavior:'instant'});
+    if(!open)button.focus({preventScroll:true});
   };
   button.onclick=()=>show(button.getAttribute('aria-pressed')!=='true');
   $('#ride-notes-back').onclick=()=>show(false);
