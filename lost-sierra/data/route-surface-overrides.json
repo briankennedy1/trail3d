@@ -99,5 +99,40 @@
         "source": "Confirmed by Brian, 2026-09-28"
       }
     ]
+  },
+  "downieville-adventure-mode": {
+    "coordinatesSha256": "b37b5ec1681468d6f9287ff383e0c1d753dffc211f86a801b8548a7f36174978",
+    "ranges": [
+      {
+        "from": 893,
+        "to": 902,
+        "type": "singletrack",
+        "source": "Brian confirmed unverified sections between miles 8 and 16 as singletrack, 2026-09-28"
+      },
+      {
+        "from": 905,
+        "to": 928,
+        "type": "singletrack",
+        "source": "Brian confirmed unverified sections between miles 8 and 16 as singletrack, 2026-09-28"
+      },
+      {
+        "from": 930,
+        "to": 946,
+        "type": "singletrack",
+        "source": "Brian confirmed unverified sections between miles 8 and 16 as singletrack, 2026-09-28"
+      },
+      {
+        "from": 1266,
+        "to": 1272,
+        "type": "singletrack",
+        "source": "Brian confirmed unverified sections between miles 8 and 16 as singletrack, 2026-09-28"
+      },
+      {
+        "from": 1552,
+        "to": 1558,
+        "type": "singletrack",
+        "source": "Brian confirmed unverified sections between miles 8 and 16 as singletrack, 2026-09-28"
+      }
+    ]
   }
 }
