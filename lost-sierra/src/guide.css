@@ -54,3 +54,6 @@
 @media(max-width:700px){.ride-settings{right:14px;bottom:14px}}
 
 .overview-route-popup{z-index:4;text-decoration:none}
+
+.guide-page .highway-marker{display:flex;flex-direction:column;gap:0;padding:3px 6px;background:#fffaf0ed;border:1px solid #848b7c;border-radius:5px 5px 9px 9px;color:#46564c;pointer-events:none;line-height:1;box-shadow:0 2px 5px #34463218}
+.highway-marker::after{display:none}.highway-marker small{font-size:6px;letter-spacing:1px;margin-bottom:2px}.highway-marker b{font-size:12px;font-weight:700}
