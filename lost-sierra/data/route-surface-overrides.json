@@ -194,5 +194,20 @@
         "source": "Mile 14.4 through the finish, including the loop closure, confirmed as singletrack by Brian, 2026-09-29"
       }
     ]
+  },
+  "jamison-creek-loop": {
+    "coordinatesSha256": "e8cf3fa9699a047fb666a78e7e771dc42a65d2c3d703304d495607331ebfbc6b",
+    "ranges": [
+      {
+        "from": 839,
+        "to": 869,
+        "type": "dirt",
+        "fromMiles": 7.2,
+        "toMiles": 7.4,
+        "actualFromMiles": 7.195384181555661,
+        "actualToMiles": 7.396866037792696,
+        "source": "Miles 7.2–7.4 confirmed as dirt road by Brian, 2026-09-29"
+      }
+    ]
   }
 }
