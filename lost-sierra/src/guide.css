@@ -60,3 +60,14 @@
 
 .guide-page .river-marker{padding:3px 5px;background:#f6efe0b8;border:0;box-shadow:none;border-radius:4px;color:#286a80;font-size:10px;font-style:italic;pointer-events:none}
 .river-marker::after{display:none}
+
+/* Keep four rides visible in the desktop rail, with the rest in the list scroll. */
+@media(min-width:701px){
+  .guide-page .ride-card:has(#browse:not([hidden])){padding:20px}
+  .guide-page #browse h2{margin-bottom:12px}
+  .guide-page #browse .tabs{margin-bottom:10px}
+  .guide-page #browse .filters{margin-bottom:10px}
+  .guide-page #entries{max-height:288px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#c5c8ba transparent}
+  .guide-page .entry-card{min-height:72px;padding:8px 0}
+  .guide-page .entry-card h3{margin:4px 0 5px}
+}
