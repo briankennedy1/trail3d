@@ -53,7 +53,7 @@ const movingTime=e=>{
   const value=e.movingMinutes??(e.id==='beckwourth-peak'?121:null);
   if(value==null||!Number.isFinite(value))return '—';
   const minutes=Math.round(value);
-  return `${e.movingTimeEstimated?'≈':''}${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}`;
+  return `${e.movingTimeEstimated?'~':''}${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}`;
 };
 const surfaceKey=types=>{
   const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt Road',unknown:'Unverified'};
