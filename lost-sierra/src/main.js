@@ -32,9 +32,9 @@ const ridePanels=(entry,content,links)=>`<div class="ride-content">
   <div id="ride-profile-panel" class="ride-content-panel">${content}</div>
   <section id="ride-notes-panel" class="ride-content-panel ride-notes-panel" aria-label="Ride notes" aria-hidden="true" inert>
     <button type="button" class="notes-back" id="ride-notes-back">← Back to ride</button>
-    <h3>Ride notes</h3><p class="detail-copy">${escape(entry.notes||entry.summary||'Ride notes are coming soon.')}</p>
+    <h3>Ride notes</h3><div class="detail-copy">${(entry.notes||entry.summary||'Ride notes are coming soon.').trim().split(/\r?\n\s*\r?\n/).filter(Boolean).map(paragraph=>`<p>${escape(paragraph)}</p>`).join('')}</div>
   </section>
-</div><div class="detail-links">${links}<button type="button" id="ride-info" title="Ride notes" aria-label="Ride notes" aria-controls="ride-notes-panel" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".8" fill="currentColor" stroke="none"/></svg></button></div>`;
+</div><div class="detail-links"><button type="button" id="ride-info" title="Ride notes" aria-label="Ride notes" aria-controls="ride-notes-panel" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path stroke-linejoin="round" d="M12 5.5C9 3.5 5.5 3.5 2 4.5v15c3.5-1 7-1 10 1 3-2 6.5-2 10-1v-15c-3.5-1-7-1-10 1Zm0 0v15"/></svg></button>${links}</div>`;
 function wireRideNotes(onOpen=()=>{}){
   const button=$('#ride-info'),content=$('.ride-content'),profile=$('#ride-profile-panel'),notes=$('#ride-notes-panel');
   const show=open=>{

@@ -63,6 +63,8 @@
 .ride-notes-panel{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;padding:0 3px 8px 0;scrollbar-width:thin}
 .ride-notes-panel h3{margin:12px 0 8px;font:600 22px/1.2 Fraunces,Georgia,serif;color:#29464b}
 .ride-notes-panel .detail-copy{margin:0;line-height:1.7}
+.ride-notes-panel .detail-copy p{margin:0}
+.ride-notes-panel .detail-copy p+p{margin-top:1.2em}
 .notes-back{border:0;background:none;padding:3px 0;color:#68716c;font-size:11px}
 .ride-content:not(.show-notes) .ride-notes-panel{opacity:0;transform:translateX(12px);visibility:hidden;pointer-events:none}
 .ride-content.show-notes #ride-profile-panel{opacity:0;transform:translateX(-12px);visibility:hidden;pointer-events:none}
