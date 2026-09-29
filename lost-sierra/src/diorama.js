@@ -114,7 +114,7 @@ export class Diorama {
         this.highwayMarkers.push({element,position:world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.4,0))});
       }
       // Town directions belong at the highway's actual terrain-boundary crossing.
-      for(const [route,name,axis,direction] of [[70,'To Reno',0,1],[89,'To Truckee',1,-1],[89,'To Susanville',1,1]]){
+      for(const [route,name,axis,direction] of [[49,'To Nevada City',1,-1],[70,'To Reno',0,1],[89,'To Truckee',1,-1],[89,'To Susanville',1,1]]){
         const lines=data.features.filter(feature=>feature.properties.route===route).map(feature=>feature.geometry.coordinates);
         const exit=roadEdgePoint(lines,this.region.bbox,axis,direction);if(!exit)continue;
         const [lon,lat]=exit;
