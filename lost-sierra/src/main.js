@@ -81,8 +81,8 @@ const intensityDisplay=entry=>{
   const label=entry.intensity?.trim()||'Not rated';
   const levels={'mellow-ish':1,moderate:2,challenging:3,intense:4};
   const level=levels[label.toLowerCase()]||0;
-  const peaks=[12,17,23,30].map((height,i)=>`<path class="${i<level?'lit':''}" d="M${i*23+1} 32L${i*23+11} ${32-height}L${i*23+21} 32Z"/>`).join('');
-  return `<div class="ride-intensity intensity-${level}" aria-label="Intensity: ${escape(label)}"><div class="intensity-caption"><span>Intensity</span><strong>${escape(label)}</strong></div><svg class="intensity-ridge" viewBox="0 0 92 35" aria-hidden="true">${peaks}</svg></div>`;
+  const symbol=level===4?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="#000" stroke="#fff" stroke-width="1.8"/></svg>':'';
+  return `<div class="ride-intensity intensity-${level}" aria-label="Intensity: ${escape(label)}">${symbol}<strong>${escape(label)}</strong></div>`;
 };
 const surfaceKey=types=>{
   const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt Road',unknown:'Unverified'};
