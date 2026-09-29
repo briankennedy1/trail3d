@@ -88,6 +88,14 @@ Zero GPX elevation placeholders were replaced with AWS/USGS terrain samples. The
 
 After a database backup, run `node lost-sierra/scripts/apply-jamison-replacement.mjs` from the repository root. The update checks the previous coordinate hash, retains the old entry and complete track in audit history, and preserves CMS notes, naming, intensity and saved camera views. Fresh databases seed the new plan directly. The original planner snapshot remains unchanged.
 
+## Indian Falls Ridge Basics — September 29, 2026
+
+Added as a separate Quincy ride from [Trailforks plan 786043](https://www.trailforks.com/routeplan/view/786043/), with all 676 exported XY points preserved. Trailforks reports 9.91 miles, 2,060 ft climbing, 2,058 ft descending and an estimated 1h 58m. The endpoints match exactly, with a combined start/finish flag and the plan's driving-directions pin at 40.04475, -120.97031.
+
+The GPX contained zero elevation placeholders; AWS/USGS terrain samples supply the profile. OSM classification is retained where available, and reviewed Trailforks estimates fill unmatched sections as singletrack. The plan's snapped surface summary is 100% trail; [Lower Indian Falls Ridge](https://www.trailforks.com/trails/lower-indian-falls-ridge/) and [Indian Fins](https://www.trailforks.com/trails/indian-fins/) both list singletrack. This is an estimate, not rider confirmation. The initial Challenging intensity is an editorial estimate informed by Indian Fins' black diamond rating, noted in the ride card.
+
+The normal one-time curated import adds this ride to existing and fresh databases without changing existing entries. Its default home view fits the route automatically.
+
 ## Buzzards Roost missing start repair
 
 The rider confirmed recording began late and requested the existing finish as

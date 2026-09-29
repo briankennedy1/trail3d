@@ -837,5 +837,37 @@
       "startMapsUrl": "https://www.google.com/maps?q=39.70428,-120.62317",
       "finishMapsUrl": "https://www.google.com/maps?q=39.7536,-120.5991"
     }
+  },
+  {
+    "id": "indian-falls-ridge-basics",
+    "entry": {
+      "name": "Indian Falls Ridge Basics",
+      "kind": "ride",
+      "area": "Quincy",
+      "status": "published"
+    },
+    "terrain": "/terrain/indian-falls-ridge-basics",
+    "track": "routes/indian-falls-ridge-basics.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 40.04475,
+        "lng": -120.97031
+      },
+      "routeUrl": "https://www.trailforks.com/routeplan/view/786043/",
+      "incomplete": false,
+      "summary": "An Indian Falls singletrack loop with the Indian Fins section.",
+      "notes": "Climb Lower Indian Falls Ridge, ride Indian Fins, then return on Lower Indian Falls Ridge.\nIndian Fins is rated black diamond on Trailforks.",
+      "viewer": {
+        "pointsOfInterest": []
+      },
+      "climbingFt": 2060,
+      "descendingFt": 2058,
+      "movingMinutes": 118,
+      "movingTimeEstimated": true,
+      "intensity": "Challenging",
+      "sameStartFinish": true,
+      "startMapsUrl": "https://www.google.com/maps?q=40.04475,-120.97031",
+      "finishMapsUrl": ""
+    }
   }
 ]

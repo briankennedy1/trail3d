@@ -578,5 +578,69 @@
         "rationale": "Return on the same short dirt trailhead-access spur at the start of the ride."
       }
     ]
+  },
+  "indian-falls-ridge-basics": {
+    "coordinatesSha256": "c42bea351a475a7949d804d3b0d879856e378afed2e463a24824b710a4a4da01",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+    "ranges": [
+      {
+        "from": 1,
+        "to": 3,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      },
+      {
+        "from": 6,
+        "to": 74,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      },
+      {
+        "from": 76,
+        "to": 83,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      },
+      {
+        "from": 97,
+        "to": 213,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      },
+      {
+        "from": 456,
+        "to": 576,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      },
+      {
+        "from": 590,
+        "to": 596,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      },
+      {
+        "from": 598,
+        "to": 669,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      },
+      {
+        "from": 672,
+        "to": 674,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786043/",
+        "rationale": "The supplied route lists Lower Indian Falls Ridge and Indian Fins, both Trailforks singletrack trails; its snapped surface summary is 100% trail. Estimate fills only unmatched OSM gaps, preserving mapped roads."
+      }
+    ]
   }
 }
