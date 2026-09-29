@@ -13,11 +13,14 @@ type FlightOptions = {
   angleBeats?: [number, number][];
 };
 
+// Lakes Basin Blue's 15.8 miles in 22.5 seconds sets the shared preview pace.
+const metersPerPlaybackSecond = 15.8 * 1609.344 / 22.5;
+
 // The original helicopter planner: precompute a smooth course and adapt the
 // rider's pacing to it. No DOM or live camera corrections are needed here.
 export function createFlightPlan({ total, routePoint, clearSightHeight, getHome,
   orbitRadius, viewScale, introEnd, angleBeats }: FlightOptions) {
-  const flightSteps = 192, followDuration = 22.5;
+  const flightSteps = 192, followDuration = total / metersPerPlaybackSecond;
   let flightPath: Shot[] | null = null;
   let flightTimes: number[] = [];
   function splineValue(v0: number, v1: number, v2: number, v3: number, t: number) {
@@ -130,7 +133,7 @@ export function createFlightPlan({ total, routePoint, clearSightHeight, getHome,
       }
       flightTimes.push(flightTimes[i] + distance / weightSum);
     }
-    // Preserve the relative pacing while fitting the complete flight into 22.5 seconds.
+    // Preserve smooth camera pacing; total preview time scales with ride distance.
     const totalMotion = flightTimes[flightSteps];
     flightTimes = flightTimes.map(time => time / totalMotion * followDuration);
   }
