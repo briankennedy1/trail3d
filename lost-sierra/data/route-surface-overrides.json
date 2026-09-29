@@ -157,6 +157,14 @@
         "fromMiles": 5,
         "toMiles": 10.5,
         "source": "Miles 5–10.5 confirmed as singletrack by Brian, 2026-09-29; clipped to route finish where shorter."
+      },
+      {
+        "from": 1283,
+        "to": 1352,
+        "type": "singletrack",
+        "fromMiles": 11.5,
+        "toMiles": 12.45491242035018,
+        "source": "Mile 11.5 through finish confirmed as singletrack by Brian, 2026-09-29."
       }
     ]
   },
