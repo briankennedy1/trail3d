@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {clipContextSegment,rideContextForMap} from '../../src/ride-context-data.ts';
+import {clipContextSegment,rideContextForMap,roadEdgePoint} from '../../src/ride-context-data.ts';
+
+test('town labels choose road boundary crossings instead of interior bends',()=>{
+  const lines=[[[4,0],[5,9],[0,8]]],bounds={west:0,east:10,south:0,north:10};
+  assert.deepEqual(roadEdgePoint(lines,bounds,1,1),[0,8]);
+  assert.deepEqual(roadEdgePoint(lines,bounds,1,-1),[4,0]);
+  assert.equal(roadEdgePoint([[[2,2],[5,9]]],bounds,1,1),undefined);
+});
 
 test('context clips crossings even when both endpoints lie outside the ride map',()=>{
   assert.deepEqual(clipContextSegment([-5,5],[15,5],10,10),[[0,5],[10,5]]);

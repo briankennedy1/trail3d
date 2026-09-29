@@ -4,7 +4,7 @@ import curatedRides from '../data/curated-rides.json';
 import beckMap from '../../public/beckwourth/map.json';
 import beckHeightsUrl from '../../public/beckwourth/terrain.bin?url';
 import { projectTrack, regionalRideData } from './ride-data.js';
-import { rideContextForMap } from '../../src/ride-context-data';
+import { rideContextForMap, roadEdgePoint } from '../../src/ride-context-data';
 import { surfaceTypesForTrack } from '../../src/route-surfaces';
 
 export async function prepareRide(entry,track,signal){
@@ -36,11 +36,15 @@ export async function prepareRide(entry,track,signal){
     for(const feature of options.contextFeatures||[])if(feature.kind==='waterway')feature.showLabel=namedWaterways.has(feature.name);
     const dixon=options.contextFeatures?.find(feature=>feature.name==='Dixon Creek');
     if(dixon)dixon.labelCoordinates=[-120.8773506,39.8116425];
-    // Anchor directions on the road toward each exit, visible from the saved home view.
-    if(options.contextFeatures)options.contextFeatures.push(
-      {name:'To Laporte',kind:'road',importance:3,length:0,lines:[],labelCoordinates:[-120.8835023,39.7939973]},
-      {name:'To Quincy',kind:'road',importance:3,length:0,lines:[],labelCoordinates:[-120.8681629,39.8504472]},
-    );
+    const road=options.contextFeatures?.find(feature=>feature.name==='La Porte Road');
+    const map=options.data.map;
+    if(road)for(const [name,direction] of [['To Laporte',-1],['To Quincy',1]]){
+      const exit=roadEdgePoint(road.lines,{west:0,east:map.widthM,south:0,north:map.heightM},1,direction);
+      if(exit)options.contextFeatures.push({name,kind:'road',importance:3,length:0,lines:[],labelCoordinates:[
+        map.bbox.west+exit[0]/map.widthM*(map.bbox.east-map.bbox.west),
+        map.bbox.south+exit[1]/map.heightM*(map.bbox.north-map.bbox.south),
+      ]});
+    }
   }
   return {...options,homeStorageKey:null,manageLoading:false};
 }

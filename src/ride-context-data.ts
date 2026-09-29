@@ -9,6 +9,13 @@ export type ContextFeature = {
 type Source = { features: { properties: { name: string; kind: 'road' | 'waterway'; class: string };
   geometry: { type: string; coordinates: XY[] } }[] };
 
+// Pick an actual clipped road exit, not an interior bend furthest toward town.
+export function roadEdgePoint(lines: XY[][], bounds: { west: number; east: number; south: number; north: number }, axis: 0 | 1, direction: -1 | 1): XY | undefined {
+  const exits = lines.flat().filter(([x, y]) =>
+    Math.min(Math.abs(x - bounds.west), Math.abs(x - bounds.east), Math.abs(y - bounds.south), Math.abs(y - bounds.north)) < 1e-7);
+  return exits.reduce<XY | undefined>((best, point) => !best || direction * point[axis] > direction * best[axis] ? point : best, undefined);
+}
+
 // Clip segments, rather than dropping outside vertices: a road crossing the
 // whole cutout may have both endpoints outside it.
 export function clipContextSegment(a: XY, b: XY, width: number, height: number): [XY, XY] | null {

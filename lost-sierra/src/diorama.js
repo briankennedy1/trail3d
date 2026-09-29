@@ -7,6 +7,7 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { roadEdgePoint } from '../../src/ride-context-data';
 const D2R=Math.PI/180, X=111.32*Math.cos(39.835*D2R), Z=111.32, EX=2.3;
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const ease=t=>t*t*t*(t*(t*6-15)+10);
@@ -112,13 +113,11 @@ export class Diorama {
         element.innerHTML=`<svg viewBox="0 0 100 104" aria-hidden="true"><defs><path id="${arcId}" d="M17 42 Q50 23 83 42"/></defs><path d="M50 3 C26 7 4 32 4 65 L4 85 Q4 96 16 98 Q50 104 84 98 Q96 96 96 85 L96 65 C96 32 74 7 50 3Z" fill="#006b42" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><text fill="#fff" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing=".4"><textPath href="#${arcId}" startOffset="50%" text-anchor="middle">CALIFORNIA</textPath></text><text x="50" y="88" fill="#fff" font-family="Arial, sans-serif" font-size="55" font-weight="600" letter-spacing="-2" text-anchor="middle">${label.route}</text></svg>`;this.labels.append(element);
         this.highwayMarkers.push({element,position:world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.4,0))});
       }
-      // Direction labels sit just inside the highway exits, so they remain readable
-      // above the diorama edge instead of being clipped by the viewport.
+      // Town directions belong at the highway's actual terrain-boundary crossing.
       for(const [route,name,axis,direction] of [[70,'To Reno',0,1],[89,'To Truckee',1,-1],[89,'To Susanville',1,1]]){
-        const points=data.features.filter(feature=>feature.properties.route===route).flatMap(feature=>feature.geometry.coordinates);
-        const edge=points.reduce((a,b)=>direction*b[axis]>direction*a[axis]?b:a);
-        const target=edge[axis]-direction*.025;
-        const [lon,lat]=points.reduce((a,b)=>Math.abs(b[axis]-target)<Math.abs(a[axis]-target)?b:a);
+        const lines=data.features.filter(feature=>feature.properties.route===route).map(feature=>feature.geometry.coordinates);
+        const exit=roadEdgePoint(lines,this.region.bbox,axis,direction);if(!exit)continue;
+        const [lon,lat]=exit;
         const element=document.createElement('span');element.className='map-marker highway-destination';element.textContent=name;
         this.labels.append(element);
         this.highwayMarkers.push({element,destination:true,position:world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.4,0))});
