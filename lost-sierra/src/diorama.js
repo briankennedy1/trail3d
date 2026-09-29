@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {overviewRouteColor} from './overview-route-colors.js';
 import {OverviewRouteStripes} from './overview-route-stripes.js';
+import {overviewLineDepth} from './overview-line-depth.js';
 import { TERRAIN_VERT, TERRAIN_FRAG, SIDE_VERT, SIDE_FRAG } from './terrain-shaders.js';
 THREE.ColorManagement.enabled=false;
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -219,7 +220,7 @@ export class Diorama {
       const group=new THREE.Group();
       for(const [color,width,order] of [[0xfff9df,5.25,20],[overviewRouteColor(entry.id),3.375,21]]){
         const geometry=new LineGeometry();geometry.setPositions(positions);
-        const line=new Line2(geometry,new LineMaterial({color,linewidth:width,transparent:true,opacity:.99,depthTest:true,depthWrite:false}));
+        const line=new Line2(geometry,overviewLineDepth(new LineMaterial({color,linewidth:width,transparent:true,opacity:.99,depthTest:true,depthWrite:false})));
         line.renderOrder=order;line.frustumCulled=false;group.add(line);
       }
       // Each route owns its start anchor and geometry; filters affect them separately.

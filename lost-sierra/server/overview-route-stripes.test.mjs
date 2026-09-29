@@ -38,3 +38,31 @@ test('shared runs retain their screen-space phase after a unique approach',()=>{
   assert.ok(Math.abs(shared.geometry.getAttribute('instanceStripeStart').array[0]-shared.runs[0].phaseKm*500)<.01);
   network.clear();
 });
+
+test('joins stay connected through bends and changes in shared-route membership',()=>{
+  const positions=[];for(let i=0;i<=50;i++)positions.push(i/50,0,i>25?(i-25)/100:0);
+  const network=new OverviewRouteStripes();
+  network.setRoutes([{id:'a',positions},{id:'b',positions:positions.slice(20*3,40*3)}]);
+  let capped=0,joined=0;
+  for(const batch of network.batches){
+    const geometry=batch.geometry,joins=geometry.getAttribute('instanceJoins');
+    const start=geometry.getAttribute('instanceStart'),end=geometry.getAttribute('instanceEnd');
+    const previous=geometry.getAttribute('instancePrevious'),next=geometry.getAttribute('instanceNext');
+    for(let i=0;i<joins.count;i++){
+      if(joins.getX(i)){joined++;assert.ok(previous.getX(i)<start.getX(i),'start miter follows the preceding path segment');}else capped++;
+      if(joins.getY(i)){joined++;assert.ok(next.getX(i)>end.getX(i),'end miter follows the next path segment');}else capped++;
+    }
+  }
+  assert.ok(network.batches.some(batch=>batch.ids.length===2));
+  assert.ok(joined>50);
+  assert.equal(capped,2,'only the complete path endpoints have caps, including across batch boundaries');
+  network.clear();
+});
+
+test('independent routes keep their endcaps even when they meet at one point',()=>{
+  const network=new OverviewRouteStripes();
+  network.setRoutes([{id:'a',positions:[-.1,0,0,0,0,0]},{id:'b',positions:[0,0,0,0,0,.1]}]);
+  const caps=network.batches.reduce((count,batch)=>count+[...batch.geometry.getAttribute('instanceJoins').array].filter(join=>!join).length,0);
+  assert.equal(caps,4,'a crossing or separate route start is not spliced into another route');
+  network.clear();
+});
