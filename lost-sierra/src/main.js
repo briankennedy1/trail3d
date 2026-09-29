@@ -81,7 +81,7 @@ const intensityDisplay=entry=>{
   const label=entry.intensity?.trim()||'Not rated';
   const levels={'mellow-ish':1,moderate:2,challenging:3,intense:4};
   const level=levels[label.toLowerCase()]||0;
-  const symbol=level===4?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="#000" stroke="#fff" stroke-width="1.8"/></svg>'
+  const symbol=level===4?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="#000"/></svg>'
     :level===2?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" fill="#376782" stroke="#fff" stroke-width="1.8"/></svg>':'';
   return `<div class="ride-intensity intensity-${level}" aria-label="Intensity: ${escape(label)}">${symbol}<strong>${escape(label)}</strong></div>`;
 };
