@@ -30,6 +30,7 @@ npm start --prefix lost-sierra
 ## Current experience
 
 - Regional overview with route highlighting and a terrain crumble transition into individual rides.
+- Shared overview trails alternate their route colors in stationary stripes with one cream outline. Hovering a ride highlights its complete path in a solid color.
 - Shared ride viewer with depth-tested routes, animated linked flags, elevation scrubbing, and hold-to-move compass controls.
 - **Play Ride** uses a smooth 45-second follow camera. Scrubbing is ignored during playback; playback ends by returning to the ride’s home view.
 - Route families: **Mt. Elwell** (The Hard Way / The Not So Easy Way) and **Downieville** (Original / Adventure Mode). Options have independent tracks, stats, notes, and camera settings.

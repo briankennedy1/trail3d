@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {overviewRouteColor} from './overview-route-colors.js';
+import {OverviewRouteStripes} from './overview-route-stripes.js';
 import { TERRAIN_VERT, TERRAIN_FRAG, SIDE_VERT, SIDE_FRAG } from './terrain-shaders.js';
 THREE.ColorManagement.enabled=false;
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -47,6 +48,7 @@ export class Diorama {
     this.rivers=new THREE.Group();this.scene.add(this.rivers);this.riverMarkers=[];
     this.highways=new THREE.Group();this.scene.add(this.highways);this.highwayMarkers=[];
     this.overviewRoute=new THREE.Group();this.scene.add(this.overviewRoute);
+    this.overviewNetwork=new OverviewRouteStripes();this.scene.add(this.overviewNetwork.group);
     this.setupRoutePopup();
     this.routeGroup=new THREE.Group();this.scene.add(this.routeGroup);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(element);this.resize();
@@ -64,6 +66,7 @@ export class Diorama {
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;this.controls.update();this.projection();
     this.setEntries(entries);
     await Promise.all([this.loadHighways(),this.loadRiver(),...entries.filter(entry=>entry.hasTrack).map(entry=>this.loadOverviewRoute(entry))]);
+    this.overviewRoutesReady=true;this.rebuildOverviewRoutes();
   }
   async loadRiver(){
     try{
@@ -167,6 +170,8 @@ export class Diorama {
     const rect=this.renderer.domElement.getBoundingClientRect();
     const raycaster=this.routeRaycaster;raycaster.setFromCamera(new THREE.Vector2((x-rect.left)/rect.width*2-1,1-(y-rect.top)/rect.height*2),this.camera);
     const lines=this.overviewRoute.children.filter(group=>group.visible).map(group=>group.children.at(-1));
+    // Hidden original lines still provide exact route picking beneath the shared network.
+    for(const line of lines)line.material.resolution.set(rect.width,rect.height);
     const hit=raycaster.intersectObjects(lines,false)[0];if(!hit)return null;
     const point=hit.pointOnLine||hit.point;
     // Match terrain occlusion: a route behind a mountain cannot trigger a popup.
@@ -176,6 +181,7 @@ export class Diorama {
     return hit.object.parent.userData;
   }
   showRoutePopup(route){
+    this.mapHoveredRoute=route.entry.id;this.highlightOverviewRoute(route.entry.id);
     this.overviewRouteEntry=route.entry.id;this.routeLabelAnchor=route.anchor;
     this.routePopup.href=`/?ride=${encodeURIComponent(route.entry.id)}`;
     this.routePopup.textContent=route.entry.name;
@@ -184,6 +190,8 @@ export class Diorama {
     this.renderer.domElement.style.cursor='pointer';this.positionRoutePopup();
   }
   hideRoutePopup(){
+    if(this.mapHoveredRoute&&this.highlightedOverview===this.mapHoveredRoute)this.highlightOverviewRoute(null);
+    this.mapHoveredRoute=null;
     clearTimeout(this.routePopupTimer);this.routePopupTimer=null;this.routePopup.hidden=true;this.routePopupPoint=null;this.routePointer=null;
     this.renderer.domElement.style.cursor='';
   }
@@ -214,7 +222,7 @@ export class Diorama {
         line.renderOrder=order;line.frustumCulled=false;group.add(line);
       }
       // Each route owns its start anchor and geometry; filters affect them separately.
-      group.userData={entry,anchor:new THREE.Vector3(...positions.slice(0,3))};
+      group.userData={entry,positions,anchor:new THREE.Vector3(...positions.slice(0,3))};
       this.overviewRoute.add(group);
     }catch(error){console.warn(`Could not show ${entry.name} on the overview:`,error);}
   }
@@ -268,19 +276,32 @@ export class Diorama {
     return parent;
   }
   highlightOverviewRoute(id){
+    this.highlightedOverview=id;
     const selected=this.overviewRoute.children.find(group=>group.userData.entry.id===id);
+    this.overviewNetwork?.setDimmed(!!selected);
     for(const group of this.overviewRoute.children){
       const highlighted=group===selected;
       const [halo,line]=group.children;
       halo.material.linewidth=highlighted?8:5.25;
       line.material.linewidth=highlighted?5:3.375;
       line.material.color.set(overviewRouteColor(group.userData.entry.id));
-      for(const stroke of group.children)stroke.material.opacity=selected&&!highlighted ? .3 : .99;
+      for(const [index,stroke] of group.children.entries()){
+        stroke.material.visible=!this.overviewRoutesReady||highlighted;
+        stroke.material.opacity=selected&&!highlighted ? .3 : .99;
+        stroke.renderOrder=highlighted?22+index:20+index;
+      }
     }
+  }
+  rebuildOverviewRoutes(){
+    if(!this.overviewRoutesReady)return;
+    const visible=new Set(this.entries.map(entry=>entry.id));
+    this.overviewNetwork.setRoutes(this.overviewRoute.children.filter(group=>visible.has(group.userData.entry.id)).map(group=>({id:group.userData.entry.id,positions:group.userData.positions})));
+    this.highlightOverviewRoute(null);
   }
   setEntries(entries){
     this.highlightOverviewRoute(null);
     this.entries=entries;this.markers.forEach(m=>m.element.remove());this.markers=[];
+    this.rebuildOverviewRoutes();
     const areas=new Map();for(const e of entries){if(!areas.has(e.area))areas.set(e.area,[]);areas.get(e.area).push(e);}
     for(const [area,rows] of areas){
       if(rows.length<2)continue;
@@ -381,8 +402,9 @@ export class Diorama {
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;
     for(const chunk of this.chunks){chunk.group.visible=true;chunk.group.position.copy(chunk.home);chunk.group.rotation.set(0,0,0);chunk.group.scale.setScalar(1);}
     this.detailTerrain.visible=false;this.highways.visible=true;this.rivers.visible=true;this.overviewRoute.visible=true;
+    this.overviewNetwork.group.visible=true;
     for(const group of this.overviewRoute.children)group.visible=this.entries?.some(entry=>entry.id===group.userData.entry.id);
-    this.controls.update();this.projection();this.renderer.render(this.scene,this.camera);
+    this.controls.update();this.projection();this.overviewNetwork.update(this.camera,this.element.clientWidth,this.element.clientHeight);this.renderer.render(this.scene,this.camera);
   }
   north(){const offset=this.camera.position.clone().sub(this.controls.target),radius=offset.length();if(Math.abs(Math.atan2(offset.x,offset.z))<.02){const pose=this.active?this.focusPose:this.home;this.move(pose.target,pose.position,1.5,pose.zoom||1);}else this.move(this.controls.target,this.controls.target.clone().add(new THREE.Vector3(0,radius*.68,radius*.733)),1.5);}
   control(action,dt){this.tween=null;const offset=this.camera.position.clone().sub(this.controls.target);if(action==='left'||action==='right')offset.applyAxisAngle(new THREE.Vector3(0,1,0),(action==='left'?1:-1)*dt*.8);else{const spherical=new THREE.Spherical().setFromVector3(offset);spherical.phi=clamp(spherical.phi+(action==='up'?-1:1)*dt*.6,.55,1.35);offset.setFromSpherical(spherical);}this.camera.position.copy(this.controls.target).add(offset);}
@@ -391,6 +413,7 @@ export class Diorama {
     const speed=this.reduced?8:.57;this.crumble+=Math.sign(this.crumbleTarget-this.crumble)*Math.min(Math.abs(this.crumbleTarget-this.crumble),dt*speed);
     this.highways.visible=!this.active&&this.crumble<.02;this.rivers.visible=this.highways.visible;
     this.overviewRoute.visible=!this.active&&this.crumble<.02;
+    this.overviewNetwork.group.visible=this.overviewRoute.visible;
     for(const group of this.overviewRoute.children)group.visible=this.entries?.some(entry=>entry.id===group.userData.entry.id);
     if(!this.routePopup.hidden&&!this.entries?.some(entry=>entry.id===this.overviewRouteEntry))this.hideRoutePopup();
     if(this.region){
@@ -400,6 +423,7 @@ export class Diorama {
     if(this.held)this.control(this.held,dt);
     if(this.tween){const t=this.tween,p=clamp((now-t.start)/1000/t.duration),s=ease(p);this.camera.zoom=THREE.MathUtils.lerp(t.fromZoom,t.zoom,s);this.camera.position.lerpVectors(t.from,t.to,s);this.controls.target.lerpVectors(t.fromTarget,t.target,s);if(p>=1)this.tween=null;}
     this.controls.update();this.projection();
+    if(this.overviewNetwork.group.visible)this.overviewNetwork.update(this.camera,this.element.clientWidth,this.element.clientHeight);
     if(!this.overviewRoute.visible||this.held||this.tween)this.hideRoutePopup();
     else if(this.routePointer){
       const pointer=this.routePointer;this.routePointer=null;const hit=this.hitOverviewRoute(pointer.x,pointer.y);

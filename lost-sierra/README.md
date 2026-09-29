@@ -30,6 +30,7 @@ Build outputs go to `lost-sierra/dist/`. The root package builds the separate st
 
 - Selecting a ride moves from the overview into its detailed terrain, with surrounding terrain crumbling away. Direct `/?ride=<id>` links load the ride intact.
 - **All rides** rebuilds the overview. The ride card fades out fully, and the overview card fades in at 80% of the return animation.
+- Shared overview sections render once with alternating route-color stripes and a continuous cream outline. Stripe lengths stay at 9 CSS pixels during zoom/orbit; hover or keyboard focus shows the complete selected route in its solid color. Filters rebuild membership from visible rides only. The display matcher allows up to 15 m GPS variation with compatible headings; it never changes stored tracks.
 - Switching route options keeps the camera moving between their views and dissolves the outgoing frame; it does not return to the overview or rebuild the whole terrain with a crumble animation.
 - **Play Ride** always uses the smooth helicopter follow camera, with a 45-second playback timeline independent of recorded ride speed. Camera positioning is eased, profile scrubbing is ignored while playing, and completion returns to the route home view.
 - Scrubbing the elevation profile moves the route highlight and green dot without moving the camera. The dot is hidden until interaction.
