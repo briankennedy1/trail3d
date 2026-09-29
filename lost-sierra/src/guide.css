@@ -128,7 +128,9 @@
 
 .returning-overview .ride-context-labels{opacity:0;transition:opacity .45s}
 .returning-overview .ride-scene{pointer-events:none!important}
-.returning-overview #ride-card{opacity:.65;transition:opacity .3s}
+.returning-overview #ride-card{opacity:0;transition:opacity .3s ease;pointer-events:none}
+.returning-overview.overview-card-ready #ride-card{opacity:1;transition:opacity .55s ease}
+@media(prefers-reduced-motion:reduce){.returning-overview #ride-card,.returning-overview.overview-card-ready #ride-card{transition:none}}
 
 /* Notes size the whole card; long descriptions use normal page scrolling. */
 .guide-page:has(.show-notes){height:auto;min-height:100dvh;overflow-y:auto}

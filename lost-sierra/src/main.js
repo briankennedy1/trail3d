@@ -174,10 +174,17 @@ async function reset(push=true){
   const token=selection,returnAnimation=returnToOverview;
   returning=!!returnAnimation;
   if(returnAnimation){
-    document.body.classList.add('returning-overview');$('#detail').inert=true;
+    document.body.classList.add('returning-overview');$('#ride-card').inert=true;
     settingsContext=null;renderSettings();
-    try{await returnAnimation();}catch(error){console.error(error);}
-    finally{returning=false;document.body.classList.remove('returning-overview');$('#detail').inert=false;}
+    let revealed=false;
+    try{await returnAnimation(progress=>{
+      if(progress<.8||revealed||token!==selection)return;
+      revealed=true;
+      $('#browse').hidden=false;$('#detail').hidden=true;
+      document.body.classList.remove('ride-open');
+      document.body.classList.add('overview-card-ready');
+    });}catch(error){console.error(error);}
+    finally{returning=false;document.body.classList.remove('returning-overview','overview-card-ready');$('#ride-card').inert=false;}
     if(token!==selection)return;
   }
   selection++;closeRide();track=null;map?.reset(!returnAnimation);
@@ -331,11 +338,11 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
       // The short terrain crossfade overlaps the eased start of the camera move.
       if(first&&transition)viewer.goHome();
       captureRideTransition=()=>({view:viewer.captureHome(),frame:viewer.captureFrame(),map:options.data.map,scale:options.scale??1});
-      if(map)returnToOverview=()=>{
+      if(map)returnToOverview=onProgress=>{
         controls.inert=true;
         map.reset(false);
         const destination=map.rideEntryView(options.data.map,options.scale);
-        return viewer.returnToOverview(destination,map.rideContext(options.data.map));
+        return viewer.returnToOverview(destination,map.rideContext(options.data.map),onProgress);
       };
       if(!options.entryView)enableRide();
       finishResize();

@@ -152,7 +152,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     startAngle: number; turn: number; startRadius: number; trackFollow: boolean;
   };
   let exiting: {context: RegionContext; elapsed: number; duration: number; startProgress: number;
-    materials: Map<THREE.Material, number>; resolve: () => void} | null = null;
+    materials: Map<THREE.Material, number>; resolve: () => void; onProgress?: (progress: number) => void} | null = null;
   let playbackTime = 0;
   let cameraTransition: CameraTransition | null = null;
   const { flightShot, timeAtProgress, progressAtTime, invalidate } = createFlightPlan({
@@ -730,6 +730,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     if (exiting) {
       exiting.elapsed = Math.min(exiting.duration, exiting.elapsed + dt);
       const progress = exiting.elapsed / exiting.duration;
+      exiting.onProgress?.(progress);
       const regionalProgress = exiting.startProgress * (1 - progress);
       exiting.context.update(regionalProgress);
       for (const material of groundMaterials) material.uniforms.uArrival.value = THREE.MathUtils.smootherstep(regionalProgress, 0, 0.22);
@@ -766,7 +767,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     },
     goHome() { pauseForManualView(); home(); },
     pause() { pauseForManualView(); },
-    returnToOverview(view: HomeView, context: RegionContext): Promise<void> {
+    returnToOverview(view: HomeView, context: RegionContext, onProgress?: (progress: number) => void): Promise<void> {
       pauseForManualView();stopViewMotion();
       const startProgress = entering ? entryElapsed / entryDuration : 1;
       entering = false;options.entryContext?.dispose();
@@ -783,7 +784,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       });
       const duration = reducedMotion ? 0.25 : 3.2;
       return new Promise<void>(resolve => {
-        exiting = {context, elapsed: 0, duration, startProgress, materials, resolve};
+        exiting = {context, elapsed: 0, duration, startProgress, materials, resolve, onProgress};
         startCameraTransition({position: new THREE.Vector3(...view.position),target: new THREE.Vector3(...view.target),
           zoom: view.zoom,offsetX: 0,offsetY: 0}, false, duration);
       });
