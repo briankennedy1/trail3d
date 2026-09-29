@@ -132,11 +132,12 @@
 .returning-overview.overview-card-ready #ride-card{opacity:1;transition:opacity .55s ease}
 @media(prefers-reduced-motion:reduce){.returning-overview #ride-card,.returning-overview.overview-card-ready #ride-card{transition:none}}
 
-/* Notes size the whole card; long descriptions use normal page scrolling. */
+/* Let expanded notes contribute to the document height so long descriptions scroll. */
 .guide-page:has(.show-notes){height:auto;min-height:100dvh;overflow-y:auto}
-.guide-page:has(.show-notes) .ride-panel{position:absolute;top:24px;bottom:auto;transform:none;max-height:none;padding-bottom:24px}
+.guide-page:has(.show-notes) main{height:auto;min-height:100dvh}
+.guide-page:has(.show-notes) .ride-panel{position:relative;top:auto;right:auto;bottom:auto;left:auto;transform:none;max-height:none;margin:0 30px 0 auto;padding:24px 0}
 .guide-page:has(.show-notes) .ride-card{overflow:visible;flex-shrink:0}
-@media(max-width:700px){.guide-page:has(.show-notes) .ride-panel{top:110px}}
+@media(max-width:700px){.guide-page:has(.show-notes) .ride-panel{width:auto;margin:0 12px;padding-top:110px}}
 
 /* Intensity banners use the ride's existing editorial rating. */
 .ride-intensity{--intensity-color:#626b65;display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0 0;padding:10px 14px;min-height:40px;border-radius:6px;background:var(--intensity-color);color:#fff}

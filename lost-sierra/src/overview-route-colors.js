@@ -1,4 +1,4 @@
-import curatedRides from '../data/curated-rides.json';
+import curatedRides from '../data/curated-rides.json' with { type: 'json' };
 
 // Keep assigned colors stable when the visible catalog is filtered or archived.
 const routeIds=['beckwourth-peak',...curatedRides.map(ride=>ride.id)];

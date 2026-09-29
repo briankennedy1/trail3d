@@ -7,6 +7,7 @@ import { projectTrack, regionalRideData } from './ride-data.js';
 import { rideContextForMap, roadEdgePoint } from '../../src/ride-context-data';
 import { surfaceTypesForTrack } from '../../src/route-surfaces';
 import { routeEndpointFlags } from './ride-access.js';
+import { applyContextLabels } from './context-labels.js';
 
 export async function prepareRide(entry,track,signal){
   const contextRequest=fetch('/terrain/ride-context.geojson',{signal}).then(r=>r.ok?r.json():null).catch(()=>null);
@@ -27,6 +28,7 @@ export async function prepareRide(entry,track,signal){
   }
   signal.throwIfAborted();
   for(const [key,value] of Object.entries(config))if(value!=null)options[key]=value;
+  if(config.home)options.autoFrameHome=false;
   const first=track.geometry.coordinates[0],last=track.geometry.coordinates.at(-1);
   // Honor the CMS loop setting; otherwise recognize recordings that close within 50 m.
   const isLoop=entry.sameStartFinish??(Math.hypot((last[0]-first[0])*111320*Math.cos(first[1]*Math.PI/180),(last[1]-first[1])*111320)<50);
@@ -66,6 +68,7 @@ export async function prepareRide(entry,track,signal){
       ]});
     }
   }
+  applyContextLabels(options.contextFeatures,config.contextLabels);
   return {...options,homeStorageKey:null,manageLoading:false};
 }
 

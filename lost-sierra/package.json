@@ -11,6 +11,8 @@
     "test": "node --test server/*.test.mjs",
     "terrain": "node scripts/build-terrain.mjs",
     "import:planner": "python3 scripts/import-planner.py",
+    "stage:ride": "python3 scripts/stage-ride-gpx.py",
+    "audit:content": "node scripts/audit-ride-content.mjs",
     "backup": "node scripts/backup.mjs"
   },
   "dependencies": { "three": "^0.186.0" },

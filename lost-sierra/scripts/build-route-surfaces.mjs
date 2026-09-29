@@ -1,11 +1,18 @@
 // Classify imported rides against a cached Overpass `way[highway];out geom`
-// response. Run: node scripts/build-route-surfaces.mjs /path/to/ways.json
+// response. Run: node scripts/build-route-surfaces.mjs /path/to/ways.json --ride ride-id
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-const root=path.resolve(import.meta.dirname,'..');
-const source=JSON.parse(fs.readFileSync(process.argv[2]));
+const args=process.argv.slice(2),sourceFile=args[0];
+const option=name=>{const i=args.indexOf(name);return i<0?null:args[i+1];};
+const rideId=option('--ride'),all=args.includes('--all');
+if(!sourceFile||Boolean(rideId)===all||args.some(arg=>arg.startsWith('--')&&!['--ride','--all','--root','--confirm-replace-catalog','--allow-all-unknown'].includes(arg)))throw Error('Usage: build-route-surfaces.mjs ways.json (--ride ID | --all --confirm-replace-catalog) [--root PROJECT_ROOT]');
+if(all&&!args.includes('--confirm-replace-catalog'))throw Error('Full catalog replacement requires --confirm-replace-catalog.');
+if(rideId&&!/^[a-z0-9-]+$/.test(rideId))throw Error('Invalid ride ID.');
+const root=option('--root')||path.resolve(import.meta.dirname,'..');
+const source=JSON.parse(fs.readFileSync(sourceFile));
 if(source.remark)throw Error(source.remark);
+if(!Array.isArray(source.elements))throw Error('Expected Overpass elements array.');
 const scaleX=85500,scaleY=111320,cell=80,grid=new Map(),sources={};
 const project=p=>[p[0]*scaleX,p[1]*scaleY];
 function surface(t){
@@ -31,8 +38,13 @@ for(const way of source.elements){
 }
 const manifest=JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')));
 const overrides=JSON.parse(fs.readFileSync(path.join(root,'data/route-surface-overrides.json')));
-const rides=[{id:'beckwourth-peak',track:'beckwourth-track.geojson'},...manifest];
-const output={source:'OpenStreetMap contributors',sourceUrl:'https://www.openstreetmap.org/copyright',retrievedAt:new Date().toISOString(),method:'Nearest mapped way within 25 m, heading-compatible; runs shorter than 30 m bridged only between matching classes. Asphalt includes mapped paved surfaces; motorway through tertiary road classes infer pavement. Tracks infer dirt roads; paths/footways/bridleways and narrow or MTB-tagged cycleways infer singletrack unless width is at least 2 m. Other explicitly unpaved roads infer dirt roads. Unmatched or insufficiently tagged segments remain unknown.',rides:{},ways:{}};
+const catalog=[{id:'beckwourth-peak',track:'beckwourth-track.geojson'},...manifest];
+const rides=rideId?catalog.filter(r=>r.id===rideId):catalog;
+if(!rides.length)throw Error(`Ride ${rideId} is missing from curated-rides.json.`);
+const outputFile=path.join(root,'public/terrain/route-surfaces.json');
+const existing=rideId?JSON.parse(fs.readFileSync(outputFile,'utf8')):null;
+if(rideId&&(!existing?.rides||!existing?.ways||Object.keys(existing.rides).length===0))throw Error('A populated route-surfaces.json is required for a single-ride update.');
+const output=existing?structuredClone(existing):{source:'OpenStreetMap contributors',sourceUrl:'https://www.openstreetmap.org/copyright',retrievedAt:new Date().toISOString(),method:'Nearest mapped way within 25 m, heading-compatible; runs shorter than 30 m bridged only between matching classes. Asphalt includes mapped paved surfaces; motorway through tertiary road classes infer pavement. Tracks infer dirt roads; paths/footways/bridleways and narrow or MTB-tagged cycleways infer singletrack unless width is at least 2 m. Other explicitly unpaved roads infer dirt roads. Unmatched or insufficiently tagged segments remain unknown.',rides:{},ways:{}};
 for(const ride of rides){
  const track=JSON.parse(fs.readFileSync(path.join(root,'data',ride.track))),coords=track.geometry.coordinates,points=coords.map(project),types=[],ids=[],dist=[];
  for(let i=1;i<points.length;i++){
@@ -61,8 +73,10 @@ for(const ride of rides){
  }
  const ranges=[],totals={singletrack:0,asphalt:0,dirt:0,unknown:0},used=new Set();
  for(let i=0;i<types.length;i++){totals[types[i]]+=dist[i];if(ids[i])used.add(ids[i]);const last=ranges.at(-1);if(last?.type===types[i])last.to=i+1;else ranges.push({from:i,to:i+1,type:types[i]});}
+ if(!used.size&&!args.includes('--allow-all-unknown'))throw Error(`${ride.id}: no mapped ways matched the track; check the Overpass export or pass --allow-all-unknown after review.`);
  for(const id of used)output.ways[id]=sources[id];
- output.rides[ride.id]={coordinatesSha256,pointCount:coords.length,ranges,meters:totals,...(confirmed?{overrides:confirmed.ranges}:{})};
+ output.rides[ride.id]={coordinatesSha256,pointCount:coords.length,ranges,meters:totals,...(confirmed?{overrides:confirmed.ranges}:{}),...(rideId?{retrievedAt:new Date().toISOString()}:{})};
  console.log(ride.id,Object.fromEntries(Object.entries(totals).map(([k,v])=>[k,`${(v/1609.344).toFixed(2)} mi`])),ranges.length+' sections');
 }
-fs.writeFileSync(path.join(root,'public/terrain/route-surfaces.json'),JSON.stringify(output)+'\n');
+const temporary=`${outputFile}.${process.pid}.tmp`;
+try{fs.writeFileSync(temporary,JSON.stringify(output)+'\n',{flag:'wx'});fs.renameSync(temporary,outputFile);}catch(error){try{fs.unlinkSync(temporary);}catch{}throw error;}

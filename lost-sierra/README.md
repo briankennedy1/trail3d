@@ -52,8 +52,12 @@ The CMS supports:
 - Route family ID, family name, option name, and ordering; independent Loop/Shuttle settings where applicable.
 - GPX/GeoJSON uploads, track downloads, provenance, original source records, and before/after audit history.
 - Viewer home, named POIs/flags, and camera/terrain settings.
+- Road/waterway label choices gathered from the current track: keep ride defaults, show all, hide all, show selected names, or hide selected names. Click name chips rather than typing them; this does not remove the roads or blue water.
+- Existing-family selection, family-aware search, and return to the last edited entry. Parking fields also accept `latitude, longitude` and convert it to a Google Maps link.
 
 The bottom-right settings cog appears only for signed-in admins. Frame the overview or a ride, then use **Set current view as home** to save the shared default. Other visitors receive that framing. The ride cog also offers editing the current route. Home changes are version-checked and audited.
+
+Rides without a custom home automatically fit their terrain beside the desktop card or above the mobile card. Saved home views take precedence.
 
 Writes require an authenticated session and matching Origin. Passwords use salted scrypt; session tokens are hashed in SQLite, with HttpOnly/SameSite cookies and a 12-hour lifetime. HTTPS origins set Secure cookies. There is no public admin link or email password-reset flow.
 
@@ -99,7 +103,13 @@ On first startup the database imports planner records. Curated imports and corre
 For an imported route:
 
 1. Export the authorized GPX from its source and retain provenance.
-2. Store a continuous GeoJSON LineString in `data/routes/` and add/update the curated manifest entry.
+2. Stage it without changing the live catalog or database:
+
+   ```sh
+   npm run stage:ride -- --input /absolute/path/ride.gpx --id new-ride --name "New Ride" --area "Lakes Basin" --source-url https://www.trailforks.com/routeplan/view/123/ --source-label "Trailforks route plan"
+   ```
+
+   Review `.staging/new-ride/review.json` and its next steps. Copy the reviewed track into `data/routes/` and the draft entry into the curated manifest. Staging refuses to overwrite existing rides.
 3. Preserve recorded elevations. For exports containing only zero elevations, omit those invalid elevation values before generating detailed terrain so the builder samples the DEM.
 4. Build detailed terrain using the track filename stem:
 
@@ -108,7 +118,8 @@ For an imported route:
    ```
 
 5. Classify surfaces and review the profile, parking, endpoint flags, statistics, and home view.
-6. Apply the import to the live database, build the frontend, and verify the ride in the guide.
+6. Run `npm run audit:content` to inspect the versioned seeds and generated assets. This does not audit current live CMS values.
+7. Apply the draft import to the database, complete the editorial review, then publish through the CMS and verify the ride in the guide.
 
 The terrain builder caches AWS Terrarium tiles and produces roughly 30-meter grids. Generated assets are checked in; normal startup does not download terrain or call Trailforks. Some rides intentionally share terrain (the Elwell variants use `/terrain/mt-elwell`); honor the manifest rather than assuming the terrain folder always matches the entry ID.
 
@@ -121,10 +132,10 @@ Source pages provide processed climbing/descent and moving-time estimates. Raw G
 - Ranges use segment indices `[from, to)`. Convert mile boundaries using the same projected geometry as the viewer.
 
 ```sh
-node scripts/build-route-surfaces.mjs /absolute/path/to/cached-overpass-ways.json
+node scripts/build-route-surfaces.mjs /absolute/path/to/cached-overpass-ways.json --ride downieville-original
 ```
 
-The input is a cached Overpass response with highway ways and geometry. The builder rejects corrections whose coordinate hash no longer matches. After replacing a track, review and remap its corrections. For a correction to one ride, preserve other rides’ generated records rather than unintentionally reclassifying the entire catalog.
+The input is a cached Overpass response with highway ways and geometry. A single-ride build preserves every other generated record. The builder rejects corrections whose coordinate hash no longer matches. After replacing a track, review and remap its corrections. A deliberate catalog rebuild requires `--all --confirm-replace-catalog`; zero-match input is rejected unless `--allow-all-unknown` is explicitly provided.
 
 Recent Downieville corrections: Original is asphalt after mile 15.2; Adventure Mode’s previously unverified sections between miles 8 and 16 are singletrack. Existing classified sections in that Adventure Mode interval remain unchanged.
 
@@ -164,6 +175,8 @@ npx tsc --noEmit
 ```
 
 Tests cover authentication, publication and edit conflicts, track validation, curated import preservation, terrain coverage, families, access links, and route behavior. Browser review is still needed for camera motion, flags, layout, and transitions.
+
+GitHub Actions runs tests, the TypeScript check, and the guide build on pushes and pull requests. See [the improvement plan](../docs/IMPROVEMENT_PLAN.md) for the integration scope and acceptance checks.
 
 ## Hosting later
 

@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 import {overviewRouteColor} from './overview-route-colors.js';
-import lakeDavisWaterSource from '../data/routes/lake-davis-water.geojson?raw';
-const lakeDavisWater=JSON.parse(lakeDavisWaterSource);
 import { TERRAIN_VERT, TERRAIN_FRAG, SIDE_VERT, SIDE_FRAG } from './terrain-shaders.js';
 THREE.ColorManagement.enabled=false;
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -10,7 +8,7 @@ import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { roadEdgePoint } from '../../src/ride-context-data';
+import { roadEdgePoint } from '../../src/ride-context-data.ts';
 const D2R=Math.PI/180, X=111.32*Math.cos(39.835*D2R), Z=111.32, EX=2.3;
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const ease=t=>t*t*t*(t*(t*6-15)+10);
@@ -57,7 +55,8 @@ export class Diorama {
   projection(){const w=this.element.clientWidth,h=this.element.clientHeight||1;const height=this.camera.position.distanceTo(this.controls.target)*.62*(w>700?1:1.45),width=height*w/h;const sx=w>700?width*180/w:0,sy=w>700?0:-height*.20;this.camera.left=-width/2+sx;this.camera.right=width/2+sx;this.camera.top=height/2+sy;this.camera.bottom=-height/2+sy;this.camera.updateProjectionMatrix();}
   resize(){const {width,height}=this.element.getBoundingClientRect();this.renderer.setSize(width,height);this.projection();}
   async init(entries,savedHome){
-    [this.region,this.beck]=await Promise.all([dataset('region'),dataset('beckwourth')]);
+    [this.region,this.beck,this.lakeWater]=await Promise.all([dataset('region'),dataset('beckwourth'),
+      fetch('/terrain/lake-davis-loop/terrain.json').then(r=>{if(!r.ok)throw Error('Lake shoreline unavailable');return r.json();}).then(meta=>meta.waterbodies||[]).catch(error=>{console.warn(error);return [];})]);
     const rb=this.region.bbox;const center=world((rb.west+rb.east)/2,(rb.south+rb.north)/2,1400);this.home.target.copy(center);this.home.position.copy(center).add(new THREE.Vector3(-75,105,-135).multiplyScalar(Math.max((rb.north-rb.south)*Z,(rb.east-rb.west)*X)/111.32));this.camera.position.copy(this.home.position);this.controls.target.copy(center);
     this.overviewTerrain=this.buildTerrain(this.region,16,false);
     this.detailTerrain=this.buildTerrain(this.beck,Math.max(this.beck.width,this.beck.height),true);this.detailTerrain.visible=false;
@@ -229,9 +228,9 @@ export class Diorama {
       const canvas=document.createElement('canvas');canvas.width=canvas.height=2048;
       const ctx=canvas.getContext('2d');ctx.fillStyle='rgb(0,0,255)';ctx.fillRect(0,0,2048,2048);
       ctx.fillStyle='rgb(255,110,255)';
-      for(const feature of lakeDavisWater.features){
+      for(const lake of this.lakeWater||[]){
         ctx.beginPath();
-        for(const ring of feature.geometry.coordinates){
+        for(const ring of lake.rings){
           ring.forEach(([lon,lat],i)=>{
             const x=(lon-d.bbox.west)/(d.bbox.east-d.bbox.west)*2048,y=(d.bbox.north-lat)/(d.bbox.north-d.bbox.south)*2048;
             if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);

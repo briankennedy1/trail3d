@@ -38,6 +38,6 @@ export function regionalRideData(track,meta,raw,pointsOfInterest=[]){
   }));
   if(meta.waterSource)map.attribution.push(meta.waterSource);
   const scale=Math.max(.25,Math.max(widthM,heightM)/7338),centerY=((min+max)/2-1898)/100*2.3;
-  return {data:{map,ride:projectTrack(track,map,heights),heights:heights.buffer},scale,baseElevation:min-120,
+  return {data:{map,ride:projectTrack(track,map,heights),heights:heights.buffer},scale,baseElevation:min-120,autoFrameHome:true,
     home:{position:[-73.69*scale,centerY+71.64*scale,-153.78*scale],target:[-7.22*scale,centerY,-7.33*scale],zoom:1.273332761095871},pointsOfInterest};
 }

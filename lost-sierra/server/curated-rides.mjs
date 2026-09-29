@@ -22,7 +22,7 @@ export function importCuratedRides(db,root,saveTrack){
     try{
       if(!row){
         const seed={...ride.entry,...after,id:ride.id};
-        db.prepare('INSERT INTO entries(id,kind,name,area,latitude,longitude,content_json,original_json,updated_at) VALUES(?,?,?,?,?,?,?,?,?)').run(ride.id,seed.kind,seed.name,seed.area,seed.coordinates.lat,seed.coordinates.lng,JSON.stringify(seed),JSON.stringify(seed),now);
+        db.prepare('INSERT INTO entries(id,kind,name,area,latitude,longitude,status,content_json,original_json,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)').run(ride.id,seed.kind,seed.name,seed.area,seed.coordinates.lat,seed.coordinates.lng,seed.status||'published',JSON.stringify(seed),JSON.stringify(seed),now);
         Object.assign(after,seed);
       }
       if(!db.prepare('SELECT entry_id FROM tracks WHERE entry_id=?').get(ride.id))saveTrack(db,ride.id,feature,feature.properties.sourceLabel,feature.properties.sourceUrl);

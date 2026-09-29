@@ -96,6 +96,7 @@ const surfaceKey=types=>{
 };
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
 let closeRide=()=>{},captureRideTransition=null,returnToOverview=null,returning=false;
+let trackRequest=null;
 let settingsContext=null,overviewHome={version:0};
 const regionalControls=$('.map-controls');
 $('.masthead').id='masthead';$('.sidebar').id='ride-card';
@@ -173,7 +174,8 @@ function wireFamilyPicker(){const dropdown=$('.route-option-dropdown');if(dropdo
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
 async function reset(push=true){
   if(returning)return;
-  const token=selection,returnAnimation=returnToOverview;
+  const token=++selection,returnAnimation=returnToOverview;
+  trackRequest?.abort();trackRequest=null;
   returning=!!returnAnimation;
   if(returnAnimation){
     document.body.classList.add('returning-overview');$('#ride-card').inert=true;
@@ -186,11 +188,11 @@ async function reset(push=true){
       document.body.classList.remove('ride-open');
       document.body.classList.add('overview-card-ready');
     });}catch(error){console.error(error);}
-    finally{returning=false;document.body.classList.remove('returning-overview','overview-card-ready');$('#ride-card').inert=false;}
+    finally{if(token===selection){returning=false;document.body.classList.remove('returning-overview','overview-card-ready');$('#ride-card').inert=false;}}
     if(token!==selection)return;
   }
-  selection++;closeRide();track=null;map?.reset(!returnAnimation);
-  $('#browse').hidden=false;$('#detail').hidden=true;
+  closeRide();track=null;map?.reset(!returnAnimation);
+  $('#browse').hidden=false;$('#detail').hidden=true;$('#detail').removeAttribute('aria-busy');
   $('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';
   $('#map-status').textContent='Pick a ride. Watch the landscape open up.';
   if(push)history.pushState({},'','/');renderList();showOverviewSettings();
@@ -199,6 +201,12 @@ async function reset(push=true){
 async function selectEntry(id,push=true,animate=true){
   if(id==='mt-elwell'){id='mt-elwell-hard-way';history.replaceState({},'',`/?ride=${id}`);}
   const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
+  if(returning){
+    returning=false;
+    document.body.classList.remove('returning-overview','overview-card-ready');
+    $('#ride-card').inert=false;
+  }
+  trackRequest?.abort();trackRequest=null;
   map?.highlightOverviewRoute(null);
   const transition=!animate?captureRideTransition?.():null;
   if(transition){
@@ -206,15 +214,29 @@ async function selectEntry(id,push=true,animate=true){
   }
   const token=++selection;closeRide();settingsContext=null;renderSettings();track=null;
   if(transition){document.body.classList.add('ride-open');$('#map-labels').hidden=true;if(map)map.suspended=true;}
-  $('#browse').hidden=true;$('#detail').hidden=false;
-  if(!transition)$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
+  $('#browse').hidden=true;$('#detail').hidden=false;$('#detail').setAttribute('aria-busy','true');
+  if(!transition)$('#detail').innerHTML='<p class="muted" role="status">Opening the ride…</p>';
   else for(const button of document.querySelectorAll('[data-route-option]'))button.disabled=true;
   if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
-  if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection){transition?.frame.remove();return;}track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
+  let trackUnavailable=false;
+  if(entry.hasTrack){
+    const request=new AbortController();trackRequest=request;
+    try{
+      const response=await fetch(`/api/tracks/${encodeURIComponent(id)}`,{signal:request.signal});
+      if(!response.ok)throw Error('Track request failed.');
+      const loaded=await response.json();
+      if(token!==selection){transition?.frame.remove();return;}
+      track=loaded;
+    }catch(error){
+      if(token!==selection||request.signal.aborted){transition?.frame.remove();return;}
+      trackUnavailable=true;
+    }finally{if(trackRequest===request)trackRequest=null;}
+  }
   if(token!==selection){transition?.frame.remove();return;}
   if(track){
     try{await openRide(entry,track,token,animate,transition);}
     finally{
+      if(token===selection)$('#detail').removeAttribute('aria-busy');
       if(transition){
         if(token===selection&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
           await transition.frame.animate([{opacity:1},{opacity:0}],{duration:420,easing:'ease-in-out',fill:'forwards'}).finished.catch(()=>{});
@@ -225,8 +247,9 @@ async function selectEntry(id,push=true,animate=true){
   }
   transition?.frame.remove();
   
-  renderDetail(entry);await map?.select(entry,null,animate);
-  $('#map-kicker').textContent=entry.area.toUpperCase();$('#map-title').textContent=entry.name;$('#map-status').textContent=track?'A closer look. Drag to explore.': 'Approximate area location · add a GPS track for the full route';
+  renderDetail(entry,trackUnavailable);$('#detail').removeAttribute('aria-busy');await map?.select(entry,null,animate);
+  if(token!==selection)return;
+  $('#map-kicker').textContent=entry.area.toUpperCase();$('#map-title').textContent=entry.name;$('#map-status').textContent='Approximate area location';
   $('.sidebar').scrollTop=0;
 }
 async function openRide(entry,rideTrack,token,animate=true,transition=null){
@@ -295,6 +318,8 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
         ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
         <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
         ${surfaceKey(options.surfaceTypes)}`,`${separateParking?'':accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`,separateParking?accessLinks(display):'')}`;
+      // Measure the final ride layout before the viewer frames its home camera.
+      document.body.classList.add('ride-open');
       fitRideTitle();wireFamilyPicker();
       $('#back').onclick=()=>reset();
       wireRideNotes(()=>viewer?.pause(),beginCardResize);
@@ -359,14 +384,15 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
     $('#back').onclick=()=>reset();$('#retry-ride').onclick=()=>selectEntry(entry.id,false,animate);
   }
 }
-function renderDetail(e){
+function renderDetail(e,trackUnavailable=false){
   const distance='—';
   const stats=e.kind==='ride'?`${intensityDisplay(e)}<div class="stats"><div><b>${distance}</b><span>Miles</span></div><div><b>${number(e.climbingFt)}</b><span>Climbing Ft</span></div><div><b>${movingTime(e)}</b><span>Moving Time</span></div></div>`:'';
-  $('#detail').innerHTML=`${mustRideBanner(e)}<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.rideFamily?.name||e.name)}</h1>${familyPicker(e)}${e.kind==='ride'?'':`<div class="entry-meta">${escape(e.type||'Explore')}</div>`}<div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
+  $('#detail').innerHTML=`${mustRideBanner(e)}<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.rideFamily?.name||e.name)}</h1>${familyPicker(e)}${e.kind==='ride'?'':`<div class="entry-meta">${escape(e.type||'Explore')}</div>`}<div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice" role="status">${trackUnavailable?'The GPS track could not load. Ride notes are still available.':e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}${trackUnavailable?'<button type="button" class="secondary retry-track" id="retry-track">Try loading the route again</button>':''}</div>
   ${e.notes||e.summary?`<h3>Field notes</h3><div class="detail-copy ride-description">${descriptionParagraphs(e.notes||e.summary)}</div>`:''}
   <div class="facts">${e.season?`<div class="fact-row"><span>Season</span><b>${escape(e.season)}</b></div>`:''}${e.driveMinutes!=null?`<div class="fact-row"><span>Drive from Everstoke</span><b>~${e.driveMinutes} min</b></div>`:''}${e.shuttleOption&&e.shuttleOption!=='no'?`<div class="fact-row"><span>Shuttle option</span><b>${e.shuttleOption==='partial'?'Partial':'Yes'}</b></div>`:''}${e.ebikeRecommended?'<p class="small muted">The planner recommends an e-bike. Confirm current e-bike access for each trail.</p>':''}</div>
   <div class="detail-links">${e.kind==='ride'?accessLinks(e):''}${external(e.routeUrl,'Open original route')}${external(e.shuttleRouteUrl,'Shuttle route')}${external(e.bkxcVideoUrl,'Watch BKXC’s ride')}</div>${e.incomplete?'<p class="notice">These notes are still being filled in.</p>':''}<p class="track-source">From the Everstoke planner. Locations and seasonal notes need local confirmation; this is not a live trail conditions feed.</p>`;
   $('#back').onclick=()=>reset();
+  if(trackUnavailable)$('#retry-track').onclick=()=>selectEntry(e.id,false,false);
   wireFamilyPicker();
   $('#share').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast('Ride link copied. This local link works on this computer.');}catch{toast('Copy this ride’s URL from your address bar.');}};
 

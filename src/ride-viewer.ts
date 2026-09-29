@@ -1,6 +1,7 @@
 import './setup';
 import { createFlightPlan } from './ride-flight-plan';
 import { frameApproachTarget } from './ride-approach';
+import { fitRideHome } from './ride-home-framing';
 import { flagClearanceHeight } from './flag-clearance';
 import { buildRideContext } from './ride-context';
 import type { ContextFeature } from './ride-context-data';
@@ -20,6 +21,7 @@ export type RideViewerOptions = {
   root?: ParentNode;
   data: { map: MapData; ride: Ride; heights: ArrayBuffer };
   home: HomeView;
+  autoFrameHome?: boolean;
   entryView?: HomeView;
   initialView?: HomeView;
   entryContext?: RegionContext;
@@ -305,7 +307,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     if (transition.elapsed >= transition.duration) {
       cameraTransition = null;
       controls.enableDamping = false;
-      if (!exiting) controls.minZoom = 0.65;
+      if (!exiting) controls.minZoom = Math.min(0.65, defaultHome.zoom);
       if (playing) play.textContent = 'Ⅱ Pause';
     }
   }
@@ -387,7 +389,28 @@ export async function mountRideViewer(options: RideViewerOptions) {
   }
   on(window, 'resize', resize);
   resize();
-  const defaultHome = options.home;
+  let defaultHome = options.home;
+  if (options.autoFrameHome) {
+    const framePoints: THREE.Vector3[] = [];
+    const step = Math.max(1, Math.floor(Math.min(map.grid.width, map.grid.height) / 40));
+    for (let j = 0; j < map.grid.height; j += step) for (let i = 0; i < map.grid.width; i += step) {
+      const x = i / (map.grid.width - 1) * map.widthM, y = j / (map.grid.height - 1) * map.heightM;
+      framePoints.push(new THREE.Vector3(...toWorld(map, x, y, terrain.heightAt(x, y))));
+    }
+    for (const x of [0, map.widthM]) for (const y of [0, map.heightM]) {
+      framePoints.push(new THREE.Vector3(...toWorld(map, x, y, terrain.heightAt(x, y))));
+      framePoints.push(new THREE.Vector3(...toWorld(map, x, y, options.baseElevation ?? map.elevation.min)));
+    }
+    const card = $<HTMLElement>('ride-card')?.getBoundingClientRect();
+    const header = $<HTMLElement>('masthead')?.getBoundingClientRect();
+    defaultHome = fitRideHome(defaultHome, framePoints, viewScale, {
+      width: innerWidth, height: innerHeight, left: 16,
+      right: innerWidth > 700 && card ? card.left - 16 : innerWidth - 16,
+      top: (header?.bottom ?? 0) + 16,
+      bottom: innerWidth <= 700 && card ? card.top - 16 : innerHeight - 24,
+    });
+    controls.minZoom = Math.min(controls.minZoom, defaultHome.zoom);
+  }
   function readHome(): HomeView | null {
     try {
       const value = JSON.parse(localStorage.getItem(options.homeStorageKey!) || 'null') as HomeView | null;

@@ -39,3 +39,14 @@ test('route settings accept named flags and reject unsafe links or invalid camer
   assert.throws(()=>validateEntry({...entry,viewer:{home:{position:[NaN,0,0],target:[0,0,0],zoom:1}}}));
   assert.throws(()=>validateEntry({...entry,viewer:{data:{}}}));
 });
+test('per-ride context label settings validate exact names without changing legacy viewer settings',()=>{
+  const entry={id:'test',kind:'ride',name:'Test',area:'Portola',status:'draft',coordinates:{lat:39.8,lng:-120.45}};
+  const labels={mode:'only',names:['Gray Eagle Creek','Gold Lake Highway']};
+  assert.deepEqual(validateEntry({...entry,viewer:{contextLabels:labels}}).viewer.contextLabels,labels);
+  assert.deepEqual(validateEntry({...entry,viewer:{home:{position:[1,2,3],target:[0,0,0],zoom:1}}}).viewer.home.position,[1,2,3]);
+  for(const contextLabels of [
+    {mode:'only',names:[]},{mode:'hide',names:['']},{mode:'all',names:['Road']},
+    {mode:'unknown',names:[]},{mode:'none',names:'Road'},{mode:'hide',names:[' Road']},
+    {mode:'hide',names:['Road'],extra:true},
+  ])assert.throws(()=>validateEntry({...entry,viewer:{contextLabels}}));
+});

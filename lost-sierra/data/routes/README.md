@@ -1,5 +1,24 @@
 # Curated routes
 
+## Repeatable local GPX import
+
+From `lost-sierra/`, stage a local GPX export with explicit source and identity:
+
+```
+npm run stage:ride -- --input /path/to/export.gpx --id my-route --name "My Route" --area "Lakes Basin" --source-url https://example.org/route --source-label "Original route export"
+```
+
+Add source-published totals only when verified: `--climbing-ft`, `--descending-ft`, and `--moving-minutes` (plus `--moving-time-estimated` if appropriate). For a confirmed family, provide all three of `--family-id`, `--family-name`, and `--family-option`. The command stages a GeoJSON track, a draft `curated-rides.json` entry, and `review.json` under ignored `.staging/<id>/`. It does not fetch, modify the CMS database, or change any catalog entry. It refuses an existing ride ID or output directory. All-zero GPX elevations are treated as export placeholders and removed; recorded elevations are preserved. Mixed elevation quality, multiple segments, over 30,000 points, or a gap over 5 km stop for review. The curated importer honors the explicit draft status when a new entry is first seeded; legacy entries without a status remain published.
+
+Review the staged track and source terms, then copy the GeoJSON to `data/routes/` and append the draft entry to `data/curated-rides.json`. The draft remains incomplete and unpublished; fill verified route facts and access links. Build its terrain with `node scripts/build-ride-terrain.mjs my-route`, which samples missing elevations, then classify surfaces using a relevant saved Overpass `way[highway];out geom` response:
+
+```
+node scripts/build-route-surfaces.mjs /path/to/ways.json --ride my-route
+npm run audit:content -- --fail-on-errors
+```
+
+Single-ride surface classification preserves the other catalog records and refuses to run without an existing populated surface catalog. It also refuses an Overpass export with no mapped ways matching the route; `--allow-all-unknown` is available after review. A full replacement requires both `--all` and `--confirm-replace-catalog`. The versioned seed audit reports stale surface hashes, incomplete surface ranges, missing tracks/terrain/elevations, terrain bounds, and unresolved editorial items. It merges planner fields with curated fields to reflect first import, and checks archived rides for structural issues while omitting their editorial warnings. It does not inspect the live CMS, so CMS-only edits are not reflected in editorial warnings. Confirm intensity, notes, route shape, parking pins, and permissions before publishing; the importer does not infer any of them.
+
 Lake Davis Loop (Trailforks route 54895) and Haskell Peak Out and Back (60243)
 were downloaded through Trailforks' GPX export on September 28, 2026, with
 Brian's explicit approval to accept the data-use agreement for both downloads.

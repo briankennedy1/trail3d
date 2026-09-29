@@ -9,3 +9,4 @@ lost-sierra/.data/
 lost-sierra/.env
 lost-sierra/.env.*
 lost-sierra/backups/
+lost-sierra/.staging/

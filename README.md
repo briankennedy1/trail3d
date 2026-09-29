@@ -37,6 +37,8 @@ npm start --prefix lost-sierra
 - Surface colors on the route and profile: yellow singletrack, dark gray asphalt, brown dirt road, and gray unverified sections.
 - Miles, climbing feet, and moving time; intensity banners; Must Ride ribbons; ride notes; parking, Trailforks, and video links.
 - Admin-only settings cog for shared home views and current-route editing. CMS intensity dropdown, route-family fields, track uploads, publishing, and audit history.
+- CMS map-label choices and coordinate-to-parking links; automatic terrain framing for rides without a saved home.
+- Safe GPX staging, per-ride surface rebuilds, seed-content audits, and automated GitHub validation.
 
 ## Project map
 

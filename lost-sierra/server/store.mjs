@@ -115,7 +115,7 @@ export function validateEntry(input) {
   }
   if(result.viewer!=null){
     const v=result.viewer;
-    if(typeof v!=='object'||Array.isArray(v)||Object.keys(v).some(k=>!['home','pointsOfInterest','baseElevation','scale','angleBeats'].includes(k)))fail('Invalid ride viewer settings.');
+    if(typeof v!=='object'||Array.isArray(v)||Object.keys(v).some(k=>!['home','pointsOfInterest','baseElevation','scale','angleBeats','contextLabels'].includes(k)))fail('Invalid ride viewer settings.');
     if(v.home){
       validateHome(v.home);
     }
@@ -124,6 +124,10 @@ export function validateEntry(input) {
     if(v.angleBeats!=null){
       const beats=v.angleBeats;
       if(!Array.isArray(beats)||beats.length<2||beats.length>32||beats.some((b,i)=>!Array.isArray(b)||b.length!==2||!b.every(Number.isFinite)||b[0]<0||b[0]>1||Math.abs(b[1])>1440||(i>0&&b[0]<=beats[i-1][0]))||beats[0][0]!==0||beats.at(-1)[0]!==1)fail('Camera beats must progress from 0 to 1.');
+    }
+    if(v.contextLabels!=null){
+      const labels=v.contextLabels;
+      if(typeof labels!=='object'||Array.isArray(labels)||Object.keys(labels).some(k=>!['mode','names'].includes(k))||!['all','none','only','hide'].includes(labels.mode)||!Array.isArray(labels.names)||labels.names.length>50||labels.names.some(name=>typeof name!=='string'||!name.trim()||name!==name.trim()||name.length>120)||(['only','hide'].includes(labels.mode)&&!labels.names.length)||(['all','none'].includes(labels.mode)&&labels.names.length))fail('Choose a label mode and up to 50 exact road or waterway names.');
     }
     if(v.pointsOfInterest!=null){
       if(!Array.isArray(v.pointsOfInterest)||v.pointsOfInterest.length>50)fail('Use up to 50 ride flags.');
