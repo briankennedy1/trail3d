@@ -1,3 +1,4 @@
+import {START_FLAG_COLOR,FINISH_FLAG_COLOR} from './ride-access.js';
 // Match a shuttle drop-off to the full track. Keep terrain coordinates and home
 // unchanged, and trim surface segments alongside their corresponding points.
 export function shuttleStartIndex(entry, track) {
@@ -17,8 +18,8 @@ export function rideVariant(entry,track,base,mode) {
   const shuttle=entry.shuttle,finish=track.geometry.coordinates.at(-1);
   const finishUrl=entry.sameStartFinish?entry.startMapsUrl:(entry.finishMapsUrl||entry.startMapsUrl);
   const points=(base.pointsOfInterest||[]).filter(p=>! /^(?:route start(?:\s*\/\s*finish)?|route finish|.*\btrailhead)$/i.test(p.name));
-  points.push({name:'Route start',latitude:shuttle.coordinates.lat,longitude:shuttle.coordinates.lng,color:'#34877b',url:shuttle.startMapsUrl},
-    {name:'Route finish',latitude:finish[1],longitude:finish[0],color:'#34877b',url:finishUrl||`https://www.google.com/maps?q=${finish[1]},${finish[0]}`});
+  points.push({name:'Route start',latitude:shuttle.coordinates.lat,longitude:shuttle.coordinates.lng,color:START_FLAG_COLOR,url:shuttle.startMapsUrl},
+    {name:'Route finish',latitude:finish[1],longitude:finish[0],color:FINISH_FLAG_COLOR,url:finishUrl||`https://www.google.com/maps?q=${finish[1]},${finish[0]}`});
   return {
     entry:{...entry,startMapsUrl:shuttle.startMapsUrl,finishMapsUrl:finishUrl,sameStartFinish:false,climbingFt:shuttle.climbingFt??null,movingMinutes:shuttle.movingMinutes??null,movingTimeEstimated:shuttle.movingTimeEstimated!==false},
     options:{...base,data:{...base.data,ride:{...base.data.ride,points:base.data.ride.points.slice(start)}},surfaceTypes:base.surfaceTypes?.slice(start),pointsOfInterest:points}

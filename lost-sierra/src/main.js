@@ -13,7 +13,7 @@ creditsDialog.addEventListener('click',event=>{
   if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)creditsDialog.close();
 });
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const external=(url,label,iconName)=>{
+const external=(url,label,iconName,visibleLabel)=>{
   try{
     const {protocol,hostname}=new URL(url);if(!['https:','http:'].includes(protocol))return '';
     const on=domain=>hostname===domain||hostname.endsWith(`.${domain}`);
@@ -21,12 +21,12 @@ const external=(url,label,iconName)=>{
     const icon=iconName==='parking'?'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="2" fill="#1769b5"/><path d="M9 18V6h4a3.5 3.5 0 0 1 0 7H9" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>'
       :brand?`<img class="link-brand-icon" src="/icons/${brand}.svg" alt="" aria-hidden="true" width="22" height="22">`
       :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3 10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg>';
-    return `<a href="${escape(url)}" target="_blank" rel="noopener noreferrer" title="${escape(label)}" aria-label="${escape(label)}">${icon}</a>`;
+    return `<a ${visibleLabel?'class="parking-link"':''} href="${escape(url)}" target="_blank" rel="noopener noreferrer" title="${escape(label)}" aria-label="${escape(label)}">${icon}${visibleLabel?`<span>${escape(visibleLabel)}</span>`:''}</a>`;
   }catch{return '';}
 };
 const accessLinks=e=>{
   const same=e.sameStartFinish||(e.startMapsUrl&&e.startMapsUrl===e.finishMapsUrl);
-  return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking'));
+  return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking',same?'Parking':'Start Parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking','Finish Parking'));
 };
 const ridePanels=(entry,content,links)=>`<div class="ride-content">
   <div id="ride-profile-panel" class="ride-content-panel">${content}</div>

@@ -6,7 +6,7 @@ import beckHeightsUrl from '../../public/beckwourth/terrain.bin?url';
 import { projectTrack, regionalRideData } from './ride-data.js';
 import { rideContextForMap, roadEdgePoint } from '../../src/ride-context-data';
 import { surfaceTypesForTrack } from '../../src/route-surfaces';
-import { routeStartParkingLinks } from './ride-access.js';
+import { routeEndpointFlags } from './ride-access.js';
 
 export async function prepareRide(entry,track,signal){
   const contextRequest=fetch('/terrain/ride-context.geojson',{signal}).then(r=>r.ok?r.json():null).catch(()=>null);
@@ -30,7 +30,7 @@ export async function prepareRide(entry,track,signal){
   const first=track.geometry.coordinates[0],last=track.geometry.coordinates.at(-1);
   // Honor the CMS loop setting; otherwise recognize recordings that close within 50 m.
   const isLoop=entry.sameStartFinish??(Math.hypot((last[0]-first[0])*111320*Math.cos(first[1]*Math.PI/180),(last[1]-first[1])*111320)<50);
-  options.pointsOfInterest=routeStartParkingLinks(options.pointsOfInterest,entry.startMapsUrl,isLoop);
+  options.pointsOfInterest=routeEndpointFlags(options.pointsOfInterest,entry,track.geometry.coordinates,isLoop);
   const context=await contextRequest;signal.throwIfAborted();
   if(context)options.contextFeatures=rideContextForMap(context,options.data.map);
   const surfaces=await surfacesRequest;signal.throwIfAborted();

@@ -114,3 +114,6 @@
 .ride-mode button:focus-visible{outline:2px solid #b94935;outline-offset:2px}
 
 .guide-page #detail>h2{white-space:nowrap}
+
+.guide-page .detail-links a.parking-link{width:auto;gap:6px;font-size:11px;white-space:nowrap}
+.guide-page .detail-links a.parking-link svg{flex-shrink:0}
