@@ -22,7 +22,7 @@ test('curated imports preserve CMS edits, existing tracks and saved home on repe
  }finally{db.close();fs.rmSync(dir,{recursive:true,force:true});}
 });
 test('all imported tracks fit detailed terrain and have usable profiles',()=>{
- const expectedMiles={'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell':23.0,'buzzards-roost-ridge':10.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
+ const expectedMiles={'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell':23.0,'buzzards-roost-ridge':12.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
  for(const {id} of JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')))){
   const route=JSON.parse(fs.readFileSync(path.join(root,`data/routes/${id}.geojson`)));
   assert.ok(Math.abs(trackStats(route).distance/1609.344-expectedMiles[id])<.1,id);
@@ -35,5 +35,21 @@ test('all imported tracks fit detailed terrain and have usable profiles',()=>{
   assert.ok(view.data.map.grid.spacing<=31);assert.equal(view.data.ride.points.length,route.geometry.coordinates.length);
   for(const [x,y] of view.data.ride.points){assert.ok(x>=0&&x<=view.data.map.widthM);assert.ok(y>=0&&y<=view.data.map.heightM);}
   if(id==='lake-davis-loop'){assert.equal(view.data.map.lakes[0].name,'Lake Davis');assert.equal(view.data.map.lakes[0].inner.length,10);assert.ok(view.data.map.lakes[0].level>1750&&view.data.map.lakes[0].level<1770);}
+ }
+});
+
+test('Buzzards Roost repair closes the loop and preserves every recorded point',()=>{
+ const route=JSON.parse(fs.readFileSync(path.join(root,'data/routes/buzzards-roost-ridge.geojson')));
+ const original=JSON.parse(fs.readFileSync(path.join(root,'data/routes/buzzards-roost-ridge-recorded.geojson')));
+ const points=route.geometry.coordinates,n=route.properties.repair.addedPointCount;
+ assert.deepEqual(points[0],points.at(-1));
+ assert.deepEqual(points.slice(n),original.geometry.coordinates);
+ const added=trackStats({type:'LineString',coordinates:points.slice(0,n+1)});
+ assert.ok(added.distance>3000&&added.distance<3300);
+ assert.ok(added.ascent>340&&added.ascent<420);
+ for(let i=1;i<=n;i++){
+  const a=points[i-1],b=points[i];
+  assert.ok(Math.hypot((a[0]-b[0])*85500,(a[1]-b[1])*111320)<=15.1,'No shortcut or jump on the reconstructed road');
+  assert.ok(Math.abs(a[2]-b[2])<8,'Elevation joins smoothly');
  }
 });

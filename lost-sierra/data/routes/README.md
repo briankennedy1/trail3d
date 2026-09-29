@@ -59,3 +59,31 @@ flags require verified summit locations and are not guessed from GPS high points
 Still pending: Cal-Ida, Hough–Taylor Creek, Hough Lower Loops and South Park need
 confirmation for the Trailforks data-use checkbox. Lost & Found Half Calf has a
 RideWithGPS source rather than Trailforks and was outside this import batch.
+
+## Buzzards Roost missing start repair
+
+The rider confirmed recording began late and requested the existing finish as
+both the start and finish. The Trailforks ride note explicitly mentions the
+missing road climb; its map identifies La Porte Road at both endpoints:
+https://www.trailforks.com/ridelog/view/80488775/
+https://www.trailforks.com/map/?lat=39.8406&lon=-120.8625&z=15
+
+`buzzards-roost-ridge-recorded.geojson` preserves the original import.
+`buzzards-roost-ridge-start-road.geojson` is the connector geometry following
+OpenStreetMap way 10494068 (La Porte Road), verified against the Trailforks map.
+OSM contributors are credited in the footer; OSM data is under ODbL:
+https://www.openstreetmap.org/copyright
+
+The nearest road projections are 1.35 m from the finish and 3.35 m from the
+recording start. The connector follows the road's northern switchback rather
+than drawing a straight link. Elevation is estimated from AWS/USGS terrain,
+with small endpoint offsets blended to exactly match recorded elevations.
+No recorded point or timestamp is invented or changed. The derived track
+records its source geometry hash, added point count, distance and estimated gain.
+
+Rebuild: `node lost-sierra/scripts/repair-buzzards-start.mjs`.
+For an existing database, first run `npm run backup --prefix lost-sierra`, then
+`node lost-sierra/scripts/apply-buzzards-repair.mjs`. This refuses a changed track,
+keeps an audit copy, preserves CMS edits, moves the original start flag and
+updates the home only if it still matches the imported default. Fresh databases
+seed the corrected route directly.

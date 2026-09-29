@@ -11,7 +11,7 @@
       "climbingFt": 472,
       "descendingFt": 463,
       "summary": "A mellow loop around Lake Davis, mixing lakeside singletrack with gravel roads.",
-      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth\u2013Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
+      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth–Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
       "season": "Snow-free months",
       "seasonMonths": [],
       "incomplete": false,
@@ -296,38 +296,38 @@
     "track": "routes/buzzards-roost-ridge.geojson",
     "details": {
       "coordinates": {
-        "lat": 39.840376,
-        "lng": -120.868586
+        "lat": 39.840827,
+        "lng": -120.856356
       },
-      "climbingFt": 2894,
+      "climbingFt": 4156,
       "summary": "A recorded climb and descent on Buzzards Roost Ridge.",
-      "notes": "https://youtu.be/1gO3Srs2T2U?si=wMG006hzNTOyXxWi",
+      "notes": "https://youtu.be/1gO3Srs2T2U?si=wMG006hzNTOyXxWi\n\nThe missing start has been reconstructed along La Porte Road from the finish back to where recording began. This adds about 2.0 miles; elevation and climbing for that section are estimated from terrain. The recorded portion is unchanged.",
       "incomplete": false,
       "viewer": {
         "pointsOfInterest": [
           {
             "name": "Route start",
-            "latitude": 39.840376,
-            "longitude": -120.868586,
+            "latitude": 39.840827,
+            "longitude": -120.856356,
             "color": "#34877b",
             "url": "https://www.trailforks.com/ridelog/view/80488775/"
           }
         ],
         "home": {
           "position": [
-            -63.393138074372445,
-            56.643622541638635,
-            -132.29199040679867
+            -77.55654631146113,
+            70.1058740139388,
+            -161.84890340312788
           ],
           "target": [
-            -8.602678528209044,
-            -4.985966434450956,
-            -6.30576336117723
+            -10.524704344071264,
+            -5.29310790698773,
+            -7.714608284204235
           ],
           "zoom": 0.85
         }
       },
-      "descendingFt": 4034
+      "descendingFt": 4170
     }
   },
   {
