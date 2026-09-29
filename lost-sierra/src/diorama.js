@@ -61,8 +61,7 @@ export class Diorama {
   }
   setupRoutePopup(){
     const canvas=this.renderer.domElement,popup=document.createElement('a');
-    popup.className='overview-route-popup';popup.hidden=true;
-    popup.innerHTML='<strong></strong><span class="overview-route-meta"></span><span class="overview-route-open">Explore ride <span aria-hidden="true">→</span></span>';
+    popup.className='map-marker overview-route-popup';popup.hidden=true;
     this.element.parentElement.append(popup);this.routePopup=popup;
     const raycaster=new THREE.Raycaster();raycaster.params.Line2={threshold:9};this.routeRaycaster=raycaster;
     const scheduleHide=()=>{clearTimeout(this.routePopupTimer);this.routePopupTimer=setTimeout(()=>{if(!popup.matches(':hover')&&!popup.contains(document.activeElement))this.hideRoutePopup();},250);};
@@ -75,13 +74,13 @@ export class Diorama {
       if(event.button!==0)return;
       const hit=this.hitOverviewRoute(event.clientX,event.clientY);
       this.routePress=hit?{x:event.clientX,y:event.clientY,open:!popup.hidden,dragged:false}:null;
-      if(hit)this.showRoutePopup(hit);else this.hideRoutePopup();
+      if(hit)this.showRoutePopup();else this.hideRoutePopup();
     });
     canvas.addEventListener('pointerup',event=>{
       const press=this.routePress;this.routePress=null;
       if(!press||press.dragged||Math.hypot(event.clientX-press.x,event.clientY-press.y)>6)return;
       const hit=this.hitOverviewRoute(event.clientX,event.clientY);if(!hit)return;
-      if(press.open){this.hideRoutePopup();this.onRide?.(this.overviewRouteEntry);}else this.showRoutePopup(hit);
+      if(press.open){this.hideRoutePopup();this.onRide?.(this.overviewRouteEntry);}else this.showRoutePopup();
     });
     canvas.addEventListener('pointercancel',()=>{this.routePress=null;this.hideRoutePopup();});
     canvas.addEventListener('wheel',()=>this.hideRoutePopup(),{passive:true});
@@ -108,8 +107,8 @@ export class Diorama {
     if(ground&&ground.distance+.025<point.clone().sub(raycaster.ray.origin).dot(raycaster.ray.direction))return null;
     return point;
   }
-  showRoutePopup(point){
-    clearTimeout(this.routePopupTimer);this.routePopupTimer=null;this.routePopupPoint=point.clone();this.routePopup.hidden=false;
+  showRoutePopup(){
+    clearTimeout(this.routePopupTimer);this.routePopupTimer=null;this.routePopupPoint=this.routeLabelAnchor;this.routePopup.hidden=false;
     this.renderer.domElement.style.cursor='pointer';this.positionRoutePopup();
   }
   hideRoutePopup(){
@@ -119,9 +118,8 @@ export class Diorama {
   positionRoutePopup(){
     if(!this.routePopupPoint)return;
     const p=this.routePopupPoint.clone().project(this.camera),w=this.element.clientWidth,h=this.element.clientHeight;
-    const popup=this.routePopup,width=popup.offsetWidth,height=popup.offsetHeight;
-    popup.style.left=`${clamp((p.x*.5+.5)*w-width/2,12,Math.max(12,w-width-12))}px`;
-    popup.style.top=`${clamp((-.5*p.y+.5)*h-height-14,12,Math.max(12,h-height-12))}px`;
+    this.routePopup.style.left=`${(p.x*.5+.5)*w}px`;
+    this.routePopup.style.top=`${(-.5*p.y+.5)*h}px`;
   }
   async loadOverviewRoute(entry){
     try{
@@ -142,8 +140,11 @@ export class Diorama {
       }
       this.overviewRouteEntry=entry.id;
       this.routePopup.href=`/?ride=${encodeURIComponent(entry.id)}`;
-      this.routePopup.querySelector('strong').textContent=entry.name;
-      this.routePopup.querySelector('.overview-route-meta').textContent=[entry.area,entry.intensity].filter(Boolean).join(' · ');
+      this.routePopup.textContent=entry.name;
+      this.routePopup.setAttribute('aria-label',`Explore ${entry.name}`);
+      // Anchor the label above the route's summit, independent of pointer position.
+      let summit=0;for(let i=3;i<positions.length;i+=3)if(positions[i+1]>positions[summit+1])summit=i;
+      this.routeLabelAnchor=new THREE.Vector3(...positions.slice(summit,summit+3)).add(new THREE.Vector3(0,2,0));
     }catch(error){console.warn('Could not show Beckwourth Peak on the overview:',error);}
   }
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
@@ -284,7 +285,7 @@ export class Diorama {
     if(!this.overviewRoute.visible||this.held||this.tween)this.hideRoutePopup();
     else if(this.routePointer){
       const pointer=this.routePointer;this.routePointer=null;const hit=this.hitOverviewRoute(pointer.x,pointer.y);
-      if(hit)this.showRoutePopup(hit);
+      if(hit)this.showRoutePopup();
       else if(!this.routePopup.hidden&&!this.routePopupTimer)this.routePopupTimer=setTimeout(()=>{this.routePopupTimer=null;if(!this.routePopup.matches(':hover')&&!this.routePopup.contains(document.activeElement))this.hideRoutePopup();},250);
     }
     if(!this.routePopup.hidden)this.positionRoutePopup();
