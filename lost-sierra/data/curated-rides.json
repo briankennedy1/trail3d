@@ -89,5 +89,445 @@
         }
       }
     }
+  },
+  {
+    "id": "mills-peak",
+    "terrain": "/terrain/mills-peak",
+    "track": "routes/mills-peak.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.781834697351,
+        "lng": -120.61123793945
+      },
+      "climbingFt": 3863,
+      "summary": "A full pedal ride to Mills Peak and back, including the climb and descent.",
+      "notes": "1hr descent. Pedal option or self-shuttle option.\n\nThe displayed track is the full ride recording, including its climbs. A shuttle-only variation will have different mileage and elevation gain.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.781834697351,
+            "longitude": -120.61123793945,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/96507446/"
+          }
+        ],
+        "home": {
+          "position": [
+            -147.47826368385702,
+            140.764101203745,
+            -307.7650615999937
+          ],
+          "target": [
+            -20.0133347379369,
+            -2.6114288588349455,
+            -14.66977436290775
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 3863
+    }
+  },
+  {
+    "id": "gold-valley-rim-pauley-creek-dh",
+    "terrain": "/terrain/gold-valley-rim-pauley-creek-dh",
+    "track": "routes/gold-valley-rim-pauley-creek-dh.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.614224545658,
+        "lng": -120.66626354121
+      },
+      "climbingFt": 3176,
+      "summary": "A recorded ride along Gold Valley Rim and down Pauley Creek toward Downieville.",
+      "notes": "",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.614224545658,
+            "longitude": -120.66626354121,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/103492055/"
+          }
+        ],
+        "home": {
+          "position": [
+            -186.33107698469578,
+            176.86242931218504,
+            -388.8450674271478
+          ],
+          "target": [
+            -25.285802277744036,
+            -4.285058205573231,
+            -18.53449306958638
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 7358
+    }
+  },
+  {
+    "id": "jamison-creek-loop",
+    "terrain": "/terrain/jamison-creek-loop",
+    "track": "routes/jamison-creek-loop.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.74231813103,
+        "lng": -120.70741944015
+      },
+      "climbingFt": 2837,
+      "summary": "A rocky backcountry loop through the Jamison Creek area.",
+      "notes": "Park at Plumas-Eureka State Park.\nRocky backcountry.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.74231813103,
+            "longitude": -120.70741944015,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/93636482/"
+          }
+        ],
+        "home": {
+          "position": [
+            -73.75821092245879,
+            73.42874550754131,
+            -153.92234598528583
+          ],
+          "target": [
+            -10.00925646932539,
+            1.7224321612942162,
+            -7.33678499201551
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 2836
+    }
+  },
+  {
+    "id": "lower-lakes-basin-loop",
+    "terrain": "/terrain/lower-lakes-basin-loop",
+    "track": "routes/lower-lakes-basin-loop.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.781702850014,
+        "lng": -120.61123802327
+      },
+      "climbingFt": 3417,
+      "summary": "A recorded Lakes Basin loop linking Grassy, Long and Smith Lake trails with Graeagle Creek.",
+      "notes": "Frazier Falls road - Grassy Lake - Long Lake (blue) - Smith Lake- Graeagle Creek",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.781702850014,
+            "longitude": -120.61123802327,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/100899059"
+          }
+        ],
+        "home": {
+          "position": [
+            -121.09257225208883,
+            115.17052617459919,
+            -252.70207302111848
+          ],
+          "target": [
+            -16.43270080772002,
+            -2.5533424119070367,
+            -12.045169692058774
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 3417
+    }
+  },
+  {
+    "id": "mt-elwell",
+    "terrain": "/terrain/mt-elwell",
+    "track": "routes/mt-elwell.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.748465,
+        "lng": -120.617551
+      },
+      "climbingFt": 5063,
+      "summary": "A long, demanding Lakes Basin ride through the Mount Elwell area.",
+      "notes": "Hard to get to. Snow likely at top in June/early July.\nShuttle from Round Lake TH or pedal from Everstoke\n\nThe displayed track is the full ride recording, including its climbs. A shuttle-only variation will have different mileage and elevation gain.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.748465,
+            "longitude": -120.617551,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/118174069/"
+          }
+        ],
+        "home": {
+          "position": [
+            -137.00650134202297,
+            131.93749782241827,
+            -285.91206101745547
+          ],
+          "target": [
+            -18.592278645952366,
+            -1.2575863971844714,
+            -13.628140247483083
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 5495
+    }
+  },
+  {
+    "id": "buzzards-roost-ridge",
+    "terrain": "/terrain/buzzards-roost-ridge",
+    "track": "routes/buzzards-roost-ridge.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.840376,
+        "lng": -120.868586
+      },
+      "climbingFt": 2894,
+      "summary": "A recorded climb and descent on Buzzards Roost Ridge.",
+      "notes": "https://youtu.be/1gO3Srs2T2U?si=wMG006hzNTOyXxWi",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.840376,
+            "longitude": -120.868586,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/80488775/"
+          }
+        ],
+        "home": {
+          "position": [
+            -63.393138074372445,
+            56.643622541638635,
+            -132.29199040679867
+          ],
+          "target": [
+            -8.602678528209044,
+            -4.985966434450956,
+            -6.30576336117723
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 4034
+    }
+  },
+  {
+    "id": "hough-tollgate",
+    "terrain": "/terrain/hough-tollgate",
+    "track": "routes/hough-tollgate.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.97565262951,
+        "lng": -120.90495927259
+      },
+      "climbingFt": 6057,
+      "summary": "A full pedal ride on Mount Hough with a Tollgate descent.",
+      "notes": "E-bike pedal route or shuttle option.\nFor shuttling: park at South Park TH after checking in at the Yuba shop. For e-biking: park at Spanish Creek TH if you want to jump in the water after the ride.\n\nThe displayed track is the full ride recording, including its climbs. A shuttle-only variation will have different mileage and elevation gain.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.97565262951,
+            "longitude": -120.90495927259,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/93704187/"
+          }
+        ],
+        "home": {
+          "position": [
+            -140.54133321202218,
+            129.8319176148906,
+            -293.28872603263363
+          ],
+          "target": [
+            -19.071968138420708,
+            -6.799662128755325,
+            -13.979752645462378
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 6075
+    }
+  },
+  {
+    "id": "hough-classic",
+    "terrain": "/terrain/hough-classic",
+    "track": "routes/hough-classic.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.969757972285,
+        "lng": -120.90096713975
+      },
+      "climbingFt": 5554,
+      "summary": "A full recorded Mount Hough ride, including the climb and classic descent.",
+      "notes": "The displayed track is the full ride recording, including its climbs. A shuttle-only variation will have different mileage and elevation gain.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.969757972285,
+            "longitude": -120.90096713975,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/111153927/"
+          }
+        ],
+        "home": {
+          "position": [
+            -118.80561772930226,
+            108.63094942227127,
+            -247.92954124592347
+          ],
+          "target": [
+            -16.12235279268588,
+            -6.8695859845303815,
+            -11.81768459703875
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 5542
+    }
+  },
+  {
+    "id": "indian-falls-acorn-grotto",
+    "terrain": "/terrain/indian-falls-acorn-grotto",
+    "track": "routes/indian-falls-acorn-grotto.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 40.04460375756,
+        "lng": -120.97035530023
+      },
+      "climbingFt": 5724,
+      "summary": "A full recorded ride linking the Indian Falls, Acorn and Grotto area.",
+      "notes": "Shuttle route. Blue with Black options. Can do just Indian Falls lollipop as a shorter variant.\n\nThe displayed track is the full ride recording, including its climbs. A shuttle-only variation will have different mileage and elevation gain.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 40.04460375756,
+            "longitude": -120.97035530023,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/view/89050236/"
+          }
+        ],
+        "home": {
+          "position": [
+            -113.2366546456734,
+            101.78954957231065,
+            -236.3079488588907
+          ],
+          "target": [
+            -15.36662432428734,
+            -8.296947086883847,
+            -11.26373562970262
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 5728
+    }
+  },
+  {
+    "id": "graeagle-smith-creek-loop",
+    "terrain": "/terrain/graeagle-smith-creek-loop",
+    "track": "routes/graeagle-smith-creek-loop.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.76638,
+        "lng": -120.61837
+      },
+      "climbingFt": 2831,
+      "summary": "A planned Lakes Basin loop connecting Graeagle with Grassy Lake, Long Lake and Smith Creek.",
+      "notes": "Imported from the original Trailforks route plan. Elevation is sampled from terrain because the GPX export has no usable elevation values.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.76638,
+            "longitude": -120.61837,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/planner/view/602145/"
+          }
+        ],
+        "home": {
+          "position": [
+            -99.28050115559783,
+            94.02857315151144,
+            -207.1835454974601
+          ],
+          "target": [
+            -13.472723728538178,
+            -2.4900196397360768,
+            -9.875506493018484
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 2827
+    }
+  },
+  {
+    "id": "lakes-basin-intense-explore",
+    "terrain": "/terrain/lakes-basin-intense-explore",
+    "track": "routes/lakes-basin-intense-explore.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.69861,
+        "lng": -120.66706
+      },
+      "climbingFt": 2854,
+      "summary": "The Lakes Basin Explorer route plan from the original ride guide.",
+      "notes": "Imported from the original Trailforks route plan. Elevation is sampled from terrain because the GPX export has no usable elevation values.",
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Route start",
+            "latitude": 39.69861,
+            "longitude": -120.66706,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/ridelog/planner/view/601617/"
+          }
+        ],
+        "home": {
+          "position": [
+            -54.05060073316893,
+            56.64120294321383,
+            -112.79551337694014
+          ],
+          "target": [
+            -7.334862360316045,
+            4.094248993909677,
+            -5.376454110111661
+          ],
+          "zoom": 0.85
+        }
+      },
+      "descendingFt": 2863
+    }
   }
 ]

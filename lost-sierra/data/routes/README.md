@@ -12,7 +12,7 @@ is not evidence of such consent. See https://www.trailforks.com/about/data/.
 `server/curated-rides.mjs` applies these once, with an audit entry, preserving
 CMS edits and existing tracks. The existing planner snapshot stays unchanged.
 SQLite backups remain local; the versioned files allow fresh databases to
-reconstruct the two rides. Do not edit the migration marker to overwrite CMS work.
+reconstruct the imported rides. Do not edit the migration marker to overwrite CMS work.
 
 Detailed elevation uses AWS Terrain Tiles, zoom 12, sampled at approximately
 30 meters. Rebuild from the project root:
@@ -30,3 +30,32 @@ Query: `where=GNIS_NAME = 'Lake Davis'`, envelope
 outFields `GNIS_NAME,ELEVATION,AREASQKM`, returnGeometry `true`, format `geojson`.
 The recorded 5,775-foot lake level is converted to meters for the renderer.
 This is a mapped shoreline, not a live reservoir-level feed.
+
+## Additional import — September 28, 2026
+
+Eleven more original planner links now have tracks and detailed terrain:
+Mills Peak; Gold Valley Rim to Pauley Creek; Jamison Creek; Lower Lakes Basin;
+Mount Elwell; Buzzards Roost Ridge; Hough–Tollgate; Hough Classic;
+Indian Falls–Acorn–Grotto; Graeagle/Smith Creek; and Lakes Basin Explorer.
+Their individual GeoJSON properties record exact source URLs and GPX hashes.
+
+Nine tracks came from the linked public ride-log GPX exports. Two came from
+BKXC's linked route-plan GPX exports. These exports did not present a data-use
+checkbox. This does not establish commercial permission. Only geometry and
+altitude were retained: timestamps, device details and other recording metadata
+were dropped. The full tracks were preserved, including climbs on recordings
+that the original planner also describes as shuttle options.
+
+Route-plan GPX files contained zero elevations throughout. Their XY positions
+were retained, and elevations were sampled from the same AWS/USGS terrain as
+the viewer. Recorded ride GPS elevations were kept. Public climbing/descent
+figures use the source pages' processed totals, since summing raw GPS elevation
+noise grossly overstates gain. Displayed mileage comes from the actual imported
+polyline and can differ slightly from Trailforks' processed summary.
+
+Each new ride starts with a route-start flag and a fitted home view. Named peak
+flags require verified summit locations and are not guessed from GPS high points.
+
+Still pending: Cal-Ida, Hough–Taylor Creek, Hough Lower Loops and South Park need
+confirmation for the Trailforks data-use checkbox. Lost & Found Half Calf has a
+RideWithGPS source rather than Trailforks and was outside this import batch.

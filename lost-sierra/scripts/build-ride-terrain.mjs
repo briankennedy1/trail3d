@@ -34,5 +34,11 @@ for(const id of process.argv.slice(2)){
   }
   const out=path.join(root,'public/terrain',id);await fs.mkdir(out,{recursive:true});
   await fs.writeFile(path.join(out,'terrain.json'),JSON.stringify(meta));await fs.writeFile(path.join(out,'terrain.bin'),Buffer.from(data.buffer));
+  // Some route-plan exports have no usable elevation. Sample the viewer's DEM
+  // for XY coordinates, preserving every elevation from an actual recording.
+  if(coords.some(p=>p.length===2)){
+    track.geometry.coordinates=coords.map(p=>p.length===2?[...p,Math.round(elevation(...p)*100)/100]:p);
+    await fs.writeFile(path.join(root,`data/routes/${id}.geojson`),JSON.stringify(track)+'\n');
+  }
   console.log(`${id}: ${width} × ${height} terrain, ${Math.round(min)}–${Math.round(max)} m`);
 }
