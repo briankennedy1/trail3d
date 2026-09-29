@@ -47,6 +47,9 @@
 .guide-page .stats strong{display:block;font:600 24px/1 Fraunces,Georgia,serif;color:#b95a37}
 .guide-page .ride-notes{font-size:12px;color:#68716c}.ride-notes summary{cursor:pointer;font-weight:600}
 .guide-page.ride-open .detail-links{margin:12px 0}.guide-page.ride-open h2{margin-bottom:8px}
+.surface-key{display:flex;flex-wrap:wrap;gap:7px 13px;margin:13px 0 2px;color:#68716c;font-size:10px;line-height:1.3}
+.surface-key span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.surface-key i{display:inline-block;width:16px;height:3px;border-radius:2px;flex:none}
 @media(prefers-reduced-motion:reduce){#canvas .ride-scene{transition:none}}
 
 #detail{position:relative}

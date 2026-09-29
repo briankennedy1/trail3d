@@ -5,9 +5,11 @@ import beckMap from '../../public/beckwourth/map.json';
 import beckHeightsUrl from '../../public/beckwourth/terrain.bin?url';
 import { projectTrack, regionalRideData } from './ride-data.js';
 import { rideContextForMap } from '../../src/ride-context-data';
+import { surfaceTypesForTrack } from '../../src/route-surfaces';
 
 export async function prepareRide(entry,track,signal){
   const contextRequest=fetch('/terrain/ride-context.geojson',{signal}).then(r=>r.ok?r.json():null).catch(()=>null);
+  const surfacesRequest=fetch('/terrain/route-surfaces.json',{signal}).then(r=>r.ok?r.json():null).catch(()=>null);
   const config=entry.viewer||{};
   const insideBeck=track.geometry.coordinates.every(([lon,lat])=>lon>=beckMap.bbox.west&&lon<=beckMap.bbox.east&&lat>=beckMap.bbox.south&&lat<=beckMap.bbox.north);
   let options;
@@ -26,6 +28,9 @@ export async function prepareRide(entry,track,signal){
   for(const [key,value] of Object.entries(config))if(value!=null)options[key]=value;
   const context=await contextRequest;signal.throwIfAborted();
   if(context)options.contextFeatures=rideContextForMap(context,options.data.map);
+  const surfaces=await surfacesRequest;signal.throwIfAborted();
+  options.surfaceTypes=await surfaceTypesForTrack(surfaces?.rides?.[entry.id],track.geometry.coordinates);
+  signal.throwIfAborted();
   if(entry.id==='buzzards-roost-ridge'){
     const namedWaterways=new Set(['Dixon Creek','Nelson Creek','Middle Fork Feather River']);
     for(const feature of options.contextFeatures||[])if(feature.kind==='waterway')feature.showLabel=namedWaterways.has(feature.name);

@@ -4,6 +4,7 @@ import { frameApproachTarget } from './ride-approach';
 import { flagClearanceHeight } from './flag-clearance';
 import { buildRideContext } from './ride-context';
 import type { ContextFeature } from './ride-context-data';
+import type { RouteSurface } from './route-surfaces';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRideRoute } from './ride-route';
@@ -24,6 +25,7 @@ export type RideViewerOptions = {
   homeStorageKey?: string | null;
   pointsOfInterest?: POI[];
   contextFeatures?: ContextFeature[];
+  surfaceTypes?: RouteSurface[];
   baseElevation?: number;
   scale?: number;
   angleBeats?: [number, number][];
@@ -81,7 +83,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
   const totalMiles = total / 1609.344;
   $<HTMLElement>('ride-distance').textContent = totalMiles.toFixed(1);
   $<HTMLElement>('profile-end').textContent = `${totalMiles.toFixed(1)} mi`;
-  const { preview, previewCore, activeHalo, active, overlap, rider } = createRideRoute(scene, points);
+  const { preview, previewCore, activeHalo, active, overlap, rider, updateSurfaceStrokes } = createRideRoute(scene, points, options.surfaceTypes);
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 3000);
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -312,11 +314,9 @@ export async function mountRideViewer(options: RideViewerOptions) {
     const path = points.slice(0, i).concat(position).flatMap(p => [p.x, p.y, p.z]);
     const visible = path.length >= 6;
     active.visible = activeHalo.visible = visible;
-    if (visible) { active.geometry.setPositions(path); activeHalo.geometry.setPositions(path); }
+    if (visible) activeHalo.geometry.setPositions(path);
     overlap.visible = sharedStickPoints > 1 && i > returnStart;
-    if (overlap.visible) {
-      overlap.geometry.setPositions(points.slice(returnStart, i).concat(position).flatMap(p => [p.x, p.y, p.z]));
-    }
+    if (visible) updateSurfaceStrokes(i, position, returnStart);
     const x = chartX(distance).toFixed(2);
     progressLine.setAttribute('x1', x); progressLine.setAttribute('x2', x);
     progressDot.setAttribute('cx', x); progressDot.setAttribute('cy', chartY(elevation).toFixed(2));

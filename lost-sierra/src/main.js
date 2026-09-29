@@ -2,6 +2,7 @@ import './style.css';
 import './guide.css';
 import { Diorama } from './diorama.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
+import { SURFACE_COLORS } from '../../src/route-surfaces';
 const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const external=(url,label,iconName)=>{
@@ -20,6 +21,10 @@ const accessLinks=e=>{
   return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking'));
 };
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
+const surfaceKey=types=>{
+  const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt road / doubletrack',unknown:'Unverified'};
+  return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
+};
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
 let closeRide=()=>{};
 let settingsContext=null,overviewHome={version:0};
@@ -110,6 +115,7 @@ async function openRide(entry,rideTrack,token,animate=true){
       <div class="stats"><div><strong id="ride-distance">—</strong><span>miles</span></div><div><strong>${climbing}</strong><span>ft climbing</span></div><div><strong>${original?'2:01':number(entry.descendingFt??(rideTrack.properties.descentM==null?null:rideTrack.properties.descentM*3.28084))}</strong><span>${original?'moving time':'ft descending'}</span></div></div>
       <div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
       <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
+      ${surfaceKey(options.surfaceTypes)}
       <div class="detail-links">${accessLinks(entry)}${external(rideTrack.properties.sourceUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}</div>
       ${entry.notes||entry.summary?`<details class="ride-notes"><summary>Ride notes</summary><p class="detail-copy">${escape(entry.notes||entry.summary)}</p></details>`:''}`;
     $('#back').onclick=()=>reset();
