@@ -271,7 +271,7 @@ export class Diorama {
       const count=document.createElement('span');count.className='marker-count';count.textContent=rows.length;element.append(count);element.ariaLabel=`Explore ${rows.length} places in ${area}`;element.onclick=()=>this.onArea(area);this.labels.append(element);
       this.markers.push({element,area,position:world(lon,lat,sample(this.region,lon,lat)).add(new THREE.Vector3(0,2,0))});
     }
-    const element=document.createElement('a');element.className='map-marker';element.textContent='EVERSTOKE';element.href='https://everstoke.bike/';element.target='_blank';element.rel='noopener noreferrer';element.setAttribute('aria-label','Everstoke (opens in a new tab)');this.labels.append(element);
+    const element=document.createElement('a');element.className='map-marker';element.textContent='Everstoke';element.href='https://everstoke.bike/';element.target='_blank';element.rel='noopener noreferrer';element.setAttribute('aria-label','Everstoke (opens in a new tab)');this.labels.append(element);
     this.markers.push({element,area:null,position:world(-120.6121166,39.780746,sample(this.region,-120.6121166,39.780746)).add(new THREE.Vector3(0,2,0))});
   }
   move(target,position,duration=2.1,zoom=1){this.tween={zoom,start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
