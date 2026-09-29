@@ -163,9 +163,10 @@ function renderList(){
 function familyPicker(entry){
   if(!entry.rideFamily)return '';
   const options=familyOptions(entry,entries);
-  return `<div class="ride-family-option"><span class="family-eyebrow">Route option</span>${options.length>1?`<select id="family-option" aria-label="Route option">${options.map(e=>`<option value="${escape(e.id)}" ${e.id===entry.id?'selected':''}>${escape(e.rideFamily.option)}</option>`).join('')}</select>`:`<strong>${escape(entry.rideFamily.option)}</strong>`}</div>`;
+  return `<div class="ride-family-option"><span class="family-eyebrow">Choose your route</span>${options.length>1?`<div class="route-option-picker" role="group" aria-label="Route option">${options.map(e=>`<button type="button" class="route-option-button" data-route-option="${escape(e.id)}" aria-pressed="${e.id===entry.id}"><span class="route-option-indicator" aria-hidden="true">${e.id===entry.id?'✓':'↗'}</span><span>${escape(e.rideFamily.option)}</span></button>`).join('')}</div>`:`<strong>${escape(entry.rideFamily.option)}</strong>`}</div>`;
 }
-function wireFamilyPicker(){const select=$('#family-option');if(select)select.onchange=()=>selectEntry(select.value,true,false);}
+function wireFamilyPicker(){for(const button of document.querySelectorAll('[data-route-option]'))button.onclick=()=>{if(button.getAttribute('aria-pressed')!=='true')selectEntry(button.dataset.routeOption,true,false);};}
+
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
 async function reset(push=true){
   if(returning)return;
@@ -197,7 +198,7 @@ async function selectEntry(id,push=true,animate=true){
   if(transition){document.body.classList.add('ride-open');$('#map-labels').hidden=true;if(map)map.suspended=true;}
   $('#browse').hidden=true;$('#detail').hidden=false;
   if(!transition)$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
-  else if($('#family-option'))$('#family-option').disabled=true;
+  else for(const button of document.querySelectorAll('[data-route-option]'))button.disabled=true;
   if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
   if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection){transition?.frame.remove();transition?.departure.dispose();return;}track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
   if(token!==selection){transition?.frame.remove();transition?.departure.dispose();return;}

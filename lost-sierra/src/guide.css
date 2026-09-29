@@ -147,10 +147,9 @@
 .family-options{border-left:2px solid #ded7c7;margin-left:3px;padding-left:12px}
 .family-option{padding:8px 0}.family-option-name{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:650;color:#315653}
 .family-option:hover .family-option-name{color:#b95a37}
-.ride-family-option{display:grid;gap:4px;margin:12px 0;padding-left:10px;border-left:2px solid #b95a37}
+.ride-family-option{display:grid;gap:7px;margin:14px 0}
 .family-eyebrow{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#68716c}
 .ride-family-option strong{font-size:15px;color:#315653}
-.ride-family-option select{width:100%;border:1px solid #ded7c7;border-radius:6px;background:#fffaf0;color:#315653;padding:7px;font:600 14px 'DM Sans',sans-serif}
 
 .intensity-rating{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
 .ride-rating-row{display:flex;align-items:center;gap:12px;margin-top:16px}
@@ -163,3 +162,13 @@
 .must-ride-banner svg{width:20px;height:20px;fill:#805c14;flex:none}
 .must-ride-banner>span{font-size:13px;color:#805c14}
 @media(max-width:700px){.must-ride-banner{margin:-16px -16px 16px}}
+
+.route-option-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:5px;border:1px solid #ded7c7;border-radius:12px;background:#eee8db}
+.route-option-button{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:76px;padding:10px 11px;text-align:left;border:1px solid transparent;border-radius:8px;background:transparent;color:#68716c;font:600 12px/1.35 'DM Sans',sans-serif;transition:background .18s,color .18s,box-shadow .18s,transform .18s}
+.route-option-button:hover{background:#f8f3e8;color:#315653;transform:translateY(-1px)}
+.route-option-button[aria-pressed="true"]{background:#fffaf0;border-color:#cba78d;color:#963f2e;box-shadow:0 2px 5px #5f49321a}
+.route-option-indicator{display:flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid #c9c7ba;border-radius:50%;font-size:11px}
+.route-option-button[aria-pressed="true"] .route-option-indicator{background:#a84d36;border-color:#a84d36;color:#fff}
+.route-option-button:focus-visible{outline:2px solid #315653;outline-offset:2px}
+.route-option-button:disabled{cursor:progress}
+@media(prefers-reduced-motion:reduce){.route-option-button{transition:none}}
