@@ -32,6 +32,11 @@ for(const id of process.argv.slice(2)){
     meta.waterbodies=[{name:'Lake Davis',level:water.properties.ELEVATION*.3048,area:water.properties.AREASQKM*1e6,rings:water.geometry.coordinates}];
     meta.waterSource='USGS National Hydrography Dataset';meta.waterSourceUrl='https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/12';
   }
+  if(id==='mt-elwell'){
+    const water=JSON.parse(await fs.readFile(path.join(root,'data/routes/mill-pond-water.geojson'),'utf8'));
+    meta.waterbodies=[{name:water.properties.name,level:water.properties.level,area:water.properties.area,rings:water.geometry.coordinates}];
+    meta.waterSource='OpenStreetMap contributors';meta.waterSourceUrl='https://www.openstreetmap.org/copyright';
+  }
   const out=path.join(root,'public/terrain',id);await fs.mkdir(out,{recursive:true});
   await fs.writeFile(path.join(out,'terrain.json'),JSON.stringify(meta));await fs.writeFile(path.join(out,'terrain.bin'),Buffer.from(data.buffer));
   // Some route-plan exports have no usable elevation. Sample the viewer's DEM
