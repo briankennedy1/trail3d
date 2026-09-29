@@ -36,7 +36,7 @@ The original Beckwourth deployment is unchanged; its source entry point now uses
 
 ## Shared ride architecture
 
-The original Beckwourth code is the baseline for **all** tracked rides. Ride selection mounts it in the guide's existing map/card; it does not load another website or an iframe. The regional renderer handles browsing and the crumble transition. At the start of the zoom, the ride renderer takes over from the matching regional camera framing and flies into the saved home view; it is not revealed only after the approach ends. The regional renderer then suspends while the ride renderer runs. Returning disposes the ride's frame loop, event listeners, controls, textures, geometry, and WebGL context, and resumes the region.
+The original Beckwourth code is the baseline for **all** tracked rides. Ride selection mounts it in the guide's existing map/card; it does not load another website or an iframe. The regional renderer handles browsing and the crumble transition. At the start of the zoom, the ride renderer takes over from the matching regional camera framing and borrows the regional terrain chunks. One camera renders both the departing region and the detailed ride; surrounding chunks drop away while nearby chunks dissolve in place. A 3.4-second approach uses multiplicative zoom and keeps the destination on a continuous screen-space path into the saved home view. The regional renderer is suspended for the entire move. GPU setup completes before the first visible approach frame, and controls unlock on actual completion rather than a timer. Returning disposes the ride's frame loop, event listeners, controls, textures, geometry, and WebGL context, and resumes the region.
 
 | Module | Responsibility |
 | --- | --- |

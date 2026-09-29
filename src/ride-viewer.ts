@@ -1,5 +1,6 @@
 import './setup';
 import { createFlightPlan } from './ride-flight-plan';
+import { frameApproachTarget } from './ride-approach';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRideRoute } from './ride-route';
@@ -15,6 +16,8 @@ export type RideViewerOptions = {
   data: { map: MapData; ride: Ride; heights: ArrayBuffer };
   home: HomeView;
   entryView?: HomeView;
+  entryContext?: { group: THREE.Group; update(progress: number): void; dispose(): void };
+  onEntryComplete?: () => void;
   homeStorageKey?: string | null;
   pointsOfInterest?: POI[];
   baseElevation?: number;
@@ -38,8 +41,19 @@ export async function mountRideViewer(options: RideViewerOptions) {
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#f6efe0');
+  const entryDuration = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.25 : 3.4;
+  let entryElapsed = 0, entering = !!options.entryView;
+  if (options.entryContext) scene.add(options.entryContext.group);
   const landscape = buildLandscape(terrain, { trees: false, baseElevation: options.baseElevation });
   scene.add(landscape.group);
+  // Reveal the detailed ground at the same location as the departing regional
+  // surface, without dissolving the entire canvas into an empty background.
+  const groundMaterials = landscape.group.children.map(child => (child as THREE.Mesh).material as THREE.ShaderMaterial);
+  if (options.entryContext) for (const material of groundMaterials) {
+    material.uniforms.uArrival = { value: 0 };
+    material.fragmentShader = 'uniform float uArrival;\n' + material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uArrival;\n}');
+    material.transparent = true;
+  }
   const pois = buildPOIs(map, terrain, options.pointsOfInterest, options.baseElevation);
   scene.add(pois.group);
 
@@ -241,10 +255,21 @@ export async function mountRideViewer(options: RideViewerOptions) {
     const height = THREE.MathUtils.lerp(
       transition.from.position.y - transition.from.target.y,
       to.position.y - to.target.y, t);
+    const zoom = entering ? Math.exp(THREE.MathUtils.lerp(Math.log(transition.from.zoom), Math.log(to.zoom), t))
+      : THREE.MathUtils.lerp(transition.from.zoom, to.zoom, t);
+    const offset = new THREE.Vector3(Math.sin(angle) * radius, height, Math.cos(angle) * radius);
+    if (entering) {
+      // Interpolate the destination's SCREEN position as we magnify it. A
+      // world-space target lerp lets the mountain leave the viewport mid-flight
+      // because magnification overtakes the pan (especially on a tall screen).
+      frameApproachTarget(target, offset, zoom, t, transition.from, to.target, camera.up);
+    }
     applyCameraPose({
       target,
-      position: target.clone().add(new THREE.Vector3(Math.sin(angle) * radius, height, Math.cos(angle) * radius)),
-      zoom: THREE.MathUtils.lerp(transition.from.zoom, to.zoom, t),
+      position: target.clone().add(offset),
+      // Constant multiplicative zoom avoids rushing most of the magnification
+      // into the first part of a regional-to-ride approach.
+      zoom,
       offsetX: THREE.MathUtils.lerp(transition.from.offsetX, to.offsetX, t),
       offsetY: THREE.MathUtils.lerp(transition.from.offsetY, to.offsetY, t),
     });
@@ -298,12 +323,12 @@ export async function mountRideViewer(options: RideViewerOptions) {
     return THREE.MathUtils.clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
   }
   on(chart, 'pointermove', event => {
-    if (playing) return;
+    if (playing || entering) return;
     playing = false; cameraTransition = null; play.textContent = '▶ Play Ride';
     setProgress(valueAtPointer(event));
   });
   on(chart, 'pointerdown', event => {
-    if (playing || event.button !== 0) return;
+    if (playing || entering || event.button !== 0) return;
     event.preventDefault();
     chart.setPointerCapture(event.pointerId);
     playing = false; cameraTransition = null; play.textContent = '▶ Play Ride';
@@ -316,7 +341,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       : event.key === 'Home' ? 0 : event.key === 'End' ? 1 : null;
     if (next === null) return;
     event.preventDefault();
-    if (playing) return;
+    if (playing || entering) return;
     playing = false; cameraTransition = null; play.textContent = '▶ Play Ride';
     setProgress(next);
   });
@@ -358,8 +383,9 @@ export async function mountRideViewer(options: RideViewerOptions) {
   if (options.entryView) {
     const view = savedHome ?? defaultHome;
     startCameraTransition({ position: new THREE.Vector3(...view.position), target: new THREE.Vector3(...view.target),
-      zoom: view.zoom, offsetX: 0, offsetY: 0 }, false, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.25 : 2.7);
+      zoom: view.zoom, offsetX: 0, offsetY: 0 }, false, entryDuration);
   }
+  controls.enabled = !entering;
   setProgress(1, false);
   controls.addEventListener('start', pauseForManualView);
   on(play, 'click', () => {
@@ -532,8 +558,20 @@ export async function mountRideViewer(options: RideViewerOptions) {
   function frame(now: number) {
     if (disposed) return;
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (entering) {
+      entryElapsed = Math.min(entryDuration, entryElapsed + dt);
+      const progress = entryElapsed / entryDuration;
+      options.entryContext?.update(progress);
+      if (options.entryContext) for (const material of groundMaterials) material.uniforms.uArrival.value = THREE.MathUtils.smootherstep(progress, 0, 0.22);
+    }
     const transitioning = cameraTransition !== null;
     if (transitioning) advanceCameraTransition(dt);
+    if (entering && entryElapsed >= entryDuration) {
+      entering = false; controls.enabled = true;
+      options.entryContext?.dispose();
+      if (options.entryContext) for (const material of groundMaterials) material.transparent = false;
+      options.onEntryComplete?.();
+    }
     if (playing && !transitioning) {
       playbackTime += dt;
       setProgress(progressAtTime(playbackTime));
@@ -620,6 +658,11 @@ export async function mountRideViewer(options: RideViewerOptions) {
     renderer.render(scene, camera);
     animation = requestAnimationFrame(frame);
   }
+  // Compile and draw the exact starting view before the host reveals this canvas.
+  // Loading GPU programs must not consume the approach animation's first beats.
+  renderer.compile(scene, camera);
+  renderer.render(scene, camera);
+  last = performance.now();
   animation = requestAnimationFrame(frame);
   return {
     captureHome(): HomeView {
@@ -638,6 +681,8 @@ export async function mountRideViewer(options: RideViewerOptions) {
     cancelAnimationFrame(animation);
     lifecycle.abort();
     controls.dispose();
+    // The regional meshes are borrowed, so detach them before disposing ride assets.
+    options.entryContext?.dispose();
     const textures = new Set<THREE.Texture>();
     scene.traverse(object => {
       const mesh = object as THREE.Mesh;

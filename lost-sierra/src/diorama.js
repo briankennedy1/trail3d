@@ -87,13 +87,53 @@ export class Diorama {
     this.markers.push({element,area:null,position:world(-120.6121166,39.780746,sample(this.region,-120.6121166,39.780746)).add(new THREE.Vector3(0,2,0))});
   }
   move(target,position,duration=2.1){this.tween={start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
+  rideAnchor(map){
+    const metersLon=111320*Math.cos((map.bbox.south+map.bbox.north)*Math.PI/360);
+    return world(map.bbox.west+map.widthM/2/metersLon,map.bbox.south+map.heightM/2/111320,1898);
+  }
   rideEntryView(map,viewScale=1){
     // Match the current regional framing in the ride's local-meter coordinates.
-    const metersLon=111320*Math.cos((map.bbox.south+map.bbox.north)*Math.PI/360);
-    const anchor=world(map.bbox.west+map.widthM/2/metersLon,map.bbox.south+map.heightM/2/111320,1898);
+    const anchor=this.rideAnchor(map);
     const shift=new THREE.Vector3((this.camera.left+this.camera.right)/2,(this.camera.top+this.camera.bottom)/2,0).applyQuaternion(this.camera.quaternion);
     const convert=point=>point.clone().add(shift).sub(anchor).multiplyScalar(10).toArray();
     return {position:convert(this.camera.position),target:convert(this.controls.target),zoom:58*viewScale*this.camera.zoom/((this.camera.top-this.camera.bottom)*10)};
+  }
+  rideContext(map){
+    // Borrow regional geometry in the shared ride scene. Both landscapes are
+    // now projected by one camera, so the crumble cannot drift behind a fade.
+    const anchor=this.rideAnchor(map),group=new THREE.Group(),materials=[];let disposed=false;
+    group.scale.setScalar(10);group.position.copy(anchor).multiplyScalar(-10);
+    const pieces=this.chunks.map(chunk=>{
+      const copy=chunk.group.clone(true);group.add(copy);
+      const fade={value:1};
+      copy.traverse(mesh=>{
+        if(!mesh.isMesh)return;
+        const source=mesh.material,material=source.clone();materials.push(material);mesh.material=material;
+        if(source.uniforms.uMask)material.uniforms.uMask.value=source.uniforms.uMask.value;
+        // Keep the regional watercolor texture fixed when changing origins.
+        material.uniforms.uRideAnchor={value:anchor.clone().multiplyScalar(10)};
+        material.vertexShader='uniform vec3 uRideAnchor;\n'+material.vertexShader.replace('vWorld = world.xyz * 10.0;','vWorld = world.xyz + uRideAnchor;');
+        material.uniforms.uDeparture=fade;
+        material.fragmentShader='uniform float uDeparture;\n'+material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uDeparture;\n}');
+        material.transparent=true;material.depthWrite=true;
+      });
+      const bounds=new THREE.Box3().setFromObject(chunk.group);
+      const a=world(map.bbox.west,map.bbox.north),b=world(map.bbox.east,map.bbox.south);
+      const overlaps=bounds.max.x>=a.x&&bounds.min.x<=b.x&&bounds.max.z>=a.z&&bounds.min.z<=b.z;
+      return {copy,fade,overlaps,home:copy.position.clone(),phase:chunk.phase};
+    });
+    return {group,
+      update(progress){
+        // Local chunks dissolve in place into detailed terrain; only the
+        // surrounding landscape drops. No falling block cuts through the ride.
+        for(const p of pieces){
+          const t=ease(clamp((progress-(p.overlaps?0:p.phase*.12))/(p.overlaps?.22:.62)));
+          p.fade.value=1-t;p.copy.visible=t<1;
+          if(!p.overlaps){p.copy.position.y=p.home.y-t*(12+p.phase*8);p.copy.rotation.x=t*.12*(p.phase-.5);}
+        }
+      },
+      dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const material of materials)material.dispose();},
+    };
   }
   async select(entry,track){
     this.active=entry;this.track=track;this.clearRoute();

@@ -28,19 +28,18 @@ async function selectEntry(id,push=true){
   $('.sidebar').scrollTop=0;
 }
 async function openRide(entry,rideTrack,token){
-  const controller=new AbortController();let viewer,canvas,controls,settleTimer;
+  const controller=new AbortController();let viewer,canvas,controls,context;
   closeRide=()=>{
-    controller.abort();clearTimeout(settleTimer);viewer?.dispose();canvas?.remove();
+    controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();
     controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
+    $('#map-labels').hidden=false;
   };
   $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p class="muted" role="status">Opening the ride…</p>';
   $('#back').onclick=()=>reset();
   try{
     const options=await prepareRide(entry,rideTrack,controller.signal);
     if(token!==selection)return;
-    // Prepare first, then begin the regional crumble and detailed ride flight together.
-    options.entryView=map?.rideEntryView(options.data.map,options.scale);
     const original=entry.id==='beckwourth-peak';
     const climbing=original?'2,083':number(rideTrack.properties.ascentM==null?entry.climbingFt:rideTrack.properties.ascentM*3.28084);
     $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
@@ -69,20 +68,23 @@ async function openRide(entry,rideTrack,token){
     canvas=document.createElement('canvas');canvas.id='scene';canvas.className='ride-scene';
     canvas.setAttribute('aria-label',`3D terrain map of ${entry.name}. Hover or tap a flag to reveal its place name.`);
     $('#canvas').append(canvas);
-    if(map){map.controls.enabled=false;map.held=null;}
-    await map?.select(entry,rideTrack);
+    if(map){
+      map.suspended=true;map.controls.enabled=false;map.held=null;map.tween=null;
+      options.entryView=map.rideEntryView(options.data.map,options.scale);
+      context=map.rideContext(options.data.map);options.entryContext=context;
+    }
+    const enableRide=()=>{
+      if(token!==selection)return;
+      controls.inert=false;$('#play').disabled=false;
+      for(const button of document.querySelectorAll('.ride-settings button'))button.disabled=false;
+    };
+    controls.inert=true;options.onEntryComplete=enableRide;
     viewer=await mountRideViewer(options);
     if(token!==selection){viewer.dispose();canvas.remove();return;}
     $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
-    canvas.getBoundingClientRect();
+    $('#map-labels').hidden=true;
     canvas.classList.add('ready');
-    const approach=map?(map.reduced?250:2700):0;
-    settleTimer=setTimeout(()=>{
-      if(token!==selection)return;
-      if(map)map.suspended=true;
-      $('#play').disabled=false;
-      for(const button of document.querySelectorAll('.ride-settings button'))button.disabled=false;
-    },approach);
+    if(!map)enableRide();
   }catch(error){
     if(controller.signal.aborted||token!==selection)return;
     closeRide();console.error(error);

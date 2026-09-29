@@ -37,7 +37,7 @@
 @media(max-width:700px){.guide-page .masthead{top:19px;left:19px}.guide-page .masthead p{font-size:11px}.guide-page .masthead h1{font-size:30px}.ride-panel{top:auto;bottom:12px;right:12px;left:12px;transform:none;width:auto;max-height:52dvh;gap:10px}.guide-page .ride-card{padding:16px}.guide-page h2{font-size:23px}.guide-page .detail-title{font-size:25px}.guide-page .stats{padding:10px 0}.guide-page .stats b{font-size:20px}.guide-page .profile{height:75px}.guide-page .map-caption{display:none}.guide-page #about{display:block}.compass{width:112px;height:112px}.compass #tilt-up{top:1px}.compass #tilt-down{bottom:1px}.compass #rotate-left{left:1px}.compass #rotate-right{right:1px}}
 
 /* The shared original ride renderer lives in the same map and card. */
-#canvas .ride-scene{position:absolute;inset:0;width:100%;height:100%;touch-action:none;opacity:0;pointer-events:none;transition:opacity .65s ease}
+#canvas .ride-scene{position:absolute;inset:0;width:100%;height:100%;touch-action:none;opacity:0;pointer-events:none}
 #canvas .ride-scene.ready{opacity:1;pointer-events:auto}
 .guide-page .stats strong{display:block;font:600 24px/1 Fraunces,Georgia,serif;color:#b95a37}
 .guide-page .ride-notes{font-size:12px;color:#68716c}.ride-notes summary{cursor:pointer;font-weight:600}
