@@ -301,7 +301,24 @@
       "movingTimeEstimated": true,
       "sameStartFinish": true,
       "startMapsUrl": "https://www.google.com/maps?q=39.76578,-120.61828",
-      "finishMapsUrl": "https://www.google.com/maps?q=39.76578,-120.61828"
+      "finishMapsUrl": "https://www.google.com/maps?q=39.76578,-120.61828",
+      "rideFamily": {
+        "id": "mt-elwell",
+        "name": "Mt. Elwell",
+        "option": "The Hard Way",
+        "order": 0
+      },
+      "shuttle": {
+        "enabled": true,
+        "coordinates": {
+          "lat": 39.693133,
+          "lng": -120.655957
+        },
+        "startMapsUrl": "https://www.google.com/maps?q=39.693133,-120.655957",
+        "climbingFt": 2100,
+        "movingMinutes": 170,
+        "movingTimeEstimated": true
+      }
     }
   },
   {

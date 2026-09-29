@@ -3,6 +3,7 @@ import './guide.css';
 import { Diorama } from './diorama.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
 import { rideVariant, shuttleStartIndex } from './ride-variants.js';
+import { groupRideEntries, familyOptions } from './ride-families.js';
 import { SURFACE_COLORS } from '../../src/route-surfaces';
 const $=s=>document.querySelector(s);
 const creditsDialog=$('#credits-dialog');
@@ -139,13 +140,31 @@ window.addEventListener('focus',refreshSession);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshSession();});
 setInterval(()=>{if(!document.hidden)refreshSession();},30000);
 
-function filtered(){const query=$('#search').value.toLowerCase().trim(),area=$('#area').value,intensity=$('#intensity').value;return entries.filter(e=>e.kind===kind&&(!area||e.area===area)&&(!intensity||e.intensity===intensity)&&`${e.name} ${e.area} ${e.notes||''} ${e.summary||''}`.toLowerCase().includes(query));}
-function renderList(){const rows=filtered().sort((a,b)=>Number(b.hasTrack)-Number(a.hasTrack));$('#result-count').textContent=`${rows.length} ${kind==='ride'?(rows.length===1?'ride':'rides'):(rows.length===1?'adventure':'adventures')}`;$('#clear').hidden=!($('#search').value||$('#area').value||$('#intensity').value);$('#entries').innerHTML=rows.length?rows.map(e=>`<article class="entry-card"><button class="entry-open" data-id="${escape(e.id)}"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(e.name)}</h3><div class="entry-meta">${e.kind==='ride'?`<span>${escape(e.intensity||'Effort not listed')}</span>${e.climbingFt!=null?`<span>·</span><span>↑ ${number(e.climbingFt)} ft</span>`:''}`:`<span>${escape((e.type||'Explore').replaceAll('-',' + '))}</span>`}${e.hasTrack?'<span class="track-tag">· 3D route</span>':''}</div></button></article>`).join(''):'<p class="empty">No places match your search. Try another filter.</p>';for(const b of document.querySelectorAll('[data-id]')){
-  b.onclick=()=>selectEntry(b.dataset.id);
-  const card=b.closest('.entry-card');
-  card.onpointerenter=b.onfocus=()=>map?.highlightOverviewRoute(b.dataset.id);
-  card.onpointerleave=b.onblur=()=>map?.highlightOverviewRoute(null);
-}map?.setEntries(rows);}
+function filtered(){const query=$('#search').value.toLowerCase().trim(),area=$('#area').value,intensity=$('#intensity').value;return entries.filter(e=>e.kind===kind&&(!area||e.area===area)&&(!intensity||e.intensity===intensity)&&`${e.name} ${e.rideFamily?.name||''} ${e.rideFamily?.option||''} ${e.area} ${e.notes||''} ${e.summary||''}`.toLowerCase().includes(query));}
+function renderList(){
+  const rows=filtered().sort((a,b)=>Number(b.hasTrack)-Number(a.hasTrack)),groups=groupRideEntries(rows);
+  $('#result-count').textContent=`${groups.length} ${kind==='ride'?(groups.length===1?'ride':'rides'):(groups.length===1?'adventure':'adventures')}`;
+  $('#clear').hidden=!($('#search').value||$('#area').value||$('#intensity').value);
+  const meta=e=>`<div class="entry-meta">${e.kind==='ride'?`<span>${escape(e.intensity||'Effort not listed')}</span>${e.climbingFt!=null?`<span>·</span><span>↑ ${number(e.climbingFt)} ft</span>`:''}`:`<span>${escape((e.type||'Explore').replaceAll('-',' + '))}</span>`}${e.hasTrack?'<span class="track-tag">· 3D route</span>':''}</div>`;
+  $('#entries').innerHTML=groups.length?groups.map(group=>{
+    const e=group.entries[0];
+    if(group.familyId)return `<article class="entry-card family-card"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(group.name)}</h3><div class="family-options">${group.entries.map(option=>`<button class="entry-open family-option" data-id="${escape(option.id)}"><span class="family-option-name">${escape(option.rideFamily.option)}<span aria-hidden="true">↗</span></span>${meta(option)}</button>`).join('')}</div></article>`;
+    return `<article class="entry-card"><button class="entry-open" data-id="${escape(e.id)}"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(e.name)}</h3>${meta(e)}</button></article>`;
+  }).join(''):'<p class="empty">No places match your search. Try another filter.</p>';
+  for(const b of document.querySelectorAll('[data-id]')){
+    b.onclick=()=>selectEntry(b.dataset.id);
+    const hover=b.closest('.family-option')||b.closest('.entry-card');
+    hover.onpointerenter=b.onfocus=()=>map?.highlightOverviewRoute(b.dataset.id);
+    hover.onpointerleave=b.onblur=()=>map?.highlightOverviewRoute(null);
+  }
+  map?.setEntries(rows);
+}
+function familyPicker(entry){
+  if(!entry.rideFamily)return '';
+  const options=familyOptions(entry,entries);
+  return `<div class="ride-family-option"><span class="family-eyebrow">Route option</span>${options.length>1?`<select id="family-option" aria-label="Route option">${options.map(e=>`<option value="${escape(e.id)}" ${e.id===entry.id?'selected':''}>${escape(e.rideFamily.option)}</option>`).join('')}</select>`:`<strong>${escape(entry.rideFamily.option)}</strong>`}</div>`;
+}
+function wireFamilyPicker(){const select=$('#family-option');if(select)select.onchange=()=>selectEntry(select.value,true,false);}
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
 async function reset(push=true){
   if(returning)return;
@@ -225,14 +244,15 @@ async function openRide(entry,rideTrack,token,animate=true){
       options.home=entry.viewer?.home||base.home;
       const original=entry.id==='beckwourth-peak'&&mode==='loop';
       const climbing=original?'2,083':number(display.climbingFt??(mode==='loop'&&rideTrack.properties.ascentM!=null?rideTrack.properties.ascentM*3.28084:null));
-      $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
+      $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.rideFamily?.name||entry.name)}</h2>
+        ${familyPicker(entry)}
         ${hasShuttle?`<div class="ride-mode" role="group" aria-label="Ride option"><button type="button" data-mode="loop" aria-pressed="${mode==='loop'}">↻ Loop</button><button type="button" data-mode="shuttle" aria-pressed="${mode==='shuttle'}">↗ Shuttle</button></div>`:''}
         ${intensityDisplay(display)}
         <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(display)}</strong><span>Moving Time</span></div></div>
         ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
         <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
         ${surfaceKey(options.surfaceTypes)}`,`${mode==='shuttle'?'':accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`,mode==='shuttle'?accessLinks(display):'')}`;
-      fitRideTitle();
+      fitRideTitle();wireFamilyPicker();
       $('#back').onclick=()=>reset();
       wireRideNotes(()=>viewer?.pause(),beginCardResize);
       for(const button of document.querySelectorAll('[data-mode]'))button.onclick=()=>{
@@ -295,11 +315,12 @@ async function openRide(entry,rideTrack,token,animate=true){
 function renderDetail(e){
   const distance='—';
   const stats=e.kind==='ride'?`${intensityDisplay(e)}<div class="stats"><div><b>${distance}</b><span>Miles</span></div><div><b>${number(e.climbingFt)}</b><span>Climbing Ft</span></div><div><b>${movingTime(e)}</b><span>Moving Time</span></div></div>`:'';
-  $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.name)}</h1>${e.kind==='ride'?'':`<div class="entry-meta">${escape(e.type||'Explore')}</div>`}<div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
+  $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.rideFamily?.name||e.name)}</h1>${familyPicker(e)}${e.kind==='ride'?'':`<div class="entry-meta">${escape(e.type||'Explore')}</div>`}<div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
   ${e.notes||e.summary?`<h3>Field notes</h3><div class="detail-copy ride-description">${descriptionParagraphs(e.notes||e.summary)}</div>`:''}
   <div class="facts">${e.season?`<div class="fact-row"><span>Season</span><b>${escape(e.season)}</b></div>`:''}${e.driveMinutes!=null?`<div class="fact-row"><span>Drive from Everstoke</span><b>~${e.driveMinutes} min</b></div>`:''}${e.shuttleOption&&e.shuttleOption!=='no'?`<div class="fact-row"><span>Shuttle option</span><b>${e.shuttleOption==='partial'?'Partial':'Yes'}</b></div>`:''}${e.ebikeRecommended?'<p class="small muted">The planner recommends an e-bike. Confirm current e-bike access for each trail.</p>':''}</div>
   <div class="detail-links">${e.kind==='ride'?accessLinks(e):''}${external(e.routeUrl,'Open original route')}${external(e.shuttleRouteUrl,'Shuttle route')}${external(e.bkxcVideoUrl,'Watch BKXC’s ride')}</div>${e.incomplete?'<p class="notice">These notes are still being filled in.</p>':''}<p class="track-source">From the Everstoke planner. Locations and seasonal notes need local confirmation; this is not a live trail conditions feed.</p>`;
   $('#back').onclick=()=>reset();
+  wireFamilyPicker();
   $('#share').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast('Ride link copied. This local link works on this computer.');}catch{toast('Copy this ride’s URL from your address bar.');}};
 
 }

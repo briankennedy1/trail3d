@@ -51,7 +51,7 @@ export function rowEntry(row) {
 export function listEntries(db,admin=false) {
   return db.prepare(`SELECT e.*, EXISTS(SELECT 1 FROM tracks t WHERE t.entry_id=e.id) AS has_track FROM entries e ${admin?'':"WHERE e.status='published'"} ORDER BY area,name`).all().map(rowEntry);
 }
-const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl','sameStartFinish','climbingFt','descendingFt','movingMinutes','movingTimeEstimated','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer','shuttle'];
+const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl','sameStartFinish','climbingFt','descendingFt','movingMinutes','movingTimeEstimated','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer','shuttle','rideFamily'];
 export function validateHome(home) {
   const vector=a=>Array.isArray(a)&&a.length===3&&a.every(n=>Number.isFinite(n)&&Math.abs(n)<100000);
   if(!home||!vector(home.position)||!vector(home.target)||!Number.isFinite(home.zoom)||home.zoom<.65||home.zoom>22)
@@ -78,6 +78,13 @@ export function validateEntry(input) {
   if(result.seasonMonths && (!Array.isArray(result.seasonMonths)||result.seasonMonths.some(n=>!Number.isInteger(n)||n<1||n>12))) fail('Season months must be 1–12.');
   for(const f of ['incomplete','ebikeRecommended','sameStartFinish','movingTimeEstimated']) if(result[f]!=null && typeof result[f]!=='boolean') fail(`Invalid ${f}.`);
   if(result.shuttleOption!=null&&!['no','yes','partial'].includes(result.shuttleOption)) fail('Invalid shuttle option.');
+  if(result.rideFamily!=null){
+    const f=result.rideFamily;
+    if(result.kind!=='ride'||typeof f!=='object'||Array.isArray(f)||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(f.id||'')||f.id.length>100)fail('Use a lowercase ride family ID with hyphens.');
+    for(const key of ['name','option'])if(typeof f[key]!=='string'||!f[key].trim()||f[key].length>200)fail('Add a family name and route option name.');
+    if(f.order!=null&&(!Number.isInteger(f.order)||f.order<0||f.order>1000))fail('Route option order must be 0–1000.');
+    result.rideFamily={id:f.id,name:f.name.trim(),option:f.option.trim(),order:f.order??0};
+  }
   if(result.shuttle!=null){
     const s=result.shuttle;
     if(typeof s!=='object'||Array.isArray(s)||typeof s.enabled!=='boolean')fail('Invalid shuttle settings.');
