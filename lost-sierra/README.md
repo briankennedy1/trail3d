@@ -51,6 +51,7 @@ The CMS supports:
 - Create, edit, draft, publish, and archive rides or off-bike adventures.
 - **Effort / intensity dropdown:** Not rated, Mellow-ish, Moderate, Challenging, Intense.
 - Must Ride, notes, season, climbing/descent totals, moving minutes, and estimated-time status.
+- Descriptions and notes accept Markdown: `## Heading`, `**bold**`, `*italic*`, `- bullet`, `1. numbered item`, `[link](https://example.org)`, quotes and code. The editor's **Preview description** updates as you type; the guide uses the same formatting. Separate paragraphs with a blank line. Existing single line breaks remain visible. Raw HTML is escaped and unsafe link protocols are blocked.
 - Editable public Trailforks and video URLs; start/finish Google Maps links and a same-start/finish setting.
 - Route family ID, family name, option name, and ordering; independent Loop/Shuttle settings where applicable.
 - GPX/GeoJSON uploads, track downloads, provenance, original source records, and before/after audit history.

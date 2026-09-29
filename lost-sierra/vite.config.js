@@ -14,6 +14,7 @@ function guideVersion(){
 }
 export default defineConfig({
   root: import.meta.dirname,
+  resolve: { dedupe: ['three'] },
   plugins: [{ name: 'guide-version', transformIndexHtml: html => {
     const {label,detail}=guideVersion();
     return html.replaceAll('%GUIDE_VERSION%',label).replaceAll('%GUIDE_VERSION_DETAIL%',detail);

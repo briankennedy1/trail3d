@@ -1,0 +1,25 @@
+.markdown-copy{overflow-wrap:anywhere;white-space:normal;line-height:1.75}
+.markdown-copy>:first-child{margin-top:0!important}
+.markdown-copy>:last-child{margin-bottom:0!important}
+.markdown-copy p{margin:0 0 1em;white-space:pre-line}
+.markdown-copy :is(h1,h2,h3,h4,h5,h6){font:600 16px/1.4 'DM Sans',sans-serif;color:inherit;letter-spacing:0;margin:1.2em 0 .5em}
+.markdown-copy :is(h1,h2){font-size:18px}
+.markdown-copy :is(ul,ol){margin:0 0 1em;padding-left:1.6em}
+.markdown-copy li{margin:.35em 0}
+.markdown-copy li>p{margin:.35em 0}
+.markdown-copy li>:is(ul,ol){margin:.35em 0}
+.markdown-copy a{color:inherit;text-decoration:underline;text-decoration-color:#ad7357;text-underline-offset:3px}
+.markdown-copy a:hover{color:#a54e38}
+.markdown-copy blockquote{border-left:3px solid #b99b75;margin:0 0 1em;padding:.25em 0 .25em 1em;color:var(--muted)}
+.markdown-copy code{font: .9em/1.6 ui-monospace,monospace;background:#ebe7db;border-radius:3px;padding:.1em .3em}
+.markdown-copy pre{max-width:100%;overflow:auto;background:#ebe7db;border-radius:5px;padding:12px;margin:0 0 1em;white-space:pre}
+.markdown-copy pre code{padding:0;background:none}
+.markdown-copy hr{border:0;border-top:1px solid var(--line);margin:1em 0}
+.markdown-copy img{max-width:100%;height:auto;border-radius:5px}
+.guide-page #detail .ride-description.markdown-copy{display:block}
+.guide-page #detail .ride-description.markdown-copy p{margin:0 0 1em}
+.guide-page #detail .ride-description.markdown-copy :is(h1,h2,h3,h4,h5,h6){font:600 16px/1.4 'DM Sans',sans-serif;margin:1.2em 0 .5em;letter-spacing:0}
+.description-preview{grid-column:1/-1;border:1px solid var(--line);border-radius:6px;font-size:12px}
+.description-preview summary{cursor:pointer;padding:12px;font-weight:600}
+.description-preview .markdown-copy{border-top:1px solid var(--line);padding:16px;font-size:13px}
+.markdown-help code{font-size:11px;color:var(--ink)}
