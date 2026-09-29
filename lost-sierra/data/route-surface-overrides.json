@@ -53,6 +53,21 @@
         "fromMiles": 0,
         "toMiles": 5,
         "source": "Confirmed by Brian, 2026-09-28"
+      },
+      {
+        "from": 2344,
+        "to": 2441,
+        "type": "dirt",
+        "fromMiles": 22,
+        "toMiles": 23,
+        "source": "Confirmed by Brian, 2026-09-28"
+      },
+      {
+        "from": 2441,
+        "to": 2504,
+        "type": "asphalt",
+        "fromMiles": 23,
+        "source": "Mile 23 to finish confirmed by Brian, 2026-09-28"
       }
     ]
   }
