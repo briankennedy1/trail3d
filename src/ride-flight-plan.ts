@@ -45,9 +45,13 @@ export function createFlightPlan({ total, routePoint, clearSightHeight, getHome,
     return Math.max(center.y + 34 * viewScale, ...subjects.map(p => p.y + clearSightHeight(p, x, z) + 2.5));
   }
   function plannedAngle(value: number) {
-    // One continuous clockwise helicopter orbit. These beats keep the rider on
-    // the visible side of the summit without searching for a new view in flight.
-    const beats = angleBeats ?? [[0, -155.6], [1, 170]];
+    // Follow from the home direction unless this ride has deliberate camera
+    // angles for terrain visibility (as Beckwourth does).
+    if (!angleBeats?.length) {
+      const home = getHome();
+      return Math.atan2(home.position[0] - home.target[0], home.position[2] - home.target[2]);
+    }
+    const beats = angleBeats;
     for (let i = 1; i < beats.length; i++) {
       const [end, endAngle] = beats[i];
       if (value > end) continue;
