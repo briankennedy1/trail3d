@@ -1,4 +1,5 @@
 import './style.css';
+import './guide.css';
 import { Diorama } from './diorama.js';
 const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -54,8 +55,8 @@ for(const id of ['search','area','intensity'])$('#'+id).addEventListener(id==='s
 $('#clear').onclick=clearFilters;
 $('#saved').onclick=()=>{savedOnly=!savedOnly;$('#saved').classList.toggle('active',savedOnly);$('#explore').classList.toggle('active',!savedOnly);reset();};
 $('#explore').onclick=()=>{savedOnly=false;$('#saved').classList.remove('active');$('#explore').classList.add('active');clearFilters();reset();};
-$('#about').onclick=()=>$('#about-dialog').showModal();$('.dialog-close').onclick=()=>$('#about-dialog').close();$('#map-home').onclick=()=>reset();$('#north').onclick=()=>map?.north();
-for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['zoom-in','in'],['zoom-out','out']]){const button=$('#'+id);button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);if(map)map.held=action;};for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,()=>{if(map)map.held=null;});button.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();if(map)map.held=action;}};button.onkeyup=()=>{if(map)map.held=null;};button.onblur=()=>{if(map)map.held=null;};}
+$('#about').onclick=()=>$('#about-dialog').showModal();$('.dialog-close').onclick=()=>$('#about-dialog').close();$('#north').onclick=()=>map?.north();
+for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt-up','up'],['tilt-down','down']]){const button=$('#'+id);button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);if(map)map.held=action;};for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,()=>{if(map)map.held=null;});button.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();if(map)map.held=action;}};button.onkeyup=()=>{if(map)map.held=null;};button.onblur=()=>{if(map)map.held=null;};}
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
 try{

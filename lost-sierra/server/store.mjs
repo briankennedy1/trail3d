@@ -2,6 +2,8 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 export const root = path.resolve(import.meta.dirname, '..');
+const scope=JSON.parse(fs.readFileSync(path.join(root,'data/guide-scope.json'),'utf8'));
+const bounds=scope.bbox;
 export function openStore(dir) {
   fs.mkdirSync(dir, {recursive:true, mode:0o700});
   const db = new DatabaseSync(path.join(dir,'guide.sqlite'), {timeout:5000});
@@ -26,6 +28,18 @@ export function openStore(dir) {
   }
   const settings=JSON.parse(fs.readFileSync(path.join(root,'data/planner-settings.json'),'utf8'));
   for(const [key,value] of Object.entries(settings)) db.prepare('INSERT OR IGNORE INTO settings VALUES(?,?,?)').run(key,JSON.stringify(value),'everstoke-planner');
+  if(!db.prepare('SELECT key FROM settings WHERE key=?').get(scope.id)) {
+    db.exec('BEGIN');
+    try {
+      for(const area of scope.excludedAreas) {
+        db.prepare("UPDATE entries SET status='archived',version=version+1,updated_at=? WHERE area=?").run(new Date().toISOString(),area);
+      }
+      db.prepare('UPDATE settings SET value_json=? WHERE key=?').run(JSON.stringify(settings.towns.filter(t=>!scope.excludedAreas.includes(t.name))),'towns');
+      db.prepare('INSERT INTO settings VALUES(?,?,NULL)').run(scope.id,JSON.stringify(scope));
+      db.prepare('INSERT INTO audit_log(action,after_json,created_at) VALUES(?,?,?)').run('guide-scope-update',JSON.stringify(scope),new Date().toISOString());
+      db.exec('COMMIT');
+    } catch(e) {db.exec('ROLLBACK');throw e;}
+  }
   return db;
 }
 export function rowEntry(row) {
@@ -45,7 +59,7 @@ export function validateEntry(input) {
   if(typeof input.area!=='string'||!input.area.trim()||input.area.length>100) fail('An area is required.');
   if(!['draft','published','archived'].includes(input.status)) fail('Choose draft, published, or archived.');
   const {lat,lng}=input.coordinates||{};
-  if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<39.18||lat>40.49||lng< -121.12||lng> -120.08) fail('The location must be within this Lost Sierra map (39.18–40.49° N, 121.12–120.08° W).');
+  if(!Number.isFinite(lat)||!Number.isFinite(lng)||(input.status==='published'&&(lat<bounds.south||lat>bounds.north||lng<bounds.west||lng>bounds.east))||lat< -90||lat>90||lng< -180||lng>180) fail('The location must be within this Lost Sierra map (39.49–40.49° N, 121.04–120.28° W).');
   const result={id:input.id,kind:input.kind,name:input.name.trim(),area:input.area.trim(),status:input.status,coordinates:{lat,lng}};
   for(const f of fields) if(input[f]!==undefined) result[f]=input[f];
   for(const f of ['driveMinutes','climbingFt','descendingFt']) if(result[f]!=null && (!Number.isFinite(result[f])||result[f]<0||result[f]>100000)) fail(`Invalid ${f}.`);
@@ -62,7 +76,7 @@ export function trackStats(feature) {
   const geometry=feature?.type==='Feature'?feature.geometry:feature;
   if(geometry?.type!=='LineString'||!Array.isArray(geometry.coordinates)||geometry.coordinates.length<2||geometry.coordinates.length>30000) throw Object.assign(new Error('Upload one continuous LineString with 2–30,000 points.'),{status:400});
   const coords=geometry.coordinates;
-  for(const p of coords) if(!Array.isArray(p)||p.length<2||p.length>3||p.some(n=>!Number.isFinite(n))||p[0]<-121.12||p[0]>-120.08||p[1]<39.18||p[1]>40.49||(p.length===3&&(p[2]<-500||p[2]>9000))) throw Object.assign(new Error('Track has invalid coordinates or extends beyond the Lost Sierra map.'),{status:400});
+  for(const p of coords) if(!Array.isArray(p)||p.length<2||p.length>3||p.some(n=>!Number.isFinite(n))||p[0]<bounds.west||p[0]>bounds.east||p[1]<bounds.south||p[1]>bounds.north||(p.length===3&&(p[2]<-500||p[2]>9000))) throw Object.assign(new Error('Track has invalid coordinates or extends beyond the Lost Sierra map.'),{status:400});
   let distance=0,ascent=0,descent=0;
   const rad=Math.PI/180;
   for(let i=1;i<coords.length;i++) {

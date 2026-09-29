@@ -6,8 +6,8 @@ const cache = path.join(root, '.cache', 'terrain');
 const out = path.join(root, 'public', 'terrain');
 await fs.mkdir(cache, { recursive: true });
 await fs.mkdir(out, { recursive: true });
-// Includes every published planner location, with space around the edges.
-const bbox = { west: -121.12, east: -120.08, south: 39.18, north: 40.49 };
+// The curated guide footprint, with space around the remaining locations.
+const { bbox } = JSON.parse(await fs.readFile(path.join(root,'data/guide-scope.json'),'utf8')); 
 const zoom = 10, n = 2 ** zoom;
 const tx = lon => (lon + 180) / 360 * n;
 const ty = lat => (1 - Math.asinh(Math.tan(lat * Math.PI / 180)) / Math.PI) / 2 * n;
