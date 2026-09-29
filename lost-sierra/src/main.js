@@ -2,6 +2,7 @@ import './style.css';
 import './guide.css';
 import './ride-card.css';
 import { Diorama } from './diorama.js';
+import {overviewRouteColor} from './overview-route-colors.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
 import { rideVariant, shuttleStartIndex } from './ride-variants.js';
 import { groupRideEntries, familyOptions } from './ride-families.js';
@@ -147,11 +148,12 @@ function renderList(){
   const rows=filtered().sort((a,b)=>Number(b.hasTrack)-Number(a.hasTrack)),groups=groupRideEntries(rows);
   $('#result-count').textContent=`${groups.length} ${kind==='ride'?(groups.length===1?'ride':'rides'):(groups.length===1?'adventure':'adventures')}`;
   $('#clear').hidden=!($('#search').value||$('#area').value||$('#intensity').value);
+  const swatch=e=>e.hasTrack?`<i class="route-color-swatch" style="background:${overviewRouteColor(e.id)}" aria-hidden="true"></i>`:'';
   const meta=e=>`<div class="entry-meta">${e.kind==='ride'?`<span>${escape(e.intensity||'Effort not listed')}</span>${e.climbingFt!=null?`<span>·</span><span>↑ ${number(e.climbingFt)} ft</span>`:''}`:`<span>${escape((e.type||'Explore').replaceAll('-',' + '))}</span>`}${e.hasTrack?'<span class="track-tag">· 3D route</span>':''}</div>`;
   $('#entries').innerHTML=groups.length?groups.map(group=>{
     const e=group.entries[0];
-    if(group.familyId)return `<article class="entry-card family-card"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(group.name)}</h3><div class="family-options">${group.entries.map(option=>`<button class="entry-open family-option" data-id="${escape(option.id)}"><span class="family-option-name">${escape(option.rideFamily.option)}<span aria-hidden="true">↗</span></span>${meta(option)}</button>`).join('')}</div></article>`;
-    return `<article class="entry-card"><button class="entry-open" data-id="${escape(e.id)}"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(e.name)}</h3>${meta(e)}</button></article>`;
+    if(group.familyId)return `<article class="entry-card family-card"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(group.name)}</h3><div class="family-options">${group.entries.map(option=>`<button class="entry-open family-option" data-id="${escape(option.id)}"><span class="family-option-name"><span>${swatch(option)}${escape(option.rideFamily.option)}</span><span aria-hidden="true">↗</span></span>${meta(option)}</button>`).join('')}</div></article>`;
+    return `<article class="entry-card"><button class="entry-open" data-id="${escape(e.id)}"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${swatch(e)}${escape(e.name)}</h3>${meta(e)}</button></article>`;
   }).join(''):'<p class="empty">No places match your search. Try another filter.</p>';
   for(const b of document.querySelectorAll('[data-id]')){
     b.onclick=()=>selectEntry(b.dataset.id);

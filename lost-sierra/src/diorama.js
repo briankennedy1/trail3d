@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {overviewRouteColor} from './overview-route-colors.js';
 import { TERRAIN_VERT, TERRAIN_FRAG, SIDE_VERT, SIDE_FRAG } from './terrain-shaders.js';
 THREE.ColorManagement.enabled=false;
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -206,7 +207,7 @@ export class Diorama {
       }
       add(...coordinates.at(-1));
       const group=new THREE.Group();
-      for(const [color,width,order] of [[0xfff9df,5.25,20],[0xedaa29,3.375,21]]){
+      for(const [color,width,order] of [[0xfff9df,5.25,20],[overviewRouteColor(entry.id),3.375,21]]){
         const geometry=new LineGeometry();geometry.setPositions(positions);
         const line=new Line2(geometry,new LineMaterial({color,linewidth:width,transparent:true,opacity:.99,depthTest:true,depthWrite:false}));
         line.renderOrder=order;line.frustumCulled=false;group.add(line);
@@ -252,7 +253,7 @@ export class Diorama {
       const [halo,line]=group.children;
       halo.material.linewidth=highlighted?8:5.25;
       line.material.linewidth=highlighted?5:3.375;
-      line.material.color.setHex(highlighted?0xa34e36:0xedaa29);
+      line.material.color.set(overviewRouteColor(group.userData.entry.id));
       for(const stroke of group.children)stroke.material.opacity=selected&&!highlighted ? .3 : .99;
     }
   }

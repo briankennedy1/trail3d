@@ -182,3 +182,5 @@
 .route-option-dropdown summary:focus-visible{outline:2px solid #315653;outline-offset:-3px;border-radius:9px}
 .route-option-dropdown .route-option-picker{border:0;border-top:1px solid #e4dac9;border-radius:0;padding:5px;background:#f0eadf}
 @media(prefers-reduced-motion:reduce){.route-option-dropdown summary svg{transition:none}}
+
+.route-color-swatch{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle;box-shadow:0 0 0 1px #fff9df}
