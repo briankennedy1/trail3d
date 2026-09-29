@@ -134,5 +134,17 @@
         "source": "Brian confirmed unverified sections between miles 8 and 16 as singletrack, 2026-09-28"
       }
     ]
+  },
+  "downieville-original": {
+    "coordinatesSha256": "c10d8855dad2ef4d7b3d36c39a4a91a49697dcb10dc42116420e15e69b169302",
+    "ranges": [
+      {
+        "from": 1360,
+        "to": 1441,
+        "type": "asphalt",
+        "fromMiles": 15.2,
+        "source": "Mile 15.2 to finish confirmed by Brian, 2026-09-28"
+      }
+    ]
   }
 }
