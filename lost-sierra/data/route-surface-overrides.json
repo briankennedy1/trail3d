@@ -68,6 +68,14 @@
         "type": "asphalt",
         "fromMiles": 23,
         "source": "Mile 23 to finish confirmed by Brian, 2026-09-28"
+      },
+      {
+        "from": 2161,
+        "to": 2261,
+        "type": "singletrack",
+        "fromMiles": 20,
+        "toMiles": 21,
+        "source": "Confirmed by Brian, 2026-09-28"
       }
     ]
   }
