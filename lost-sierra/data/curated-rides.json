@@ -931,6 +931,50 @@
       "intensity": "Intense",
       "sameStartFinish": true,
       "startMapsUrl": "https://www.google.com/maps?q=39.96942,-120.90061",
+      "finishMapsUrl": "",
+      "rideFamily": {
+        "id": "mt-hough",
+        "name": "Mt. Hough",
+        "option": "Classic Loop",
+        "order": 0
+      }
+    }
+  },
+  {
+    "id": "mt-hough-tollgate-option",
+    "entry": {
+      "name": "Mt. Hough Tollgate Option",
+      "kind": "ride",
+      "area": "Quincy",
+      "status": "published"
+    },
+    "terrain": "/terrain/mt-hough-tollgate-option",
+    "track": "routes/mt-hough-tollgate-option.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.96941,
+        "lng": -120.90065
+      },
+      "routeUrl": "https://www.trailforks.com/routeplan/view/786054/",
+      "incomplete": false,
+      "summary": "A Mt. Hough climbing loop with a descent through the Tollgate trails.",
+      "notes": "Climb Mt. Hough Road to the summit and start down Tippy Top. This option follows the access roads into Upper Tollgate, Tollgate Connector and Lower Tollgate, then links Berry Creek and Huffle-Berry toward the return.\nTollgate Connector is rated black diamond on Trailforks. The route includes road connections between trail sections.",
+      "viewer": {
+        "pointsOfInterest": []
+      },
+      "climbingFt": 3973,
+      "descendingFt": 4008,
+      "movingMinutes": 230,
+      "movingTimeEstimated": true,
+      "rideFamily": {
+        "id": "mt-hough",
+        "name": "Mt. Hough",
+        "option": "Tollgate Option",
+        "order": 1
+      },
+      "intensity": "Intense",
+      "sameStartFinish": true,
+      "startMapsUrl": "https://www.google.com/maps?q=39.96941,-120.90065",
       "finishMapsUrl": ""
     }
   }

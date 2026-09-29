@@ -756,5 +756,34 @@
         "rationale": "Gap on the Tippy Top descent, listed as singletrack by Trailforks; extend the adjoining trail surface."
       }
     ]
+  },
+  "mt-hough-tollgate-option": {
+    "coordinatesSha256": "d1f90e4e418a57d9cfd920f6176ed687f12aaab034771d5d7e68abd691c0c351",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/786054/",
+    "ranges": [
+      {
+        "from": 267,
+        "to": 285,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786054/",
+        "rationale": "Final Mt. Hough Road approach to the summit turnaround in the supplied plan; extend the adjoining dirt road."
+      },
+      {
+        "from": 285,
+        "to": 299,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Summit turnaround and start of Tippy Top, listed as singletrack by Trailforks."
+      },
+      {
+        "from": 304,
+        "to": 336,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Gap on the Tippy Top descent, listed as singletrack by Trailforks; extend the adjoining trail surface."
+      }
+    ]
   }
 }

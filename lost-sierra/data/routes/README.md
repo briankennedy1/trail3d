@@ -197,3 +197,11 @@ The requested old miles 12.51–12.91 contain a northbound road excursion and re
 Added as a separate Quincy ride from [Trailforks plan 786052](https://www.trailforks.com/routeplan/view/786052/), exported September 29, 2026. All 1,669 XY points are preserved: 22.15 miles calculated, 22.14 displayed by Trailforks. Source totals are 4,167 ft climbing, 4,194 ft descending and estimated 3h 46m. The endpoints coincide exactly at 39.96942, -120.90061, with one combined start/finish flag and a Maps link using the plan's directions destination.
 
 Zero GPX elevations were replaced with AWS/USGS terrain samples and detailed terrain was built for the route bounds. OSM matching provides the surface baseline; remaining summit gaps use documented Trailforks-based estimates, distinguishing the final dirt road approach from Tippy Top singletrack. These estimates are not rider-confirmed. Intense is an editorial estimate based on the route's distance and climbing. The existing Houghtastic ride remains a separate route.
+
+### Mt. Hough family — Tollgate Option
+
+The new `mt-hough-tollgate-option` is imported from [Trailforks plan 786054](https://www.trailforks.com/routeplan/view/786054/), exported September 29, 2026. All 1,449 XY positions are retained: 21.41 miles calculated, 21.40 on Trailforks; source totals are 3,973 ft climbing, 4,008 ft descending and estimated 3h 50m. The endpoints are approximately 35 m apart; this is treated as a loop with one combined start/finish flag, without altering the source GPS geometry. The Maps link uses the plan's directions destination, 39.96941, -120.90065.
+
+Zero elevation placeholders were replaced with AWS/USGS terrain samples. OSM matching provides surface classification, with documented Trailforks estimates for the remaining summit road and Tippy Top gaps; these estimates are not rider-confirmed. Intense is an editorial estimate based on the route's climbing, distance and the black-diamond Tollgate Connector.
+
+Both this ride and `mt-hough-classic-loop` now belong to the **Mt. Hough** family, labeled **Tollgate Option** and **Classic Loop**. The one-time family migration preserves the existing Classic Loop's track, notes and camera views. The archived `hough-classic` and `hough-tollgate` routes remain excluded.
