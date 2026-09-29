@@ -48,7 +48,7 @@ export function buildRideContext(terrain: Terrain, features: ContextFeature[]) {
       group.add(new Line2(geometry, material));
       if (length > longestLength) { longest = line; longestLength = length; }
     }
-    if (longestLength < 100) continue;
+    if (longestLength < 100 || feature.showLabel === false) continue;
     // A stable geographic anchor at the midpoint of the longest local section.
     let remaining = longestLength / 2, anchor = longest[0];
     for (let i = 1; i < longest.length; i++) {

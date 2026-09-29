@@ -26,6 +26,10 @@ export async function prepareRide(entry,track,signal){
   for(const [key,value] of Object.entries(config))if(value!=null)options[key]=value;
   const context=await contextRequest;signal.throwIfAborted();
   if(context)options.contextFeatures=rideContextForMap(context,options.data.map);
+  if(entry.id==='buzzards-roost-ridge'){
+    const namedWaterways=new Set(['Dixon Creek','Nelson Creek','Middle Fork Feather River']);
+    for(const feature of options.contextFeatures||[])if(feature.kind==='waterway')feature.showLabel=namedWaterways.has(feature.name);
+  }
   return {...options,homeStorageKey:null,manageLoading:false};
 }
 

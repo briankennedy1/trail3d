@@ -2,7 +2,7 @@ import type { MapData, XY } from './data';
 
 export type ContextFeature = {
   name: string; kind: 'road' | 'waterway'; importance: number;
-  length: number; lines: XY[][];
+  length: number; lines: XY[][]; showLabel?: boolean;
 };
 type Source = { features: { properties: { name: string; kind: 'road' | 'waterway'; class: string };
   geometry: { type: string; coordinates: XY[] } }[] };
