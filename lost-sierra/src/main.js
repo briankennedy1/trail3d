@@ -82,7 +82,7 @@ const intensityDisplay=entry=>{
   const label=entry.intensity?.trim()||'Not rated';
   const levels={'mellow-ish':1,moderate:2,challenging:3,intense:4};
   const level=levels[label.toLowerCase()]||0;
-  const symbol=level===4?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="none" stroke="#fff" stroke-width="1.8"/></svg>'
+  const symbol=level===4?'<svg class="intensity-symbol intensity-double-diamond" viewBox="0 0 42 24" aria-hidden="true"><path d="M11 2 20 12 11 22 2 12Z M31 2 40 12 31 22 22 12Z" fill="none" stroke="#fff" stroke-width="1.8"/></svg>'
     :level===3?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12Z" fill="#000" stroke="#fff" stroke-width="1.8"/></svg>'
     :level===2?'<svg class="intensity-symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" fill="#376782" stroke="#fff" stroke-width="1.8"/></svg>':'';
   return `<div class="ride-intensity intensity-${level}" aria-label="${entry.mustRide?'Must Ride · ':''}Intensity: ${escape(label)}">${entry.mustRide?'<span class="must-ride"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2L5.8 21 7 14.2 2 9.3l6.9-1Z"/></svg><strong>MUST RIDE</strong></span>':''}<span class="intensity-rating">${symbol}<strong>${escape(label)}</strong></span></div>`;

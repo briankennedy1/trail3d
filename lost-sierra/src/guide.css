@@ -157,3 +157,5 @@
 .must-ride svg{width:20px;height:20px;fill:currentColor;flex:none}
 .ride-intensity:has(.must-ride){gap:8px;padding-inline:10px}
 .ride-intensity:has(.must-ride) strong{font-size:10px;letter-spacing:.08em;overflow-wrap:normal}
+
+.intensity-symbol.intensity-double-diamond{width:36px}
