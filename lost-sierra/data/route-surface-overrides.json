@@ -146,5 +146,31 @@
         "source": "Mile 15.2 to finish confirmed by Brian, 2026-09-28"
       }
     ]
+  },
+  "mills-peak-shuttle": {
+    "coordinatesSha256": "494ef3a376b17a97785f6232448210068cdb3a0ce4c8aacf575b11b001821ba8",
+    "ranges": [
+      {
+        "from": 554,
+        "to": 1171,
+        "type": "singletrack",
+        "fromMiles": 5,
+        "toMiles": 10.5,
+        "source": "Miles 5–10.5 confirmed as singletrack by Brian, 2026-09-29; clipped to route finish where shorter."
+      }
+    ]
+  },
+  "mills-peak-shuttle-from-the-top": {
+    "coordinatesSha256": "17bfa6e5068bb3844524aad4f13067443814849aa4e64d1edd0317242cd59603",
+    "ranges": [
+      {
+        "from": 538,
+        "to": 976,
+        "type": "singletrack",
+        "fromMiles": 5,
+        "toMiles": 10.5,
+        "source": "Miles 5–10.5 confirmed as singletrack by Brian, 2026-09-29; clipped to route finish where shorter."
+      }
+    ]
   }
 }
