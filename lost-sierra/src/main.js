@@ -28,13 +28,13 @@ const accessLinks=e=>{
   const same=e.sameStartFinish||(e.startMapsUrl&&e.startMapsUrl===e.finishMapsUrl);
   return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking',same?'Parking':'Start Parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking','Finish Parking'));
 };
-const ridePanels=(entry,content,links)=>`<div class="ride-content">
+const ridePanels=(entry,content,links,parkingRow='')=>`<div class="ride-content">
   <div id="ride-profile-panel" class="ride-content-panel">${content}</div>
   <section id="ride-notes-panel" class="ride-content-panel ride-notes-panel" aria-label="Ride notes" aria-hidden="true" inert>
     <button type="button" class="notes-back" id="ride-notes-back">← Back to ride</button>
     <h3>Ride notes</h3><div class="detail-copy">${(entry.notes||entry.summary||'Ride notes are coming soon.').trim().split(/\r?\n\s*\r?\n/).filter(Boolean).map(paragraph=>`<p>${escape(paragraph)}</p>`).join('')}</div>
   </section>
-</div><div class="detail-links"><button type="button" id="ride-info" title="Ride notes" aria-label="Ride notes" aria-controls="ride-notes-panel" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path stroke-linejoin="round" d="M12 5.5C9 3.5 5.5 3.5 2 4.5v15c3.5-1 7-1 10 1 3-2 6.5-2 10-1v-15c-3.5-1-7-1-10 1Zm0 0v15"/></svg></button>${links}</div>`;
+</div><div class="detail-links"><button type="button" id="ride-info" title="Ride notes" aria-label="Ride notes" aria-controls="ride-notes-panel" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path stroke-linejoin="round" d="M12 5.5C9 3.5 5.5 3.5 2 4.5v15c3.5-1 7-1 10 1 3-2 6.5-2 10-1v-15c-3.5-1-7-1-10 1Zm0 0v15"/></svg></button>${links}${parkingRow?`<div class="parking-row">${parkingRow}</div>`:''}</div>`;
 function wireRideNotes(onOpen=()=>{}){
   const button=$('#ride-info'),content=$('.ride-content'),profile=$('#ride-profile-panel'),notes=$('#ride-notes-panel');
   const show=open=>{
@@ -179,7 +179,7 @@ async function openRide(entry,rideTrack,token,animate=true){
         <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(display)}</strong><span>Moving Time</span></div></div>
         ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
         <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
-        ${surfaceKey(options.surfaceTypes)}`,`${accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`)}`;
+        ${surfaceKey(options.surfaceTypes)}`,`${mode==='shuttle'?'':accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`,mode==='shuttle'?accessLinks(display):'')}`;
       fitRideTitle();
       $('#back').onclick=()=>reset();
       wireRideNotes(()=>viewer?.pause());

@@ -120,3 +120,5 @@
 .guide-page .detail-links a.parking-link svg{flex-shrink:0}
 
 .guide-page .stats strong,.guide-page .stats b,.guide-page .stats span{white-space:nowrap}
+
+.guide-page .detail-links .parking-row{display:flex;flex-basis:100%;gap:18px;flex-wrap:wrap}
