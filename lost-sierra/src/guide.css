@@ -30,6 +30,8 @@
 .guide-page .map-caption{position:fixed;left:38px;bottom:24px;right:auto;color:#777a6d;font-size:10px}.guide-page .map-caption #map-status{display:none}.guide-page .attribution{font-size:10px}
 .guide-page .map-marker{background:#fffaf0e8;color:#315653;border-color:#b6b69b;border-radius:6px}.guide-page .map-marker:hover{background:#315653;color:#fffaf0}
 .guide-page a.map-marker{text-decoration:none}
+.ride-context-labels{position:fixed;inset:0;z-index:1;pointer-events:none}
+.guide-page .ride-context-label{pointer-events:none}
 .map-controls{order:1;display:flex;flex:none;justify-content:center;pointer-events:auto}
 .compass{position:relative;width:126px;height:126px;flex:none;border:1px solid rgba(113,93,66,.16);border-radius:50%;background:rgba(255,250,239,.93);box-shadow:0 8px 24px rgba(48,54,41,.12);backdrop-filter:blur(9px)}
 .map-controls .compass button{position:absolute;display:grid;place-items:center;width:35px;height:35px;padding:0;border:0;border-radius:50%;background:transparent;color:#315653;line-height:1;touch-action:none;user-select:none;-webkit-tap-highlight-color:transparent;transition:background .12s ease,color .12s ease}

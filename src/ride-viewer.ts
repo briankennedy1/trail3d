@@ -2,6 +2,8 @@ import './setup';
 import { createFlightPlan } from './ride-flight-plan';
 import { frameApproachTarget } from './ride-approach';
 import { flagClearanceHeight } from './flag-clearance';
+import { buildRideContext } from './ride-context';
+import type { ContextFeature } from './ride-context-data';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRideRoute } from './ride-route';
@@ -21,6 +23,7 @@ export type RideViewerOptions = {
   onEntryComplete?: () => void;
   homeStorageKey?: string | null;
   pointsOfInterest?: POI[];
+  contextFeatures?: ContextFeature[];
   baseElevation?: number;
   scale?: number;
   angleBeats?: [number, number][];
@@ -47,6 +50,9 @@ export async function mountRideViewer(options: RideViewerOptions) {
   if (options.entryContext) scene.add(options.entryContext.group);
   const landscape = buildLandscape(terrain, { trees: false, baseElevation: options.baseElevation });
   scene.add(landscape.group);
+  const rideContext = buildRideContext(terrain, options.contextFeatures ?? []);
+  scene.add(rideContext.group);
+  let contextExclusions: DOMRect[] = [];
   // Reveal the detailed ground at the same location as the departing regional
   // surface, without dissolving the entire canvas into an empty background.
   const groundMaterials = landscape.group.children.map(child => (child as THREE.Mesh).material as THREE.ShaderMaterial);
@@ -352,6 +358,8 @@ export async function mountRideViewer(options: RideViewerOptions) {
     renderer.setSize(w, h, false);
     const pixelWidth = Math.round(w * renderer.getPixelRatio());
     const pixelHeight = Math.round(h * renderer.getPixelRatio());
+    rideContext.resize(pixelWidth, pixelHeight);
+    contextExclusions = ['masthead', 'ride-card', 'compass'].map(id => $<HTMLElement>(id)?.getBoundingClientRect()).filter(Boolean);
     camera.left = -58 * viewScale * aspect / 2; camera.right = 58 * viewScale * aspect / 2;
     camera.top = 29 * viewScale; camera.bottom = -29 * viewScale; camera.updateProjectionMatrix();
     if (playing && !cameraTransition) frameRiderForMobile();
@@ -698,6 +706,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       }
     }
     flagsFacing = true;
+    rideContext.update(camera, innerWidth, innerHeight, contextExclusions);
     renderer.render(scene, camera);
     animation = requestAnimationFrame(frame);
   }
@@ -724,6 +733,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     cancelAnimationFrame(animation);
     lifecycle.abort();
     controls.dispose();
+    rideContext.dispose();
     // The regional meshes are borrowed, so detach them before disposing ride assets.
     options.entryContext?.dispose();
     const textures = new Set<THREE.Texture>();

@@ -4,8 +4,10 @@ import curatedRides from '../data/curated-rides.json';
 import beckMap from '../../public/beckwourth/map.json';
 import beckHeightsUrl from '../../public/beckwourth/terrain.bin?url';
 import { projectTrack, regionalRideData } from './ride-data.js';
+import { rideContextForMap } from '../../src/ride-context-data';
 
 export async function prepareRide(entry,track,signal){
+  const contextRequest=fetch('/terrain/ride-context.geojson',{signal}).then(r=>r.ok?r.json():null).catch(()=>null);
   const config=entry.viewer||{};
   const insideBeck=track.geometry.coordinates.every(([lon,lat])=>lon>=beckMap.bbox.west&&lon<=beckMap.bbox.east&&lat>=beckMap.bbox.south&&lat<=beckMap.bbox.north);
   let options;
@@ -22,6 +24,8 @@ export async function prepareRide(entry,track,signal){
   }
   signal.throwIfAborted();
   for(const [key,value] of Object.entries(config))if(value!=null)options[key]=value;
+  const context=await contextRequest;signal.throwIfAborted();
+  if(context)options.contextFeatures=rideContextForMap(context,options.data.map);
   return {...options,homeStorageKey:null,manageLoading:false};
 }
 
