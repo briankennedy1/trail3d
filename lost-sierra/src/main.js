@@ -99,7 +99,7 @@ let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
 let slugAliases={};
 let closeRide=()=>{},captureRideTransition=null,returnToOverview=null,returning=false;
 let trackRequest=null;
-let settingsContext=null,overviewHome={version:0};
+let settingsContext=null,overviewHome={version:0},regionHomes={};
 const regionalControls=$('.map-controls');
 $('.masthead').id='masthead';$('.sidebar').id='ride-card';
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),3000);}
@@ -110,6 +110,10 @@ function renderSettings(){
   const settings=document.createElement('details');settings.className='ride-settings';
   settings.innerHTML='<summary aria-label="Ride settings" title="Ride settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.1-2 .9-2.1-.5-2 3.5 1.5 1.6v2.3L2.3 15l2 3.5 2.1-.5 2 .9L9 21h4l.6-2.1 2-.9 2.1.5 2-3.5-1.5-1.6v-2.3L19.7 9l-2-3.5-2.1.5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></summary><div class="ride-settings-menu"><button type="button" id="set-home" disabled>Set current view as home</button><button type="button" id="go-home" disabled>Go to home view</button><p>Saves the default view for everyone.</p></div>';
   const summary=settings.querySelector('summary');summary.ariaLabel=context.label;summary.title=context.label;
+  const setLabel=context.setLabel||'Set current view as home';
+  settings.querySelector('#set-home').textContent=setLabel;
+  settings.querySelector('#go-home').textContent=context.goLabel||'Go to home view';
+  settings.querySelector('p').textContent=context.description||'Saves the default view for everyone.';
   if(context.entryId){
     const edit=document.createElement('a');edit.href=`/admin.html?entry=${encodeURIComponent(context.entryId)}`;
     edit.textContent='Edit current route';settings.querySelector('.ride-settings-menu').prepend(edit);
@@ -119,13 +123,24 @@ function renderSettings(){
   settings.querySelector('#go-home').onclick=()=>{context.goHome();settings.open=false;};
   settings.querySelector('#set-home').onclick=async()=>{
     const button=settings.querySelector('#set-home');button.disabled=true;button.textContent='Saving…';
-    try{await context.save(context.capture());settings.open=false;toast('Home view saved for everyone.');}
+    try{await context.save(context.capture());settings.open=false;toast(context.savedMessage||'Home view saved for everyone.');}
     catch(error){toast(error.message);}
-    finally{button.disabled=false;button.textContent='Set current view as home';}
+    finally{button.disabled=false;button.textContent=setLabel;}
   };
 }
 function showOverviewSettings(){
   if(!map)return;
+  const area=$('#area').value;
+  if(area){
+    settingsContext={label:`${area} settings`,setLabel:`Set ${area} home view`,goLabel:`Go to ${area} home view`,
+      description:'Frame the region, then save. Clicking its flag returns everyone to this view.',savedMessage:`${area} home view saved for everyone.`,
+      ready:()=>true,capture:()=>map.captureHome(),goHome:()=>map.goToRegion(area),async save(home){
+        const response=await fetch('/api/region-home',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({area,version:Object.hasOwn(regionHomes,area)?regionHomes[area].version:0,home})});
+        const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the region home view.');
+        regionHomes={...regionHomes,[area]:{version:result.version,home:result.home}};map.setRegionHome(area,result.home);
+      }};
+    renderSettings();return;
+  }
   settingsContext={label:'Map settings',ready:()=>true,capture:()=>map.captureHome(),goHome:()=>map.reset(),async save(home){
     const response=await fetch('/api/overview-home',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:overviewHome.version,home})});
     const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the home view.');
@@ -164,7 +179,8 @@ function renderList(){
     hover.onpointerenter=b.onfocus=()=>map?.highlightOverviewRoute(b.dataset.id);
     hover.onpointerleave=b.onblur=()=>map?.highlightOverviewRoute(null);
   }
-  map?.setEntries(rows);
+  map?.setEntries(rows);map?.setArea($('#area').value);
+  if(!$('#browse').hidden)showOverviewSettings();
 }
 function familyPicker(entry){
   if(!entry.rideFamily)return '';
@@ -173,7 +189,8 @@ function familyPicker(entry){
 }
 function wireFamilyPicker(){const dropdown=$('.route-option-dropdown');if(dropdown)dropdown.onkeydown=event=>{if(event.key==='Escape'){dropdown.open=false;dropdown.querySelector('summary').focus();}};for(const button of document.querySelectorAll('[data-route-option]'))button.onclick=()=>{if(dropdown)dropdown.open=false;if(button.getAttribute('aria-pressed')!=='true')selectEntry(button.dataset.routeOption,true,false);};}
 
-function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
+function selectArea(area){$('#area').value=area;renderList();map?.goToRegion(area);}
+function clearFilters(){const hadArea=!!$('#area').value;for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();if(hadArea)map?.reset();}
 async function reset(push=true){
   if(returning)return;
   const token=++selection,returnAnimation=returnToOverview;
@@ -403,18 +420,19 @@ function renderDetail(e,trackUnavailable=false){
 
 }
 for(const button of document.querySelectorAll('[data-kind]'))button.onclick=()=>{kind=button.dataset.kind;for(const b of document.querySelectorAll('[data-kind]'))b.classList.toggle('active',b===button);$('#intensity').disabled=kind!=='ride';$('#intensity').value='';reset();};
-for(const id of ['search','area','intensity'])$('#'+id).addEventListener(id==='search'?'input':'change',renderList);
+for(const id of ['search','intensity'])$('#'+id).addEventListener(id==='search'?'input':'change',renderList);
+$('#area').addEventListener('change',()=>selectArea($('#area').value));
 $('#clear').onclick=clearFilters;
 $('#north').onclick=()=>map?.north();
 for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt-up','up'],['tilt-down','down']]){const button=$('#'+id);button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);if(map)map.held=action;};for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,()=>{if(map)map.held=null;});button.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();if(map)map.held=action;}};button.onkeyup=()=>{if(map)map.held=null;};button.onblur=()=>{if(map)map.held=null;};}
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
 try{
-  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');const catalog=await response.json();entries=catalog.entries;slugAliases=catalog.slugAliases||{};overviewHome=catalog.settings.overviewHome||{version:0};
+  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');const catalog=await response.json();entries=catalog.entries;slugAliases=catalog.slugAliases||{};overviewHome=catalog.settings.overviewHome||{version:0};regionHomes=catalog.settings.regionHomes||{};
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
   const initial=new URLSearchParams(location.search).get('ride');
-  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},onRide:id=>selectEntry(id)});await map.init(filtered(),overviewHome.home);if(!initial)showOverviewSettings();if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
+  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:selectArea,onRide:id=>selectEntry(id)});await map.init(filtered(),overviewHome.home,regionHomes,entries);if(!initial)showOverviewSettings();if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
   if(initial){
     // Shared links and refreshes open at the saved home view, with no overview
     // flash or crumble. Only an in-page ride selection makes the approach.

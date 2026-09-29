@@ -85,6 +85,21 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
           }catch(e){db.exec('ROLLBACK');throw e;}
           return json(200,next);
         }
+        if(p==='/api/region-home'&&method==='PUT'){
+          if(!canSetHome)throw error(401,'Sign in as an admin to set a region home view.');
+          const body=await readBody(req),area=body.area;
+          if(typeof area!=='string'||!listEntries(db).some(entry=>entry.area===area))throw error(404,'Region not found.');
+          const row=db.prepare('SELECT value_json FROM settings WHERE key=?').get('regionHomes');
+          const homes=row?JSON.parse(row.value_json):{};
+          const before=Object.hasOwn(homes,area)?homes[area]:{version:0};
+          if(body.version!==before.version)throw error(409,'This region home view changed. Reload before saving.');
+          const next={version:before.version+1,home:validateHome(body.home)};
+          db.exec('BEGIN');try{
+            db.prepare('INSERT INTO settings VALUES(?,?,NULL) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json').run('regionHomes',JSON.stringify({...homes,[area]:next}));
+            audit(user,'region-home-update',null,{area,...before},{area,...next});db.exec('COMMIT');
+          }catch(e){db.exec('ROLLBACK');throw e;}
+          return json(200,{area,...next});
+        }
         const homeRoute=p.match(/^\/api\/ride-home\/([a-z0-9-]+)$/);
         if(homeRoute&&method==='PUT'){
           if(!canSetHome)throw error(401,'Sign in as an admin to set the ride home view.');

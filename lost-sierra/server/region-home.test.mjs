@@ -1,0 +1,44 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {createGuideServer} from './index.mjs';
+
+test('region homes require admin access, retain independent versions, and survive restart for public visitors',async t=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'region-home-test-'));
+  const origin='http://127.0.0.1:19547';let app,cookie='';
+  const start=async()=>{
+    app=await createGuideServer({dataDir:dir,origin});
+    await new Promise(resolve=>app.server.listen(19547,'127.0.0.1',resolve));
+  };
+  t.after(async()=>{await app?.close();fs.rmSync(dir,{recursive:true,force:true});});
+  const catalog=async()=>(await fetch(origin+'/api/catalog')).json();
+  const save=(body,requestOrigin=origin)=>fetch(origin+'/api/region-home',{method:'PUT',headers:{Origin:requestOrigin,Cookie:cookie,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  await start();
+  const before=await catalog(),[area,otherArea]=[...new Set(before.entries.map(entry=>entry.area))];
+  const home={position:[-20,25,-40],target:[-5,3,-8],zoom:1.4};
+  assert.equal((await save({area,version:0,home})).status,401);
+  const setup=await fetch(origin+'/api/setup',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({token:app.setupToken,username:'admin',password:'test-only-password'})});
+  assert.equal(setup.status,201);cookie=setup.headers.get('set-cookie').split(';')[0];
+  assert.equal((await save({area,version:0,home},'https://elsewhere.example')).status,403);
+  assert.equal((await save({area:'Unknown region',version:0,home})).status,404);
+  assert.equal((await save({area:12,version:0,home})).status,404);
+  assert.equal((await save({area,version:0,home:{...home,zoom:0}})).status,400);
+  assert.equal((await save({area,version:0,home:{...home,target:[0]}})).status,400);
+  assert.equal((await save({area,version:0,home})).status,200);
+  assert.equal((await save({area,version:0,home})).status,409);
+  const otherHome={...home,position:[10,20,30],zoom:2};
+  assert.equal((await save({area:otherArea,version:0,home:otherHome})).status,200);
+  const updatedHome={...home,zoom:1.8};
+  const updated=await save({area,version:1,home:updatedHome});
+  assert.equal(updated.status,200);assert.deepEqual(await updated.json(),{area,version:2,home:updatedHome});
+  const audits=app.db.prepare("SELECT after_json FROM audit_log WHERE action='region-home-update'").all();
+  assert.equal(audits.length,3);assert.deepEqual(JSON.parse(audits[2].after_json),{area,version:2,home:updatedHome});
+  await app.close();await start();
+  const after=await catalog();
+  assert.deepEqual(after.settings.regionHomes,{[area]:{version:2,home:updatedHome},[otherArea]:{version:1,home:otherHome}});
+  assert.deepEqual(after.entries,before.entries);
+  assert.deepEqual(after.settings.overviewHome,before.settings.overviewHome);
+  cookie='';assert.equal((await save({area,version:2,home})).status,401);
+});

@@ -58,6 +58,15 @@ The CMS supports:
 
 The bottom-right settings cog appears only for signed-in admins. Frame the overview or a ride, then use **Set current view as home** to save the shared default. Other visitors receive that framing. The ride cog also offers editing the current route. Home changes are version-checked and audited.
 
+Region flags filter the list and smoothly move to that region's home view. To
+save one, sign in as an admin, click the region flag (or choose its Area), frame
+the map, and use **Set [region] home view** in the settings cog. Position,
+look-at point, and zoom are saved for everyone and survive server restarts.
+Until a region has a saved view, the map automatically frames its complete
+routes. Each region keeps its own home; choose **All areas** to save or return
+to the full overview home. Returning from a ride and the compass home action
+also honor the selected region.
+
 Rides without a custom home automatically fit their terrain beside the desktop card or above the mobile card. Saved home views take precedence.
 
 Writes require an authenticated session and matching Origin. Passwords use salted scrypt; session tokens are hashed in SQLite, with HttpOnly/SameSite cookies and a 12-hour lifetime. HTTPS origins set Secure cookies. There is no public admin link or email password-reset flow.
