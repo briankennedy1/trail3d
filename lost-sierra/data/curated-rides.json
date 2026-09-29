@@ -11,7 +11,7 @@
       "climbingFt": 472,
       "descendingFt": 463,
       "summary": "A mellow loop around Lake Davis, mixing lakeside singletrack with gravel roads.",
-      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth\u2013Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
+      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth–Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
       "season": "Snow-free months",
       "seasonMonths": [],
       "incomplete": false,
@@ -256,21 +256,21 @@
     "track": "routes/mt-elwell.geojson",
     "details": {
       "coordinates": {
-        "lat": 39.748465,
-        "lng": -120.617551
+        "lat": 39.76578,
+        "lng": -120.61828
       },
-      "climbingFt": 5063,
-      "summary": "A long, demanding Lakes Basin ride through the Mount Elwell area.",
-      "notes": "Hard to get to. Snow likely at top in June/early July.\nShuttle from Round Lake TH or pedal from Everstoke\n\nThe displayed track is the full ride recording, including its climbs. A shuttle-only variation will have different mileage and elevation gain.",
+      "climbingFt": 4560,
+      "summary": "A demanding Mount Elwell ride via Frazier Falls Road, Round Lake, and Smith Creek.",
+      "notes": "The crown jewel of pain and pleasure in The Lost Sierra. Unforgiving, intense rocky climbing that's tough no matter what type of bike you've got. \n\nSnow sticks around for a long time in heavy winters.",
       "incomplete": false,
       "viewer": {
         "pointsOfInterest": [
           {
             "name": "Route start",
-            "latitude": 39.748465,
-            "longitude": -120.617551,
+            "latitude": 39.76578,
+            "longitude": -120.61828,
             "color": "#34877b",
-            "url": "https://www.trailforks.com/ridelog/view/118174069/"
+            "url": "https://www.google.com/maps?q=39.76578,-120.61828"
           }
         ],
         "home": {
@@ -287,8 +287,13 @@
           "zoom": 0.85
         }
       },
-      "descendingFt": 5495,
-      "routeUrl": "https://www.trailforks.com/routeplan/view/785580/"
+      "descendingFt": 4558,
+      "routeUrl": "https://www.trailforks.com/routeplan/view/785580/",
+      "movingMinutes": 275,
+      "movingTimeEstimated": true,
+      "sameStartFinish": false,
+      "startMapsUrl": "https://www.google.com/maps?q=39.76578,-120.61828",
+      "finishMapsUrl": "https://www.google.com/maps?q=39.76677,-120.61901"
     }
   },
   {
