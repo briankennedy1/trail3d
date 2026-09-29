@@ -311,6 +311,13 @@
             "longitude": -120.856356,
             "color": "#34877b",
             "url": "https://www.trailforks.com/ridelog/view/80488775/"
+          },
+          {
+            "name": "Buzzard Roost Ridge",
+            "latitude": 39.802837,
+            "longitude": -120.866181,
+            "color": "#ed8b23",
+            "url": "https://geo.mytopo.com/feature/california/plumas/ridge/257786/buzzard-roost-ridge/"
           }
         ],
         "home": {
