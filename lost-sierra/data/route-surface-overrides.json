@@ -89,6 +89,14 @@
         "fromMiles": 10,
         "toMiles": 10.5,
         "source": "Confirmed by Brian, 2026-09-28"
+      },
+      {
+        "from": 1569,
+        "to": 1608,
+        "type": "dirt",
+        "fromMiles": 12.1,
+        "toMiles": 12.72059237985505,
+        "source": "Confirmed by Brian, 2026-09-28"
       }
     ]
   }
