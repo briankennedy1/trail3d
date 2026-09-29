@@ -11,6 +11,13 @@ const ease=t=>t*t*t*(t*(t*6-15)+10);
 function world(lon,lat,e=0){return new THREE.Vector3((lon+120.6)*X,e/1000*EX,(39.835-lat)*Z);}
 async function dataset(name){const [meta,buffer]=await Promise.all([fetch(`/terrain/${name}.json`).then(r=>{if(!r.ok)throw Error('Terrain unavailable');return r.json();}),fetch(`/terrain/${name}.bin`).then(r=>{if(!r.ok)throw Error('Terrain unavailable');return r.arrayBuffer();})]);return {...meta,data:new Uint16Array(buffer)};}
 function sample(d,lon,lat){const xx=clamp((lon-d.bbox.west)/(d.bbox.east-d.bbox.west))*(d.width-1),yy=clamp((d.bbox.north-lat)/(d.bbox.north-d.bbox.south))*(d.height-1),x=Math.min(Math.floor(xx),d.width-2),y=Math.min(Math.floor(yy),d.height-2),u=xx-x,v=yy-y,a=d.data[y*d.width+x],b=d.data[y*d.width+x+1],c=d.data[(y+1)*d.width+x],e=d.data[(y+1)*d.width+x+1];return (a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+e*u*v)/d.scale;}
+// Match the overview mesh's triangle surfaces so the route stays on the ground.
+function surfaceElevation(d,lon,lat){
+  const gx=clamp((lon-d.bbox.west)/(d.bbox.east-d.bbox.west))*(d.width-1),gy=clamp((d.bbox.north-lat)/(d.bbox.north-d.bbox.south))*(d.height-1);
+  const x=Math.min(Math.floor(gx),d.width-2),y=Math.min(Math.floor(gy),d.height-2),u=gx-x,v=gy-y;
+  const a=d.data[y*d.width+x],b=d.data[y*d.width+x+1],c=d.data[(y+1)*d.width+x],e=d.data[(y+1)*d.width+x+1];
+  return (u+v<=1?a+(b-a)*u+(c-a)*v:e+(c-e)*(1-u)+(b-e)*(1-v))/d.scale;
+}
 export class Diorama {
   constructor(element,labels,{onArea}) {
     Object.assign(this,{element,labels,onArea});
@@ -33,6 +40,7 @@ export class Diorama {
     this.home={target:new THREE.Vector3(0,3,0),position:new THREE.Vector3(-90,125,-160)};
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.controls.update();
     this.chunks=[];this.markers=[];this.crumble=0;this.crumbleTarget=0;this.active=null;
+    this.overviewRoute=new THREE.Group();this.scene.add(this.overviewRoute);
     this.routeGroup=new THREE.Group();this.scene.add(this.routeGroup);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(element);this.resize();
     this.last=performance.now();this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);
@@ -47,6 +55,28 @@ export class Diorama {
     if(savedHome)this.setHome(savedHome);
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;this.controls.update();this.projection();
     this.setEntries(entries);
+    const beckwourth=entries.find(entry=>entry.id==='beckwourth-peak'&&entry.hasTrack);
+    if(beckwourth)await this.loadOverviewRoute(beckwourth);
+  }
+  async loadOverviewRoute(entry){
+    try{
+      const response=await fetch(`/api/tracks/${entry.id}`);
+      if(!response.ok)throw Error('Overview route unavailable');
+      const track=await response.json(),coordinates=track.geometry.coordinates,positions=[];
+      const add=(lon,lat)=>positions.push(...world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.012,0)));
+      for(let i=0;i<coordinates.length-1;i++){
+        const a=coordinates[i],b=coordinates[i+1];
+        const steps=Math.max(1,Math.ceil(Math.hypot((b[0]-a[0])*X,(b[1]-a[1])*Z)/.025));
+        for(let j=0;j<steps;j++){const t=j/steps;add(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t);}
+      }
+      add(...coordinates.at(-1));
+      for(const [color,width,order] of [[0xfff9df,5.25,20],[0xedaa29,3.375,21]]){
+        const geometry=new LineGeometry();geometry.setPositions(positions);
+        const line=new Line2(geometry,new LineMaterial({color,linewidth:width,transparent:true,opacity:.99,depthTest:true,depthWrite:false}));
+        line.renderOrder=order;line.frustumCulled=false;this.overviewRoute.add(line);
+      }
+      this.overviewRouteEntry=entry.id;
+    }catch(error){console.warn('Could not show Beckwourth Peak on the overview:',error);}
   }
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
   buildTerrain(d,step,detail){
@@ -175,6 +205,7 @@ export class Diorama {
   frame(now){requestAnimationFrame(this.frame);const dt=Math.min((now-this.last)/1000,.05);this.last=now;
     if(this.suspended)return;
     const speed=this.reduced?8:.57;this.crumble+=Math.sign(this.crumbleTarget-this.crumble)*Math.min(Math.abs(this.crumbleTarget-this.crumble),dt*speed);
+    this.overviewRoute.visible=!this.active&&this.crumble<.02&&this.entries?.some(entry=>entry.id===this.overviewRouteEntry);
     if(this.region){
       for(const c of this.chunks){const a=c.keep?0:ease(clamp((this.crumble-c.phase*.22)/.78));c.group.visible=a<.995;c.group.position.copy(c.home);c.group.position.y=-a*(85+c.phase*40);c.group.rotation.set(a*.3*(c.phase-.5),a*.12,a*.3*(.5-c.phase));c.group.scale.setScalar(1-a*.75);}
       if(!this.active&&this.crumble<.02)this.detailTerrain.visible=false;
