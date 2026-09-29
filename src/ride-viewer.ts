@@ -10,11 +10,10 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRideRoute } from './ride-route';
 import { EXAGGERATION, LAKE_LEVEL, Terrain, WORLD_SCALE, toWorld, type MapData } from './data';
 import { buildLandscape } from './terrain';
-import { crumbleLandscape } from './ride-crumble';
 import { BANNER_HEIGHT, PENNANT_CENTER, buildPOIs, shapeBanner, type LoosePiece, type POI } from './pois';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
-type RegionContext = { group: THREE.Group; update(progress: number): void; dispose(): void; preserve?(bounds: [number, number, number, number]): void };
+type RegionContext = { group: THREE.Group; update(progress: number): void; dispose(): void };
 type HomeView = { position: [number, number, number]; target: [number, number, number]; zoom: number };
 
 export type RideViewerOptions = {
@@ -23,8 +22,6 @@ export type RideViewerOptions = {
   home: HomeView;
   entryView?: HomeView;
   initialView?: HomeView;
-  routeDeparture?: RegionContext;
-  sharedTerrain?: [number, number, number, number];
   entryContext?: RegionContext;
   onEntryComplete?: () => void;
   homeStorageKey?: string | null;
@@ -57,10 +54,6 @@ export async function mountRideViewer(options: RideViewerOptions) {
   if (options.entryContext) scene.add(options.entryContext.group);
   const landscape = buildLandscape(terrain, { trees: false, baseElevation: options.baseElevation });
   scene.add(landscape.group);
-  let routeChangeElapsed = 0;
-  const routeArrival = options.routeDeparture ? crumbleLandscape(landscape.group) : null;
-  if (options.sharedTerrain) { routeArrival?.preserve(options.sharedTerrain); options.routeDeparture?.preserve?.(options.sharedTerrain); }
-  if (options.routeDeparture) { scene.add(options.routeDeparture.group); routeArrival!(1); }
   const rideContext = buildRideContext(terrain, options.contextFeatures ?? []);
   scene.add(rideContext.group);
   let contextExclusions: DOMRect[] = [];
@@ -70,7 +63,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
   for (const material of groundMaterials) {
     material.uniforms.uArrival = { value: options.entryContext ? 0 : 1 };
     material.fragmentShader = 'uniform float uArrival;\n' + material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uArrival;\n}');
-    material.transparent = !!options.entryContext || !!options.routeDeparture;
+    material.transparent = !!options.entryContext;
   }
   const pois = buildPOIs(map, terrain, options.pointsOfInterest, options.baseElevation);
   scene.add(pois.group);
@@ -618,13 +611,6 @@ export async function mountRideViewer(options: RideViewerOptions) {
   function frame(now: number) {
     if (disposed) return;
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (routeArrival && routeChangeElapsed < 2.8) {
-      routeChangeElapsed = Math.min(2.8, routeChangeElapsed + (reducedMotion ? 2.8 : dt));
-      const progress = routeChangeElapsed / 2.8;
-      options.routeDeparture!.update(Math.min(1, progress / .78));
-      routeArrival(1 - THREE.MathUtils.smoothstep(progress, .15, 1));
-      if (progress === 1) options.routeDeparture!.dispose();
-    }
     if (entering) {
       entryElapsed = Math.min(entryDuration, entryElapsed + dt);
       const progress = entryElapsed / entryDuration;
@@ -762,21 +748,6 @@ export async function mountRideViewer(options: RideViewerOptions) {
   last = performance.now();
   animation = requestAnimationFrame(frame);
   return {
-    captureDeparture(): RegionContext {
-      const copy = buildLandscape(terrain, { trees: false, baseElevation: options.baseElevation }).group;
-      const update = crumbleLandscape(copy, true); let released = false;
-      return { group: copy, update, preserve: update.preserve, dispose() {
-        if (released) return; released = true; copy.removeFromParent();
-        const textures = new Set<THREE.Texture>();
-        for (const child of copy.children) {
-          const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
-          mesh.geometry.dispose();
-          for (const uniform of Object.values(mesh.material.uniforms)) if (uniform.value instanceof THREE.Texture) textures.add(uniform.value);
-          mesh.material.dispose();
-        }
-        textures.forEach(texture => texture.dispose());
-      }};
-    },
     captureFrame(): HTMLCanvasElement {
       renderer.render(scene, camera);
       const frame = document.createElement('canvas');
@@ -826,7 +797,6 @@ export async function mountRideViewer(options: RideViewerOptions) {
     rideContext.dispose();
     // The regional meshes are borrowed, so detach them before disposing ride assets.
     options.entryContext?.dispose();
-    options.routeDeparture?.dispose();
     exiting?.context.dispose();exiting?.resolve();
     const textures = new Set<THREE.Texture>();
     scene.traverse(object => {
