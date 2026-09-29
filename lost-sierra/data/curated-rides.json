@@ -901,5 +901,37 @@
       "startMapsUrl": "https://www.google.com/maps?q=40.04552,-120.88597",
       "finishMapsUrl": "https://www.google.com/maps?q=39.9758,-120.93687"
     }
+  },
+  {
+    "id": "mt-hough-classic-loop",
+    "entry": {
+      "name": "Mt. Hough Classic Loop",
+      "kind": "ride",
+      "area": "Quincy",
+      "status": "published"
+    },
+    "terrain": "/terrain/mt-hough-classic-loop",
+    "track": "routes/mt-hough-classic-loop.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.96942,
+        "lng": -120.90061
+      },
+      "routeUrl": "https://www.trailforks.com/routeplan/view/786052/",
+      "incomplete": false,
+      "summary": "A full Mt. Hough loop with a long climb and a singletrack descent through Rhinehart Meadow.",
+      "notes": "A big climbing day on Mt. Hough, followed by Tippy Top and the classic descent through Rhinehart Meadow and the lower Mt. Hough trails.\nThe finish links Berry Creek, Huffle-Berry and 10M20 back toward the starting point.",
+      "viewer": {
+        "pointsOfInterest": []
+      },
+      "climbingFt": 4167,
+      "descendingFt": 4194,
+      "movingMinutes": 226,
+      "movingTimeEstimated": true,
+      "intensity": "Intense",
+      "sameStartFinish": true,
+      "startMapsUrl": "https://www.google.com/maps?q=39.96942,-120.90061",
+      "finishMapsUrl": ""
+    }
   }
 ]

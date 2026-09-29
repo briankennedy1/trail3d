@@ -727,5 +727,34 @@
         "rationale": "Finish on Barlow Road after the plan turns off Oakland Camp Road. Infer pavement from the residential road and continuous paved approach; Barlow Road has no explicit OSM surface tag."
       }
     ]
+  },
+  "mt-hough-classic-loop": {
+    "coordinatesSha256": "91e21a34e1ba77f70a2b060767e6674f17bfc1127a2b85acc24dcb72a7399e18",
+    "reviewedAt": "2026-09-29",
+    "source": "Trailforks-based best estimate; not rider-confirmed",
+    "sourceUrl": "https://www.trailforks.com/routeplan/view/786052/",
+    "ranges": [
+      {
+        "from": 267,
+        "to": 283,
+        "type": "dirt",
+        "sourceUrl": "https://www.trailforks.com/routeplan/view/786052/",
+        "rationale": "Final summit road approach in the supplied plan; extend the adjoining dirt road to the summit turnaround, where Tippy Top starts."
+      },
+      {
+        "from": 283,
+        "to": 326,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Summit turnaround and start of Tippy Top, listed as singletrack by Trailforks."
+      },
+      {
+        "from": 357,
+        "to": 389,
+        "type": "singletrack",
+        "sourceUrl": "https://www.trailforks.com/trails/mt-hough-tippy-top/",
+        "rationale": "Gap on the Tippy Top descent, listed as singletrack by Trailforks; extend the adjoining trail surface."
+      }
+    ]
   }
 }
