@@ -123,6 +123,19 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
         if(p.startsWith('/api/admin/')) {
           if(!user) throw error(401,'Sign in to manage the guide.');
           if(p==='/api/admin/entries'&&method==='GET') return json(200,{entries:listEntries(db,true)});
+          const detailId=p.match(/^\/api\/admin\/entries\/([a-z0-9-]+)$/)?.[1];
+          if(detailId&&method==='GET') {
+            const row=db.prepare('SELECT * FROM entries WHERE id=?').get(detailId);
+            if(!row)throw error(404,'Entry not found.');
+            const track=db.prepare('SELECT * FROM tracks WHERE entry_id=?').get(detailId);
+            return json(200,{
+              entry:listEntries(db,true).find(e=>e.id===detailId),
+              original:row.original_json?JSON.parse(row.original_json):null,
+              source:row.source_id?db.prepare('SELECT id,url,imported_at,sha256 FROM sources WHERE id=?').get(row.source_id):null,
+              track:track?{sourceLabel:track.source_label,sourceUrl:track.source_url,distanceM:track.distance_m,ascentM:track.ascent_m,descentM:track.descent_m,updatedAt:track.updated_at,pointCount:JSON.parse(track.geojson).geometry.coordinates.length}:null,
+              history:db.prepare('SELECT id,action,created_at,before_json,after_json FROM audit_log WHERE entry_id=? ORDER BY id DESC LIMIT 50').all(detailId).map(r=>({id:r.id,action:r.action,createdAt:r.created_at,before:r.before_json?JSON.parse(r.before_json):null,after:r.after_json?JSON.parse(r.after_json):null})),
+            });
+          }
           if(p==='/api/admin/export'&&method==='GET') {
             res.setHeader('Content-Disposition','attachment; filename="lost-sierra-content.json"');
             return json(200,{schemaVersion:1,exportedAt:new Date().toISOString(),entries:listEntries(db,true),settings:Object.fromEntries(db.prepare('SELECT key,value_json FROM settings').all().map(r=>[r.key,JSON.parse(r.value_json)])),tracks:db.prepare('SELECT * FROM tracks').all().map(t=>({...t,geojson:JSON.parse(t.geojson)})),sources:db.prepare('SELECT * FROM sources').all()});
