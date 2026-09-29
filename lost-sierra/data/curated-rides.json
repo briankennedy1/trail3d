@@ -769,7 +769,11 @@
       "summary": "A shuttle ride on Mills Peak with a road approach and a long trail descent.",
       "notes": "This shuttle route includes climbing before the descent on Mills Peak Trail and Mills Peak (Lower). Plan transportation between the separate start and finish.\n\nAllow approximately 2h 45m of moving time, based on the Trailforks route estimate.",
       "viewer": {
-        "pointsOfInterest": []
+        "pointsOfInterest": [],
+        "contextLabels": {
+          "mode": "none",
+          "names": []
+        }
       },
       "climbingFt": 1007,
       "descendingFt": 3083,
@@ -808,7 +812,11 @@
       "summary": "A mostly downhill shuttle ride from the top of Mills Peak.",
       "notes": "Start at the upper Mills Peak trail and descend via Mills Peak Trail and Mills Peak (Lower). This option skips the longer road approach of the standard shuttle.\n\nArrange transportation between the separate start and finish. Trailforks estimates approximately 2h 21m of moving time.",
       "viewer": {
-        "pointsOfInterest": []
+        "pointsOfInterest": [],
+        "contextLabels": {
+          "mode": "none",
+          "names": []
+        }
       },
       "climbingFt": 171,
       "descendingFt": 3044,
