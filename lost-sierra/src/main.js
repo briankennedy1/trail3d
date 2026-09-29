@@ -15,19 +15,19 @@ function filtered(){const query=$('#search').value.toLowerCase().trim(),area=$('
 function renderList(){const rows=filtered().sort((a,b)=>Number(b.hasTrack)-Number(a.hasTrack));$('#result-count').textContent=`${rows.length} ${kind==='ride'?(rows.length===1?'ride':'rides'):(rows.length===1?'adventure':'adventures')}`;$('#clear').hidden=!($('#search').value||$('#area').value||$('#intensity').value);$('#entries').innerHTML=rows.length?rows.map(e=>`<article class="entry-card"><button class="entry-open" data-id="${escape(e.id)}"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(e.name)}</h3><div class="entry-meta">${e.kind==='ride'?`<span>${escape(e.intensity||'Effort not listed')}</span>${e.climbingFt!=null?`<span>·</span><span>↑ ${number(e.climbingFt)} ft</span>`:''}`:`<span>${escape((e.type||'Explore').replaceAll('-',' + '))}</span>`}${e.hasTrack?'<span class="track-tag">· 3D route</span>':''}</div></button></article>`).join(''):'<p class="empty">No places match your search. Try another filter.</p>';for(const b of document.querySelectorAll('[data-id]'))b.onclick=()=>selectEntry(b.dataset.id);map?.setEntries(rows);}
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
 function reset(push=true){selection++;closeRide();track=null;map?.reset();$('#browse').hidden=false;$('#detail').hidden=true;$('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';$('#map-status').textContent='Pick a ride. Watch the landscape open up.';if(push)history.pushState({},'','/');renderList();}
-async function selectEntry(id,push=true){
+async function selectEntry(id,push=true,animate=true){
   const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
   const token=++selection;closeRide();track=null;
   $('#browse').hidden=true;$('#detail').hidden=false;$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
   if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
   if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection)return;track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
   if(token!==selection)return;
-  if(track){await openRide(entry,track,token);return;}
-  renderDetail(entry);await map?.select(entry,null);
+  if(track){await openRide(entry,track,token,animate);return;}
+  renderDetail(entry);await map?.select(entry,null,animate);
   $('#map-kicker').textContent=entry.area.toUpperCase();$('#map-title').textContent=entry.name;$('#map-status').textContent=track?'A closer look. Drag to explore.': 'Approximate area location · add a GPS track for the full route';
   $('.sidebar').scrollTop=0;
 }
-async function openRide(entry,rideTrack,token){
+async function openRide(entry,rideTrack,token,animate=true){
   const controller=new AbortController();let viewer,canvas,controls,context;
   closeRide=()=>{
     controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();
@@ -70,8 +70,10 @@ async function openRide(entry,rideTrack,token){
     $('#canvas').append(canvas);
     if(map){
       map.suspended=true;map.controls.enabled=false;map.held=null;map.tween=null;
-      options.entryView=map.rideEntryView(options.data.map,options.scale);
-      context=map.rideContext(options.data.map);options.entryContext=context;
+      if(animate){
+        options.entryView=map.rideEntryView(options.data.map,options.scale);
+        context=map.rideContext(options.data.map);options.entryContext=context;
+      }
     }
     const enableRide=()=>{
       if(token!==selection)return;
@@ -84,12 +86,12 @@ async function openRide(entry,rideTrack,token){
     $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
     $('#map-labels').hidden=true;
     canvas.classList.add('ready');
-    if(!map)enableRide();
+    if(!options.entryView)enableRide();
   }catch(error){
     if(controller.signal.aborted||token!==selection)return;
     closeRide();console.error(error);
     $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p>The ride could not load.</p><button class="secondary" id="retry-ride">Try again</button>';
-    $('#back').onclick=()=>reset();$('#retry-ride').onclick=()=>selectEntry(entry.id,false);
+    $('#back').onclick=()=>reset();$('#retry-ride').onclick=()=>selectEntry(entry.id,false,animate);
   }
 }
 function renderDetail(e){
@@ -115,6 +117,12 @@ try{
   const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');entries=(await response.json()).entries;
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
-  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},});await map.init(filtered());$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
-  const initial=new URLSearchParams(location.search).get('ride');if(initial)await selectEntry(initial,false);
+  const initial=new URLSearchParams(location.search).get('ride');
+  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},});await map.init(filtered());if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
+  if(initial){
+    // Shared links and refreshes open at the saved home view, with no overview
+    // flash or crumble. Only an in-page ride selection makes the approach.
+    await selectEntry(initial,false,false);
+    if(map||document.querySelector('.ride-scene.ready'))$('#loading').hidden=true;
+  }
 }catch(e){$('#loading').textContent=e.message;$('#entries').innerHTML='<p class="empty">Could not load the guide. Refresh to try again.</p>';console.error(e);}

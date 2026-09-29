@@ -135,7 +135,7 @@ export class Diorama {
       dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const material of materials)material.dispose();},
     };
   }
-  async select(entry,track){
+  async select(entry,track,animate=true){
     this.active=entry;this.track=track;this.clearRoute();
     let center,span;
     if(track){
@@ -157,7 +157,12 @@ export class Diorama {
     this.crumbleTarget=1;
     const distance=this.useDetail?span*1.6:Math.max(span*1.65,26);
     this.focusPose={target:center.clone(),position:center.clone().add(new THREE.Vector3(-distance*.45,distance*.48,-distance))};
-    this.move(this.focusPose.target,this.focusPose.position,2.7);
+    if(animate)this.move(this.focusPose.target,this.focusPose.position,2.7);
+    else{
+      this.tween=null;this.crumble=1;this.camera.zoom=1;
+      this.camera.position.copy(this.focusPose.position);this.controls.target.copy(this.focusPose.target);
+      this.controls.update();this.projection();
+    }
   }
   clearRoute(){for(const c of [...this.routeGroup.children]){c.geometry.dispose();c.material.dispose();this.routeGroup.remove(c);}this.route=null;}
   reset(){this.active=null;this.points=null;this.track=null;this.clearRoute();this.crumbleTarget=0;this.move(this.home.target,this.home.position,2.5);}
