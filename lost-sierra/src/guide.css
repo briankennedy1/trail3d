@@ -71,3 +71,5 @@
   .guide-page .entry-card{min-height:72px;padding:8px 0}
   .guide-page .entry-card h3{margin:4px 0 5px}
 }
+
+.guide-page .highway-destination{font-size:10px;font-weight:600;pointer-events:none}

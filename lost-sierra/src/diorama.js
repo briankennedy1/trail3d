@@ -117,6 +117,17 @@ export class Diorama {
         element.innerHTML=`<svg viewBox="0 0 100 104" aria-hidden="true"><defs><path id="${arcId}" d="M17 42 Q50 23 83 42"/></defs><path d="M50 3 C26 7 4 32 4 65 L4 85 Q4 96 16 98 Q50 104 84 98 Q96 96 96 85 L96 65 C96 32 74 7 50 3Z" fill="#006b42" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><text fill="#fff" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing=".4"><textPath href="#${arcId}" startOffset="50%" text-anchor="middle">CALIFORNIA</textPath></text><text x="50" y="88" fill="#fff" font-family="Arial, sans-serif" font-size="55" font-weight="600" letter-spacing="-2" text-anchor="middle">${label.route}</text></svg>`;this.labels.append(element);
         this.highwayMarkers.push({element,position:world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.4,0))});
       }
+      // Direction labels sit just inside the highway exits, so they remain readable
+      // above the diorama edge instead of being clipped by the viewport.
+      for(const [route,name,axis,direction] of [[70,'To Reno',0,1],[89,'To Truckee',1,-1]]){
+        const points=data.features.filter(feature=>feature.properties.route===route).flatMap(feature=>feature.geometry.coordinates);
+        const edge=points.reduce((a,b)=>direction*b[axis]>direction*a[axis]?b:a);
+        const target=edge[axis]-direction*.025;
+        const [lon,lat]=points.reduce((a,b)=>Math.abs(b[axis]-target)<Math.abs(a[axis]-target)?b:a);
+        const element=document.createElement('span');element.className='map-marker highway-destination';element.textContent=name;
+        this.labels.append(element);
+        this.highwayMarkers.push({element,destination:true,position:world(lon,lat,surfaceElevation(this.region,lon,lat)).add(new THREE.Vector3(0,.4,0))});
+      }
     }catch(error){console.warn('Could not show the overview highways:',error);}
   }
   setupRoutePopup(){
@@ -373,7 +384,7 @@ export class Diorama {
     for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers]){
       if(this.active||((this.highwayMarkers.includes(marker)||this.riverMarkers.includes(marker))&&!this.highways.visible)){marker.element.style.display='none';continue;}
       const p=marker.position.clone().project(this.camera);const w=this.element.clientWidth,h=this.element.clientHeight,x=(p.x*.5+.5)*w,y=(-p.y*.5+.5)*h;
-      const visible=p.z>-1&&p.z<1&&x>20&&x<w-20&&y>45&&y<h-85;
+      const visible=p.z>-1&&p.z<1&&x>20&&x<w-20&&y>45&&y<h-(marker.destination?25:85);
       const width=marker.element.offsetWidth||90;const rect={x:x-width/2,y:y-25,w:width,h:32};const overlap=boxes.some(b=>rect.x<b.x+b.w&&rect.x+rect.w>b.x&&rect.y<b.y+b.h&&rect.y+rect.h>b.y);
       marker.element.style.display=visible&&!overlap?'flex':'none';marker.element.style.left=`${x}px`;marker.element.style.top=`${y}px`;if(visible&&!overlap)boxes.push(rect);
     }
