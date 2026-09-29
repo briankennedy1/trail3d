@@ -27,7 +27,10 @@ export async function prepareRide(entry,track,signal){
   }
   signal.throwIfAborted();
   for(const [key,value] of Object.entries(config))if(value!=null)options[key]=value;
-  options.pointsOfInterest=routeStartParkingLinks(options.pointsOfInterest,entry.startMapsUrl);
+  const first=track.geometry.coordinates[0],last=track.geometry.coordinates.at(-1);
+  // Honor the CMS loop setting; otherwise recognize recordings that close within 50 m.
+  const isLoop=entry.sameStartFinish??(Math.hypot((last[0]-first[0])*111320*Math.cos(first[1]*Math.PI/180),(last[1]-first[1])*111320)<50);
+  options.pointsOfInterest=routeStartParkingLinks(options.pointsOfInterest,entry.startMapsUrl,isLoop);
   const context=await contextRequest;signal.throwIfAborted();
   if(context)options.contextFeatures=rideContextForMap(context,options.data.map);
   const surfaces=await surfacesRequest;signal.throwIfAborted();

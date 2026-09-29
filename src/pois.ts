@@ -7,13 +7,13 @@ export type POI = { name: string; latitude: number; longitude: number; color: st
 // Banner height in world units; its width follows the text on it.
 export const BANNER_HEIGHT = 1.97;
 
-function labelTexture(name: string, color: string, elevationFt?: number, linked = false) {
+function labelTexture(name: string, color: string, elevationFt?: number) {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d')!;
   const nameFont = `700 ${elevationFt ? 49 : 53}px system-ui, sans-serif`;
   const elevationFont = '700 38px system-ui, sans-serif';
   const elevation = elevationFt ? `${elevationFt.toLocaleString()} ft` : '';
-  const textStart = linked ? 99 : 36;
+  const textStart = 36;
   ctx.font = nameFont;
   const nameEnd = textStart + ctx.measureText(name).width;
   ctx.font = elevationFont;
@@ -42,25 +42,6 @@ function labelTexture(name: string, color: string, elevationFt?: number, linked 
     ctx.font = elevationFont;
     ctx.textAlign = 'right';
     ctx.fillText(elevation, textEnd, 72);
-  }
-  if (linked) {
-    // Standard external-link mark, drawn on the fabric rather than overlaid on it.
-    ctx.strokeStyle = '#fffaf0';
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(65, 68);
-    ctx.lineTo(65, 91);
-    ctx.lineTo(39, 91);
-    ctx.lineTo(39, 65);
-    ctx.lineTo(62, 65);
-    ctx.moveTo(55, 76);
-    ctx.lineTo(81, 50);
-    ctx.moveTo(67, 50);
-    ctx.lineTo(81, 50);
-    ctx.lineTo(81, 64);
-    ctx.stroke();
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 8;
@@ -348,7 +329,7 @@ export function buildPOIs(map: MapData, terrain: Terrain, ridePlaces: POI[] = []
     bannerGeometry.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(bannerGeometry.attributes.position.count * 3).fill(1), 3));
     // Write depth for the fabric but not its clear margins, so the route strokes
     // drawn afterwards pass behind the banner instead of painting over it.
-    const { texture, width: bannerWidth } = labelTexture(place.name, place.color, place.elevationFt, Boolean(place.url));
+    const { texture, width: bannerWidth } = labelTexture(place.name, place.color, place.elevationFt);
     const label = new THREE.Mesh(bannerGeometry, new THREE.MeshBasicMaterial({
       map: texture, transparent: true,
       side: THREE.DoubleSide, depthTest: true, depthWrite: true, alphaTest: 0.5, vertexColors: true,

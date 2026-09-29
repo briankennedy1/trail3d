@@ -7,11 +7,11 @@ const isGoogleMaps=url=>{
 };
 
 // Resolve at display time so editing the parking field also updates the flag.
-export function routeStartParkingLinks(points=[],parkingUrl){
+export function routeStartParkingLinks(points=[],parkingUrl,isLoop=false){
   return points.map(point=>{
     if(!/^(?:route start(?:\s*\/\s*finish)?|.*\btrailhead)$/i.test(point.name.trim()))return point;
     const url=isGoogleMaps(parkingUrl)?parkingUrl:isGoogleMaps(point.url)?point.url:
       `https://www.google.com/maps/search/?api=1&query=${point.latitude},${point.longitude}`;
-    return {...point,url};
+    return {...point,name:isLoop?'Route Start / Finish':point.name,url};
   });
 }
