@@ -48,6 +48,24 @@ function wireRideNotes(onOpen=()=>{}){
   button.onclick=()=>show(button.getAttribute('aria-pressed')!=='true');
   $('#ride-notes-back').onclick=()=>show(false);
 }
+function fitRideTitle(){
+  const title=$('#detail h2');
+  if(!title||!title.clientWidth)return;
+  title.style.fontSize='';
+  const range=document.createRange();range.selectNodeContents(title);
+  for(let pass=0;pass<3;pass++){
+    const width=range.getBoundingClientRect().width,available=title.clientWidth-1;
+    if(width<=available)break;
+    title.style.fontSize=`${parseFloat(getComputedStyle(title).fontSize)*available/width}px`;
+  }
+}
+let titleWidth=0;
+new ResizeObserver(([entry])=>{
+  if(entry.contentRect.width===titleWidth)return;
+  titleWidth=entry.contentRect.width;fitRideTitle();
+}).observe($('#detail'));
+document.fonts.ready.then(fitRideTitle);
+document.fonts.addEventListener('loadingdone',fitRideTitle);
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
 const movingTime=e=>{
   const value=e.movingMinutes??(e.id==='beckwourth-peak'?121:null);
@@ -162,6 +180,7 @@ async function openRide(entry,rideTrack,token,animate=true){
         ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
         <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
         ${surfaceKey(options.surfaceTypes)}`,`${accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`)}`;
+      fitRideTitle();
       $('#back').onclick=()=>reset();
       wireRideNotes(()=>viewer?.pause());
       for(const button of document.querySelectorAll('[data-mode]'))button.onclick=()=>{

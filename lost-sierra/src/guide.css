@@ -112,3 +112,5 @@
 .ride-mode button{flex:1;border:0;border-radius:7px;padding:9px 12px;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:650;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s}
 .ride-mode button[aria-pressed="true"]{background:#fffaf0;color:#51432e;box-shadow:0 1px 5px #51432e20}
 .ride-mode button:focus-visible{outline:2px solid #b94935;outline-offset:2px}
+
+.guide-page #detail>h2{white-space:nowrap}
