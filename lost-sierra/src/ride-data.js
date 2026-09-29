@@ -30,6 +30,13 @@ export function regionalRideData(track,meta,raw,pointsOfInterest=[]){
     heights[y*width+x]=Math.round(h*meta.scale);min=Math.min(min,h);max=Math.max(max,h);
   }
   const map={bbox,widthM,heightM,grid:{width,height,spacing:widthM/(width-1),scale:meta.scale},elevation:{min,max},basin:[[0,0],[widthM,0],[widthM,heightM],[0,heightM]],lakes:[],wilderness:[],roads:[],labels:[],attribution:[meta.source]};
+  const metersLon=111320*Math.cos((bbox.south+bbox.north)*Math.PI/360);
+  map.lakes=(meta.waterbodies||[]).map(lake=>({
+    name:lake.name,level:lake.level,area:lake.area,
+    outer:lake.rings[0].map(([lon,lat])=>[(lon-bbox.west)*metersLon,(lat-bbox.south)*111320]),
+    inner:lake.rings.slice(1).map(ring=>ring.map(([lon,lat])=>[(lon-bbox.west)*metersLon,(lat-bbox.south)*111320])),
+  }));
+  if(meta.waterSource)map.attribution.push(meta.waterSource);
   const scale=Math.max(.25,Math.max(widthM,heightM)/7338),centerY=((min+max)/2-1898)/100*2.3;
   return {data:{map,ride:projectTrack(track,map,heights),heights:heights.buffer},scale,baseElevation:min-120,
     home:{position:[-73.69*scale,centerY+71.64*scale,-153.78*scale],target:[-7.22*scale,centerY,-7.33*scale],zoom:1.273332761095871},pointsOfInterest};

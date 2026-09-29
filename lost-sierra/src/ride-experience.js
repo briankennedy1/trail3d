@@ -1,5 +1,6 @@
 import { mountRideViewer } from '../../src/ride-viewer';
 import { BECKWOURTH_VIEW } from '../../src/beckwourth-preset';
+import curatedRides from '../data/curated-rides.json';
 import beckMap from '../../public/beckwourth/map.json';
 import beckHeightsUrl from '../../public/beckwourth/terrain.bin?url';
 import { projectTrack, regionalRideData } from './ride-data.js';
@@ -13,7 +14,8 @@ export async function prepareRide(entry,track,signal){
     const heights=await response.arrayBuffer();
     options={...BECKWOURTH_VIEW,data:{map:beckMap,ride:projectTrack(track,beckMap,new Uint16Array(heights)),heights}};
   }else{
-    const responses=await Promise.all([fetch('/terrain/region.json',{signal}),fetch('/terrain/region.bin',{signal})]);
+    const detail=curatedRides.find(ride=>ride.id===entry.id)?.terrain;
+    const responses=await Promise.all([fetch(detail?`${detail}/terrain.json`:'/terrain/region.json',{signal}),fetch(detail?`${detail}/terrain.bin`:'/terrain/region.bin',{signal})]);
     if(responses.some(r=>!r.ok))throw Error('Terrain could not load.');
     const [meta,buffer]=await Promise.all([responses[0].json(),responses[1].arrayBuffer()]);
     options=regionalRideData(track,meta,new Uint16Array(buffer),config.pointsOfInterest||[]);

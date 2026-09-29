@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
+import {importCuratedRides} from './curated-rides.mjs';
 export const root = path.resolve(import.meta.dirname, '..');
 const scope=JSON.parse(fs.readFileSync(path.join(root,'data/guide-scope.json'),'utf8'));
 const bounds=scope.bbox;
@@ -40,6 +41,7 @@ export function openStore(dir) {
       db.exec('COMMIT');
     } catch(e) {db.exec('ROLLBACK');throw e;}
   }
+  importCuratedRides(db,root,saveTrack);
   return db;
 }
 export function rowEntry(row) {

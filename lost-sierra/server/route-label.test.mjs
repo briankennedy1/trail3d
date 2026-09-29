@@ -13,9 +13,9 @@ test('route label stem stays attached to rendered start through orbit and zoom',
     element:{clientWidth:1280,clientHeight:720},camera:new THREE.OrthographicCamera(-70,70,40,-40,.05,1200),
   });
   try{await map.loadOverviewRoute({id:'test-ride',name:'Test ride'});}finally{globalThis.fetch=originalFetch;}
-  const startAttribute=map.overviewRoute.children[0].geometry.attributes.instanceStart;
+  const startAttribute=map.overviewRoute.children[0].children[0].geometry.attributes.instanceStart;
   const start=new THREE.Vector3().fromBufferAttribute(startAttribute,0);
-  map.routePopupPoint=map.routeLabelAnchor;
+  map.routePopupPoint=map.overviewRoute.children[0].userData.anchor;
   for(const angle of [0,.8,2.4,4.7])for(const zoom of [.65,1,4,12]){
     map.camera.position.set(Math.sin(angle)*100,70,Math.cos(angle)*100);
     map.camera.lookAt(0,3,0);map.camera.zoom=zoom;map.camera.updateProjectionMatrix();map.camera.updateMatrixWorld();
@@ -24,5 +24,5 @@ test('route label stem stays attached to rendered start through orbit and zoom',
     assert.ok(Math.abs(parseFloat(map.routePopup.style.left)-(projected.x*.5+.5)*1280)<.001);
     assert.ok(Math.abs(parseFloat(map.routePopup.style.top)+15-(-projected.y*.5+.5)*720)<.001);
   }
-  for(const line of map.overviewRoute.children){line.geometry.dispose();line.material.dispose();}
+  for(const line of map.overviewRoute.children[0].children){line.geometry.dispose();line.material.dispose();}
 });

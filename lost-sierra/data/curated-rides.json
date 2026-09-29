@@ -1,0 +1,93 @@
+[
+  {
+    "id": "lake-davis-loop",
+    "terrain": "/terrain/lake-davis-loop",
+    "track": "routes/lake-davis-loop.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.8928,
+        "lng": -120.4768
+      },
+      "climbingFt": 472,
+      "descendingFt": 463,
+      "summary": "A mellow loop around Lake Davis, mixing lakeside singletrack with gravel roads.",
+      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth\u2013Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
+      "season": "Snow-free months",
+      "seasonMonths": [],
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Lake Davis Trailhead",
+            "latitude": 39.8928,
+            "longitude": -120.4768,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/route/yuba-expeditions-lake-davis-loop/"
+          }
+        ],
+        "home": {
+          "position": [
+            -130,
+            128,
+            -271
+          ],
+          "target": [
+            -14,
+            2,
+            6
+          ],
+          "zoom": 0.85
+        }
+      }
+    }
+  },
+  {
+    "id": "haskell-peak",
+    "terrain": "/terrain/haskell-peak",
+    "track": "routes/haskell-peak.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.63114,
+        "lng": -120.54321
+      },
+      "climbingFt": 2312,
+      "descendingFt": 2309,
+      "summary": "A sustained singletrack climb to Haskell Peak followed by the descent back to Chapman Creek.",
+      "notes": "An 8.7-mile intermediate out-and-back using Chapman Creek Trail, the Haskell Peak connector and Haskell Peak Trail. Expect about 2,300 feet of climbing with steep pitches near the top, then return along the same trail. Yuba Expeditions recommends parking off the highway just uphill from Chapman Creek Campground. Trailforks lists this route as non-e-bike. Ride after snowmelt when the trail is dry; check current conditions before heading out.",
+      "season": "Snow-free months",
+      "seasonMonths": [],
+      "incomplete": false,
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Haskell Peak",
+            "latitude": 39.66247,
+            "longitude": -120.5528,
+            "color": "#c8613d",
+            "url": "https://www.trailforks.com/trails/haskell-peak/"
+          },
+          {
+            "name": "Chapman Creek Trailhead",
+            "latitude": 39.63114,
+            "longitude": -120.54321,
+            "color": "#34877b",
+            "url": "https://www.trailforks.com/trails/chapman-creek-trail/"
+          }
+        ],
+        "home": {
+          "position": [
+            -40,
+            60,
+            110
+          ],
+          "target": [
+            6,
+            4,
+            2
+          ],
+          "zoom": 0.85
+        }
+      }
+    }
+  }
+]

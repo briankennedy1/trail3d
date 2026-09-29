@@ -81,12 +81,12 @@ async function openRide(entry,rideTrack,token,animate=true){
     const options=await prepareRide(entry,rideTrack,controller.signal);
     if(token!==selection)return;
     const original=entry.id==='beckwourth-peak';
-    const climbing=original?'2,083':number(rideTrack.properties.ascentM==null?entry.climbingFt:rideTrack.properties.ascentM*3.28084);
+    const climbing=original?'2,083':number(entry.climbingFt??(rideTrack.properties.ascentM==null?null:rideTrack.properties.ascentM*3.28084));
     $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
-      <div class="stats"><div><strong id="ride-distance">—</strong><span>miles</span></div><div><strong>${climbing}</strong><span>ft climbing</span></div><div><strong>${original?'2:01':number(rideTrack.properties.descentM==null?entry.descendingFt:rideTrack.properties.descentM*3.28084)}</strong><span>${original?'moving time':'ft descending'}</span></div></div>
+      <div class="stats"><div><strong id="ride-distance">—</strong><span>miles</span></div><div><strong>${climbing}</strong><span>ft climbing</span></div><div><strong>${original?'2:01':number(entry.descendingFt??(rideTrack.properties.descentM==null?null:rideTrack.properties.descentM*3.28084))}</strong><span>${original?'moving time':'ft descending'}</span></div></div>
       <div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
       <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
-      <div class="detail-links">${external(rideTrack.properties.sourceUrl,'View original ride')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}</div>
+      <div class="detail-links">${external(rideTrack.properties.sourceUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}</div>
       ${entry.notes||entry.summary?`<details class="ride-notes"><summary>Ride notes</summary><p class="detail-copy">${escape(entry.notes||entry.summary)}</p></details>`:''}`;
     $('#back').onclick=()=>reset();
     let ready=false;
