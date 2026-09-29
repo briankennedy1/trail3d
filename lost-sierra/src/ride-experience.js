@@ -6,6 +6,7 @@ import beckHeightsUrl from '../../public/beckwourth/terrain.bin?url';
 import { projectTrack, regionalRideData } from './ride-data.js';
 import { rideContextForMap, roadEdgePoint } from '../../src/ride-context-data';
 import { surfaceTypesForTrack } from '../../src/route-surfaces';
+import { routeStartParkingLinks } from './ride-access.js';
 
 export async function prepareRide(entry,track,signal){
   const contextRequest=fetch('/terrain/ride-context.geojson',{signal}).then(r=>r.ok?r.json():null).catch(()=>null);
@@ -26,6 +27,7 @@ export async function prepareRide(entry,track,signal){
   }
   signal.throwIfAborted();
   for(const [key,value] of Object.entries(config))if(value!=null)options[key]=value;
+  options.pointsOfInterest=routeStartParkingLinks(options.pointsOfInterest,entry.startMapsUrl);
   const context=await contextRequest;signal.throwIfAborted();
   if(context)options.contextFeatures=rideContextForMap(context,options.data.map);
   const surfaces=await surfacesRequest;signal.throwIfAborted();
