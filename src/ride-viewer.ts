@@ -4,7 +4,7 @@ import { frameApproachTarget } from './ride-approach';
 import { flagClearanceHeight } from './flag-clearance';
 import { buildRideContext } from './ride-context';
 import type { ContextFeature } from './ride-context-data';
-import type { RouteSurface } from './route-surfaces';
+import { SURFACE_COLORS, type RouteSurface } from './route-surfaces';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { createRideRoute } from './ride-route';
@@ -121,8 +121,24 @@ export async function mountRideViewer(options: RideViewerOptions) {
     chartSvg.append(node);
     return node;
   };
-  svg('path', { d: `${profile}L280,96L0,96Z`, fill: '#c6d8bd', opacity: '.8' });
-  svg('path', { d: profile, fill: 'none', stroke: '#477365', 'stroke-width': '2', 'vector-effect': 'non-scaling-stroke' });
+  if (options.surfaceTypes?.length === ride.points.length - 1) {
+    // Surface entries describe segments between points. Shared boundary points
+    // keep the colored runs aligned with the map and distance-based scrubbing.
+    const surfaces = options.surfaceTypes;
+    for (let start = 0; start < surfaces.length;) {
+      let end = start + 1;
+      while (end < surfaces.length && surfaces[end] === surfaces[start]) end++;
+      const color = SURFACE_COLORS[surfaces[start]];
+      const line = ride.points.slice(start, end + 1).map((point, offset) =>
+        `${offset ? 'L' : 'M'}${chartX(distances[start + offset]).toFixed(2)},${chartY(point[2]).toFixed(2)}`).join('');
+      svg('path', { d: `${line}L${chartX(distances[end]).toFixed(2)},96L${chartX(distances[start]).toFixed(2)},96Z`, fill: color, opacity: '.35' });
+      svg('path', { d: line, fill: 'none', stroke: color, 'stroke-width': '2', 'vector-effect': 'non-scaling-stroke' });
+      start = end;
+    }
+  } else {
+    svg('path', { d: `${profile}L280,96L0,96Z`, fill: '#c6d8bd', opacity: '.8' });
+    svg('path', { d: profile, fill: 'none', stroke: '#477365', 'stroke-width': '2', 'vector-effect': 'non-scaling-stroke' });
+  }
   const progressLine = svg('line', { y1: '0', y2: '96', stroke: '#b55d35', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   const progressDot = svg('circle', { r: '4', fill: '#b55d35', stroke: '#fffaf0', 'stroke-width': '1.5', 'vector-effect': 'non-scaling-stroke' });
   let playing = false, progress = 1, last = performance.now();
