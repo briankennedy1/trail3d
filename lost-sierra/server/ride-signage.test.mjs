@@ -21,7 +21,8 @@ test('signage cleanup preserves edited rides, flags, homes, and later CMS choice
     const editedBefore = read('south-park');
     simplifyRideSignage(db);
     for (const id of ['lower-lakes-basin-loop', 'hough-tollgate']) {
-      assert.deepEqual(read(id), {id, notes: 'Keep my notes', viewer: {home, pointsOfInterest, contextLabels: {mode: 'none', names: []}}});
+      const contextLabels = id === 'lower-lakes-basin-loop' ? {mode: 'only', names: ['Frazier Falls Road']} : {mode: 'none', names: []};
+      assert.deepEqual(read(id), {id, notes: 'Keep my notes', viewer: {home, pointsOfInterest, contextLabels}});
     }
     assert.deepEqual(read('south-park'), editedBefore);
     const customized = {...read('lower-lakes-basin-loop'), viewer: {home, pointsOfInterest, contextLabels: {mode: 'only', names: ['Smith Creek']}}};

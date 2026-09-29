@@ -20,7 +20,10 @@ export function simplifyRideSignage(db) {
         before.viewer?.contextLabels ||
         db.prepare('SELECT id FROM audit_log WHERE entry_id=? AND user_id IS NOT NULL LIMIT 1').get(id)
       )) continue;
-      const after = {...before, viewer: {...before.viewer, contextLabels: {mode: 'none', names: []}}};
+      const contextLabels = id === 'lower-lakes-basin-loop'
+        ? {mode: 'only', names: ['Frazier Falls Road']}
+        : {mode: 'none', names: []};
+      const after = {...before, viewer: {...before.viewer, contextLabels}};
       db.prepare('UPDATE entries SET content_json=?,version=version+1,updated_at=? WHERE id=?').run(JSON.stringify(after), now, id);
       db.prepare('INSERT INTO audit_log(action,entry_id,before_json,after_json,created_at) VALUES(?,?,?,?,?)')
         .run('ride-signage-cleanup', id, row.content_json, JSON.stringify(after), now);
