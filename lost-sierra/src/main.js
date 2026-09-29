@@ -36,15 +36,17 @@ const ridePanels=(entry,content,links,parkingRow='')=>`<div class="ride-content"
     <h3>Ride notes</h3><div class="detail-copy ride-description">${descriptionParagraphs(entry.notes||entry.summary||'Ride notes are coming soon.')}</div>
   </section>
 </div><div class="detail-links"><button type="button" id="ride-info" title="Ride notes" aria-label="Ride notes" aria-controls="ride-notes-panel" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path stroke-linejoin="round" d="M12 5.5C9 3.5 5.5 3.5 2 4.5v15c3.5-1 7-1 10 1 3-2 6.5-2 10-1v-15c-3.5-1-7-1-10 1Zm0 0v15"/></svg></button>${links}${parkingRow?`<div class="parking-row">${parkingRow}</div>`:''}</div>`;
-function wireRideNotes(onOpen=()=>{}){
+function wireRideNotes(onOpen=()=>{},beginResize=()=>()=>{}){
   const button=$('#ride-info'),content=$('.ride-content'),profile=$('#ride-profile-panel'),notes=$('#ride-notes-panel');
   const show=open=>{
+    const finishResize=beginResize();
     if(open)onOpen();
     content.classList.toggle('show-notes',open);button.setAttribute('aria-pressed',String(open));
     profile.inert=open;notes.inert=!open;
     profile.setAttribute('aria-hidden',String(open));notes.setAttribute('aria-hidden',String(!open));
     $('.sidebar').scrollTop=0;window.scrollTo({top:0,behavior:'instant'});
     if(!open)button.focus({preventScroll:true});
+    finishResize();
   };
   button.onclick=()=>show(button.getAttribute('aria-pressed')!=='true');
   $('#ride-notes-back').onclick=()=>show(false);
@@ -168,13 +170,34 @@ async function selectEntry(id,push=true,animate=true){
   $('.sidebar').scrollTop=0;
 }
 async function openRide(entry,rideTrack,token,animate=true){
-  const controller=new AbortController();let viewer,canvas,controls,context,cardResizeAnimation;
+  const controller=new AbortController();let viewer,canvas,controls,context,cardResizeAnimation,panelMoveAnimation;
   closeRide=()=>{
-    returnToOverview=null;cardResizeAnimation?.cancel();controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
+    returnToOverview=null;cardResizeAnimation?.cancel();panelMoveAnimation?.cancel();controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
     controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
     $('#map-labels').hidden=false;
   };
+  function beginCardResize(){
+    const card=$('#ride-card'),panel=card.closest('.ride-panel');
+    // Capture the displayed frame before cancelling, including rapid reversals.
+    const previous=card.getBoundingClientRect();
+    cardResizeAnimation?.cancel();panelMoveAnimation?.cancel();
+    return ()=>{
+      if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      const nextHeight=card.getBoundingClientRect().height;
+      const timing={duration:380,easing:'cubic-bezier(.22,1,.36,1)'};
+      cardResizeAnimation=card.animate([
+        {height:`${previous.height}px`,overflow:'clip',flexShrink:0},
+        {height:`${nextHeight}px`,overflow:'clip',flexShrink:0},
+      ],timing);
+      // Notes use a taller, page-scrolling layout. Ease that position change too.
+      const offset=previous.top-card.getBoundingClientRect().top;
+      panelMoveAnimation=panel.animate([{translate:`0 ${offset}px`},{translate:'0 0'}],timing);
+      for(const section of card.querySelectorAll('.stats,.ride-content,.detail-links'))section.animate([
+        {opacity:.45,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'},
+      ],{duration:280,easing:timing.easing});
+    };
+  }
   $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p class="muted" role="status">Opening the ride…</p>';
   $('#back').onclick=()=>reset();
   try{
@@ -185,9 +208,7 @@ async function openRide(entry,rideTrack,token,animate=true){
     async function showMode(mode,first=false){
       if(changing||controller.signal.aborted)return;
       changing=true;
-      const card=$('#ride-card'),previousHeight=first?null:card.getBoundingClientRect().height;
-      // Read the in-flight size before cancelling so rapid toggles stay continuous.
-      cardResizeAnimation?.cancel();
+      const finishResize=first?()=>{}:beginCardResize();
       const initialView=viewer?.captureHome();
       viewer?.dispose();canvas?.remove();context?.dispose();context=null;
       const variant=rideVariant(entry,rideTrack,base,mode),options=variant.options,display=variant.entry;
@@ -203,7 +224,7 @@ async function openRide(entry,rideTrack,token,animate=true){
         ${surfaceKey(options.surfaceTypes)}`,`${mode==='shuttle'?'':accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`,mode==='shuttle'?accessLinks(display):'')}`;
       fitRideTitle();
       $('#back').onclick=()=>reset();
-      wireRideNotes(()=>viewer?.pause());
+      wireRideNotes(()=>viewer?.pause(),beginCardResize);
       for(const button of document.querySelectorAll('[data-mode]'))button.onclick=()=>{
         if(button.dataset.mode===mode||changing)return;
         showMode(button.dataset.mode).catch(error=>{console.error(error);toast('Could not switch ride options. Please reopen the ride.');});
@@ -249,16 +270,7 @@ async function openRide(entry,rideTrack,token,animate=true){
         return viewer.returnToOverview(destination,map.rideContext(options.data.map));
       };
       if(!options.entryView)enableRide();
-      if(!first&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-        const nextHeight=card.getBoundingClientRect().height;
-        cardResizeAnimation=card.animate([
-          {height:`${previousHeight}px`,overflow:'clip'},
-          {height:`${nextHeight}px`,overflow:'clip'},
-        ],{duration:380,easing:'cubic-bezier(.22,1,.36,1)'});
-        for(const section of card.querySelectorAll('.stats,.ride-content,.detail-links'))section.animate([
-          {opacity:.45,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'},
-        ],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
-      }
+      finishResize();
       changing=false;
       if(!first)document.querySelector(`[data-mode="${mode}"]`)?.focus({preventScroll:true});
     }
