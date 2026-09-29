@@ -170,3 +170,13 @@
 .route-option-button:focus-visible{outline:2px solid #315653;outline-offset:2px}
 .route-option-button:disabled{cursor:progress}
 @media(prefers-reduced-motion:reduce){.route-option-button{transition:none}}
+
+.route-option-dropdown{border:1px solid #d4c8b5;border-radius:10px;background:#fffaf0;box-shadow:0 2px 5px #5f49320a;overflow:hidden}
+.route-option-dropdown summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px;padding:10px 13px;list-style:none;cursor:pointer;color:#315653;font:600 13px/1.4 'DM Sans',sans-serif}
+.route-option-dropdown summary::-webkit-details-marker{display:none}
+.route-option-dropdown summary svg{width:18px;height:18px;fill:none;stroke:#8d6950;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none;transition:transform .18s}
+.route-option-dropdown[open] summary svg{transform:rotate(180deg)}
+.route-option-dropdown summary:hover{background:#f6efe2}
+.route-option-dropdown summary:focus-visible{outline:2px solid #315653;outline-offset:-3px;border-radius:9px}
+.route-option-dropdown .route-option-picker{border:0;border-top:1px solid #e4dac9;border-radius:0;padding:5px;background:#f0eadf}
+@media(prefers-reduced-motion:reduce){.route-option-dropdown summary svg{transition:none}}

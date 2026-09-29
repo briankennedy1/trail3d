@@ -163,9 +163,9 @@ function renderList(){
 function familyPicker(entry){
   if(!entry.rideFamily)return '';
   const options=familyOptions(entry,entries);
-  return `<div class="ride-family-option"><span class="family-eyebrow">Choose your route</span>${options.length>1?`<div class="route-option-picker" role="group" aria-label="Route option">${options.map(e=>`<button type="button" class="route-option-button" data-route-option="${escape(e.id)}" aria-pressed="${e.id===entry.id}"><span>${escape(e.rideFamily.option)}</span></button>`).join('')}</div>`:`<strong>${escape(entry.rideFamily.option)}</strong>`}</div>`;
+  return `<div class="ride-family-option"><span class="family-eyebrow">Choose your route</span>${options.length>1?`<details class="route-option-dropdown"><summary><span>${escape(entry.rideFamily.option)}</span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7 5 5 5-5"/></svg></summary><div class="route-option-picker" role="group" aria-label="Route option">${options.map(e=>`<button type="button" class="route-option-button" data-route-option="${escape(e.id)}" aria-pressed="${e.id===entry.id}"><span>${escape(e.rideFamily.option)}</span></button>`).join('')}</div></details>`:`<strong>${escape(entry.rideFamily.option)}</strong>`}</div>`;
 }
-function wireFamilyPicker(){for(const button of document.querySelectorAll('[data-route-option]'))button.onclick=()=>{if(button.getAttribute('aria-pressed')!=='true')selectEntry(button.dataset.routeOption,true,false);};}
+function wireFamilyPicker(){const dropdown=$('.route-option-dropdown');if(dropdown)dropdown.onkeydown=event=>{if(event.key==='Escape'){dropdown.open=false;dropdown.querySelector('summary').focus();}};for(const button of document.querySelectorAll('[data-route-option]'))button.onclick=()=>{if(dropdown)dropdown.open=false;if(button.getAttribute('aria-pressed')!=='true')selectEntry(button.dataset.routeOption,true,false);};}
 
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
 async function reset(push=true){
