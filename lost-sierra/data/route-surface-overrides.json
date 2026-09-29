@@ -45,6 +45,14 @@
         "to": 2504,
         "type": "asphalt",
         "source": "Loop closure along mapped Highway 89, OSM way 712509475"
+      },
+      {
+        "from": 0,
+        "to": 379,
+        "type": "asphalt",
+        "fromMiles": 0,
+        "toMiles": 5,
+        "source": "Confirmed by Brian, 2026-09-28"
       }
     ]
   }
