@@ -13,6 +13,7 @@ creditsDialog.addEventListener('click',event=>{
   if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)creditsDialog.close();
 });
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const descriptionParagraphs=text=>String(text).split(/\r\n?|\n/).map(p=>p.trim()).filter(Boolean).map(p=>`<p>${escape(p)}</p>`).join('');
 const external=(url,label,iconName,visibleLabel)=>{
   try{
     const {protocol,hostname}=new URL(url);if(!['https:','http:'].includes(protocol))return '';
@@ -32,7 +33,7 @@ const ridePanels=(entry,content,links,parkingRow='')=>`<div class="ride-content"
   <div id="ride-profile-panel" class="ride-content-panel">${content}</div>
   <section id="ride-notes-panel" class="ride-content-panel ride-notes-panel" aria-label="Ride notes" aria-hidden="true" inert>
     <button type="button" class="notes-back" id="ride-notes-back">← Back to ride</button>
-    <h3>Ride notes</h3><div class="detail-copy">${(entry.notes||entry.summary||'Ride notes are coming soon.').trim().split(/\r?\n\s*\r?\n/).filter(Boolean).map(paragraph=>`<p>${escape(paragraph)}</p>`).join('')}</div>
+    <h3>Ride notes</h3><div class="detail-copy ride-description">${descriptionParagraphs(entry.notes||entry.summary||'Ride notes are coming soon.')}</div>
   </section>
 </div><div class="detail-links"><button type="button" id="ride-info" title="Ride notes" aria-label="Ride notes" aria-controls="ride-notes-panel" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path stroke-linejoin="round" d="M12 5.5C9 3.5 5.5 3.5 2 4.5v15c3.5-1 7-1 10 1 3-2 6.5-2 10-1v-15c-3.5-1-7-1-10 1Zm0 0v15"/></svg></button>${links}${parkingRow?`<div class="parking-row">${parkingRow}</div>`:''}</div>`;
 function wireRideNotes(onOpen=()=>{}){
@@ -237,7 +238,7 @@ function renderDetail(e){
   const distance='—';
   const stats=e.kind==='ride'?`<div class="stats"><div><b>${distance}</b><span>Miles</span></div><div><b>${number(e.climbingFt)}</b><span>Climbing Ft</span></div><div><b>${movingTime(e)}</b><span>Moving Time</span></div></div>`:'';
   $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.name)}</h1><div class="entry-meta">${escape(e.intensity||e.type||'Explore')}</div><div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
-  ${e.notes||e.summary?`<h3>Field notes</h3><p class="detail-copy">${escape(e.notes||e.summary)}</p>`:''}
+  ${e.notes||e.summary?`<h3>Field notes</h3><div class="detail-copy ride-description">${descriptionParagraphs(e.notes||e.summary)}</div>`:''}
   <div class="facts">${e.season?`<div class="fact-row"><span>Season</span><b>${escape(e.season)}</b></div>`:''}${e.driveMinutes!=null?`<div class="fact-row"><span>Drive from Everstoke</span><b>~${e.driveMinutes} min</b></div>`:''}${e.shuttleOption&&e.shuttleOption!=='no'?`<div class="fact-row"><span>Shuttle option</span><b>${e.shuttleOption==='partial'?'Partial':'Yes'}</b></div>`:''}${e.ebikeRecommended?'<p class="small muted">The planner recommends an e-bike. Confirm current e-bike access for each trail.</p>':''}</div>
   <div class="detail-links">${e.kind==='ride'?accessLinks(e):''}${external(e.routeUrl,'Open original route')}${external(e.shuttleRouteUrl,'Shuttle route')}${external(e.bkxcVideoUrl,'Watch BKXC’s ride')}</div>${e.incomplete?'<p class="notice">These notes are still being filled in.</p>':''}<p class="track-source">From the Everstoke planner. Locations and seasonal notes need local confirmation; this is not a live trail conditions feed.</p>`;
   $('#back').onclick=()=>reset();
