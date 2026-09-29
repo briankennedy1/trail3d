@@ -584,5 +584,65 @@
       },
       "descendingFt": 2863
     }
+  },
+  {
+    "id": "mt-elwell-not-so-easy",
+    "entry": {
+      "name": "Mt. Elwell Not So Easy",
+      "kind": "ride",
+      "area": "Lakes Basin"
+    },
+    "terrain": "/terrain/mt-elwell",
+    "track": "routes/mt-elwell-not-so-easy.geojson",
+    "details": {
+      "coordinates": {
+        "lat": 39.69309,
+        "lng": -120.65588
+      },
+      "rideFamily": {
+        "id": "mt-elwell",
+        "name": "Mt. Elwell",
+        "option": "The Not So Easy Way",
+        "order": 1
+      },
+      "routeUrl": "https://www.trailforks.com/route/elwell-to-mill-pond/",
+      "startMapsUrl": "https://www.google.com/maps?q=39.69309,-120.65588",
+      "finishMapsUrl": "https://www.google.com/maps?q=39.76677,-120.61606",
+      "sameStartFinish": false,
+      "climbingFt": 2081,
+      "descendingFt": 4327,
+      "movingMinutes": 155,
+      "movingTimeEstimated": true,
+      "intensity": "Challenging",
+      "shuttleOption": "yes",
+      "incomplete": false,
+      "summary": "A shuttle from Round Lake trailhead over Mt. Elwell to Mill Pond.",
+      "notes": "Start at Round Lake trailhead for a demanding backcountry climb to Mt. Elwell. Expect steep, rocky sections and hike-a-bike on the way to the summit.\n\nThe route descends toward Graeagle and finishes at Mill Pond. Arrange a shuttle between the start and finish parking locations.",
+      "viewer": {
+        "pointsOfInterest": [
+          {
+            "name": "Mt. Elwell",
+            "latitude": 39.70826,
+            "longitude": -120.6893,
+            "elevationFt": 7816,
+            "color": "#ed8b23",
+            "url": "https://www.peakbagger.com/peak.aspx?pid=2545"
+          }
+        ],
+        "home": {
+          "position": [
+            -111.41019377596085,
+            107.07203095948367,
+            -232.49639841046627
+          ],
+          "target": [
+            -10.915749749795593,
+            -1.2388155883496192,
+            -11.08205618642683
+          ],
+          "zoom": 0.85
+        }
+      }
+    }
   }
 ]

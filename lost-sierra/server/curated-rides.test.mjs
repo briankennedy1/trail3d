@@ -7,6 +7,19 @@ import {openStore,root,saveTrack,listEntries,trackStats} from './store.mjs';
 import {importCuratedRides} from './curated-rides.mjs';
 import {regionalRideData} from '../src/ride-data.js';
 
+test('new curated family options seed once and retain subsequent CMS edits',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'curated-option-')),db=openStore(dir);
+ try{
+  const id='mt-elwell-not-so-easy',entry=listEntries(db).find(e=>e.id===id);
+  assert.equal(entry.rideFamily.id,'mt-elwell');assert.equal(entry.hasTrack,true);
+  assert.equal(entry.sameStartFinish,false);assert.notEqual(entry.startMapsUrl,entry.finishMapsUrl);
+  entry.notes='Updated in CMS';
+  db.prepare('UPDATE entries SET content_json=? WHERE id=?').run(JSON.stringify(entry),id);
+  importCuratedRides(db,root,saveTrack);
+  assert.equal(listEntries(db).find(e=>e.id===id).notes,'Updated in CMS');
+ }finally{db.close();fs.rmSync(dir,{recursive:true,force:true});}
+});
+
 test('curated imports preserve CMS edits, existing tracks and saved home on repeat',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'curated-rides-')),db=openStore(dir);
  try{
@@ -22,15 +35,15 @@ test('curated imports preserve CMS edits, existing tracks and saved home on repe
  }finally{db.close();fs.rmSync(dir,{recursive:true,force:true});}
 });
 test('all imported tracks fit detailed terrain and have usable profiles',()=>{
- const expectedMiles={'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell':23.64,'buzzards-roost-ridge':12.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
- for(const {id} of JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')))){
+ const expectedMiles={'lake-davis-loop':19.2,'haskell-peak':8.7,'mills-peak':24.9,'gold-valley-rim-pauley-creek-dh':20.6,'jamison-creek-loop':13.7,'lower-lakes-basin-loop':19.6,'mt-elwell':23.64,'mt-elwell-not-so-easy':14.0,'buzzards-roost-ridge':12.3,'hough-tollgate':31.1,'hough-classic':26.8,'indian-falls-acorn-grotto':28.3,'graeagle-smith-creek-loop':14.8,'lakes-basin-intense-explore':14.9};
+ for(const {id,terrain} of JSON.parse(fs.readFileSync(path.join(root,'data/curated-rides.json')))){
   const route=JSON.parse(fs.readFileSync(path.join(root,`data/routes/${id}.geojson`)));
   assert.ok(Math.abs(trackStats(route).distance/1609.344-expectedMiles[id])<.1,id);
   assert.ok(route.geometry.coordinates.every(p=>p.length===3&&p[2]>500),`${id} needs usable elevation values`);
   assert.match(route.properties.sourceUrl,/^https:\/\/www\.trailforks\.com\//);
   assert.match(route.properties.gpxSha256,/^[a-f0-9]{64}$/);
-  const meta=JSON.parse(fs.readFileSync(path.join(root,`public/terrain/${id}/terrain.json`)));
-  const b=fs.readFileSync(path.join(root,`public/terrain/${id}/terrain.bin`));
+  const meta=JSON.parse(fs.readFileSync(path.join(root,`public${terrain}/terrain.json`)));
+  const b=fs.readFileSync(path.join(root,`public${terrain}/terrain.bin`));
   const view=regionalRideData(route,meta,new Uint16Array(b.buffer,b.byteOffset,b.length/2));
   assert.ok(view.data.map.grid.spacing<=31);assert.equal(view.data.ride.points.length,route.geometry.coordinates.length);
   for(const [x,y] of view.data.ride.points){assert.ok(x>=0&&x<=view.data.map.widthM);assert.ok(y>=0&&y<=view.data.map.heightM);}

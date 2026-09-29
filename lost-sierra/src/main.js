@@ -242,6 +242,7 @@ async function openRide(entry,rideTrack,token,animate=true){
       const variant=rideVariant(entry,rideTrack,base,mode),options=variant.options,display=variant.entry;
       if(initialView)options.initialView=initialView;
       options.home=entry.viewer?.home||base.home;
+      const separateParking=display.sameStartFinish===false;
       const original=entry.id==='beckwourth-peak'&&mode==='loop';
       const climbing=original?'2,083':number(display.climbingFt??(mode==='loop'&&rideTrack.properties.ascentM!=null?rideTrack.properties.ascentM*3.28084:null));
       $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.rideFamily?.name||entry.name)}</h2>
@@ -251,7 +252,7 @@ async function openRide(entry,rideTrack,token,animate=true){
         <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(display)}</strong><span>Moving Time</span></div></div>
         ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
         <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
-        ${surfaceKey(options.surfaceTypes)}`,`${mode==='shuttle'?'':accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`,mode==='shuttle'?accessLinks(display):'')}`;
+        ${surfaceKey(options.surfaceTypes)}`,`${separateParking?'':accessLinks(display)}${external(mode==='shuttle'?(entry.shuttleRouteUrl||entry.routeUrl):entry.routeUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`,separateParking?accessLinks(display):'')}`;
       fitRideTitle();wireFamilyPicker();
       $('#back').onclick=()=>reset();
       wireRideNotes(()=>viewer?.pause(),beginCardResize);
