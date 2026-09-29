@@ -56,7 +56,7 @@ const movingTime=e=>{
   return `${e.movingTimeEstimated?'≈':''}${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}`;
 };
 const surfaceKey=types=>{
-  const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt road / doubletrack',unknown:'Unverified'};
+  const labels={singletrack:'Singletrack',asphalt:'Asphalt',dirt:'Dirt Road',unknown:'Unverified'};
   return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap, with rider-confirmed corrections. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
 };
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
