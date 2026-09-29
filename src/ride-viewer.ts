@@ -727,6 +727,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       invalidate();
     },
     goHome() { pauseForManualView(); home(); },
+    pause() { pauseForManualView(); },
     dispose() {
     if (disposed) return;
     disposed = true;

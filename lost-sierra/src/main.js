@@ -27,6 +27,26 @@ const accessLinks=e=>{
   const same=e.sameStartFinish||(e.startMapsUrl&&e.startMapsUrl===e.finishMapsUrl);
   return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking'));
 };
+const ridePanels=(entry,content,links)=>`<div class="ride-content">
+  <div id="ride-profile-panel" class="ride-content-panel">${content}</div>
+  <section id="ride-notes-panel" class="ride-content-panel ride-notes-panel" aria-label="Ride notes" aria-hidden="true" inert>
+    <button type="button" class="notes-back" id="ride-notes-back">← Back to ride</button>
+    <h3>Ride notes</h3><p class="detail-copy">${escape(entry.notes||entry.summary||'Ride notes are coming soon.')}</p>
+  </section>
+</div><div class="detail-links">${links}<button type="button" id="ride-info" title="Ride notes" aria-label="Ride notes" aria-controls="ride-notes-panel" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".8" fill="currentColor" stroke="none"/></svg></button></div>`;
+function wireRideNotes(onOpen=()=>{}){
+  const button=$('#ride-info'),content=$('.ride-content'),profile=$('#ride-profile-panel'),notes=$('#ride-notes-panel');
+  const show=open=>{
+    if(open)onOpen();
+    content.classList.toggle('show-notes',open);button.setAttribute('aria-pressed',String(open));
+    profile.inert=open;notes.inert=!open;
+    profile.setAttribute('aria-hidden',String(open));notes.setAttribute('aria-hidden',String(!open));
+    if(open){notes.scrollTop=0;$('.sidebar').scrollTop=0;}
+    else button.focus({preventScroll:true});
+  };
+  button.onclick=()=>show(button.getAttribute('aria-pressed')!=='true');
+  $('#ride-notes-back').onclick=()=>show(false);
+}
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
 const movingTime=e=>{
   const value=e.movingMinutes??(e.id==='beckwourth-peak'?121:null);
@@ -126,12 +146,11 @@ async function openRide(entry,rideTrack,token,animate=true){
     const climbing=original?'2,083':number(entry.climbingFt??(rideTrack.properties.ascentM==null?null:rideTrack.properties.ascentM*3.28084));
     $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
       <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(entry)}</strong><span>Moving Time</span></div></div>
-      <div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
+      ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
       <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
-      ${surfaceKey(options.surfaceTypes)}
-      <div class="detail-links">${accessLinks(entry)}${external(rideTrack.properties.sourceUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}</div>
-      ${entry.notes||entry.summary?`<details class="ride-notes"><summary>Ride notes</summary><p class="detail-copy">${escape(entry.notes||entry.summary)}</p></details>`:''}`;
+      ${surfaceKey(options.surfaceTypes)}`,`${accessLinks(entry)}${external(rideTrack.properties.sourceUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`)}`;
     $('#back').onclick=()=>reset();
+    wireRideNotes(()=>viewer?.pause());
     let ready=false;
     settingsContext={
       label:'Ride settings',entryId:entry.id,ready:()=>ready,
