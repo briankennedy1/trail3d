@@ -152,14 +152,14 @@
 .ride-family-option strong{font-size:15px;color:#315653}
 .ride-family-option select{width:100%;border:1px solid #ded7c7;border-radius:6px;background:#fffaf0;color:#315653;padding:7px;font:600 14px 'DM Sans',sans-serif}
 
-.intensity-rating,.must-ride{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+.intensity-rating{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
 .ride-rating-row{display:flex;align-items:center;gap:12px;margin-top:16px}
 .ride-rating-row .ride-intensity{flex:1;min-width:0;margin:0}
-.must-ride{color:#8b681a;flex:none}
-.must-ride strong{font-size:10px;font-weight:750;letter-spacing:.08em}
-.must-ride svg{color:#d5a72c}
-.must-ride svg{width:20px;height:20px;fill:currentColor;flex:none}
-.ride-rating-row:has(.must-ride) .ride-intensity{padding-inline:10px}
-.ride-rating-row:has(.must-ride) .ride-intensity strong{font-size:10px;letter-spacing:.08em;overflow-wrap:normal}
 
 .intensity-symbol.intensity-double-diamond{width:36px}
+
+.must-ride-banner{display:flex;align-items:center;justify-content:center;gap:10px;margin:-24px -24px 18px;padding:12px 24px 16px;background:linear-gradient(115deg,#c39432,#efd183 48%,#d5aa4b);color:#493817;clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - 5px),0 100%)}
+.must-ride-banner strong{font-size:11px;letter-spacing:.2em;font-weight:800}
+.must-ride-banner svg{width:20px;height:20px;fill:#805c14;flex:none}
+.must-ride-banner>span{font-size:13px;color:#805c14}
+@media(max-width:700px){.must-ride-banner{margin:-16px -16px 16px}}
