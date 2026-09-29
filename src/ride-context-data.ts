@@ -3,6 +3,8 @@ import type { MapData, XY } from './data';
 export type ContextFeature = {
   name: string; kind: 'road' | 'waterway'; importance: number;
   length: number; lines: XY[][]; showLabel?: boolean;
+  /** Optional fixed label location as [longitude, latitude]. */
+  labelCoordinates?: XY;
 };
 type Source = { features: { properties: { name: string; kind: 'road' | 'waterway'; class: string };
   geometry: { type: string; coordinates: XY[] } }[] };

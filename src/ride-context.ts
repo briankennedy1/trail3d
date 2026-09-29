@@ -56,6 +56,11 @@ export function buildRideContext(terrain: Terrain, features: ContextFeature[]) {
       if (remaining <= length) { anchor = [a[0] + (b[0] - a[0]) * remaining / length, a[1] + (b[1] - a[1]) * remaining / length]; break; }
       remaining -= length;
     }
+    if (feature.labelCoordinates) {
+      const [lon, lat] = feature.labelCoordinates, map = terrain.map;
+      anchor = [(lon - map.bbox.west) / (map.bbox.east - map.bbox.west) * map.widthM,
+        (lat - map.bbox.south) / (map.bbox.north - map.bbox.south) * map.heightM];
+    }
     // Reuse the overview's actual nameplate component and styles.
     const element = document.createElement('span'); element.className = 'map-marker ride-context-label';
     element.textContent = feature.name; element.style.visibility = 'hidden'; labelLayer.append(element);
