@@ -351,7 +351,17 @@ export class Diorama {
   clearRoute(){for(const c of [...this.routeGroup.children]){c.geometry.dispose();c.material.dispose();this.routeGroup.remove(c);}this.route=null;}
   captureHome(){return {position:this.camera.position.toArray(),target:this.controls.target.toArray(),zoom:this.camera.zoom};}
   setHome(home){this.home={position:new THREE.Vector3(...home.position),target:new THREE.Vector3(...home.target),zoom:home.zoom};}
-  reset(){this.active=null;this.points=null;this.track=null;this.clearRoute();this.crumbleTarget=0;this.move(this.home.target,this.home.position,2.5,this.home.zoom||1);}
+  reset(animate=true){
+    this.active=null;this.points=null;this.track=null;this.clearRoute();this.crumbleTarget=0;
+    if(animate){this.move(this.home.target,this.home.position,2.5,this.home.zoom||1);return;}
+    // Prepare an exact home frame underneath the ride's return animation.
+    this.tween=null;this.crumble=0;this.held=null;
+    this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;
+    for(const chunk of this.chunks){chunk.group.visible=true;chunk.group.position.copy(chunk.home);chunk.group.rotation.set(0,0,0);chunk.group.scale.setScalar(1);}
+    this.detailTerrain.visible=false;this.highways.visible=true;this.rivers.visible=true;this.overviewRoute.visible=true;
+    for(const group of this.overviewRoute.children)group.visible=this.entries?.some(entry=>entry.id===group.userData.entry.id);
+    this.controls.update();this.projection();this.renderer.render(this.scene,this.camera);
+  }
   north(){const offset=this.camera.position.clone().sub(this.controls.target),radius=offset.length();if(Math.abs(Math.atan2(offset.x,offset.z))<.02){const pose=this.active?this.focusPose:this.home;this.move(pose.target,pose.position,1.5,pose.zoom||1);}else this.move(this.controls.target,this.controls.target.clone().add(new THREE.Vector3(0,radius*.68,radius*.733)),1.5);}
   control(action,dt){this.tween=null;const offset=this.camera.position.clone().sub(this.controls.target);if(action==='left'||action==='right')offset.applyAxisAngle(new THREE.Vector3(0,1,0),(action==='left'?1:-1)*dt*.8);else{const spherical=new THREE.Spherical().setFromVector3(offset);spherical.phi=clamp(spherical.phi+(action==='up'?-1:1)*dt*.6,.55,1.35);offset.setFromSpherical(spherical);}this.camera.position.copy(this.controls.target).add(offset);}
   frame(now){requestAnimationFrame(this.frame);const dt=Math.min((now-this.last)/1000,.05);this.last=now;

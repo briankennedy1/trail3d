@@ -80,7 +80,7 @@ const surfaceKey=types=>{
   return `<div class="surface-key" aria-label="Route surface key" title="Surface estimates from OpenStreetMap, with rider-confirmed corrections. Unverified sections need surface confirmation.">${Object.entries(labels).filter(([type])=>type!=='unknown'||types?.includes(type)).map(([type,label])=>`<span><i style="background:${SURFACE_COLORS[type]}" aria-hidden="true"></i>${label}</span>`).join('')}</div>`;
 };
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
-let closeRide=()=>{};
+let closeRide=()=>{},returnToOverview=null,returning=false;
 let settingsContext=null,overviewHome={version:0};
 const regionalControls=$('.map-controls');
 $('.masthead').id='masthead';$('.sidebar').id='ride-card';
@@ -136,7 +136,24 @@ function renderList(){const rows=filtered().sort((a,b)=>Number(b.hasTrack)-Numbe
   card.onpointerleave=b.onblur=()=>map?.highlightOverviewRoute(null);
 }map?.setEntries(rows);}
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
-function reset(push=true){selection++;closeRide();track=null;map?.reset();$('#browse').hidden=false;$('#detail').hidden=true;$('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';$('#map-status').textContent='Pick a ride. Watch the landscape open up.';if(push)history.pushState({},'','/');renderList();showOverviewSettings();}
+async function reset(push=true){
+  if(returning)return;
+  const token=selection,returnAnimation=returnToOverview;
+  returning=!!returnAnimation;
+  if(returnAnimation){
+    document.body.classList.add('returning-overview');$('#detail').inert=true;
+    settingsContext=null;renderSettings();
+    try{await returnAnimation();}catch(error){console.error(error);}
+    finally{returning=false;document.body.classList.remove('returning-overview');$('#detail').inert=false;}
+    if(token!==selection)return;
+  }
+  selection++;closeRide();track=null;map?.reset(!returnAnimation);
+  $('#browse').hidden=false;$('#detail').hidden=true;
+  $('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';
+  $('#map-status').textContent='Pick a ride. Watch the landscape open up.';
+  if(push)history.pushState({},'','/');renderList();showOverviewSettings();
+}
+
 async function selectEntry(id,push=true,animate=true){
   const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
   map?.highlightOverviewRoute(null);
@@ -153,7 +170,7 @@ async function selectEntry(id,push=true,animate=true){
 async function openRide(entry,rideTrack,token,animate=true){
   const controller=new AbortController();let viewer,canvas,controls,context;
   closeRide=()=>{
-    controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
+    returnToOverview=null;controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
     controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
     $('#map-labels').hidden=false;
@@ -222,6 +239,12 @@ async function openRide(entry,rideTrack,token,animate=true){
       $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
       $('#map-labels').hidden=true;
       canvas.classList.add('ready');
+      if(map)returnToOverview=()=>{
+        controls.inert=true;
+        map.reset(false);
+        const destination=map.rideEntryView(options.data.map,options.scale);
+        return viewer.returnToOverview(destination,map.rideContext(options.data.map));
+      };
       if(!options.entryView)enableRide();
       changing=false;
       if(!first)document.querySelector(`[data-mode="${mode}"]`)?.focus({preventScroll:true});

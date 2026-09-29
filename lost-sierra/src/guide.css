@@ -122,3 +122,7 @@
 .guide-page .stats strong,.guide-page .stats b,.guide-page .stats span{white-space:nowrap}
 
 .guide-page .detail-links .parking-row{display:flex;flex-basis:100%;gap:18px;flex-wrap:wrap}
+
+.returning-overview .ride-context-labels{opacity:0;transition:opacity .45s}
+.returning-overview .ride-scene{pointer-events:none!important}
+.returning-overview #ride-card{opacity:.65;transition:opacity .3s}

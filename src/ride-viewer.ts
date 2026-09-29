@@ -13,6 +13,7 @@ import { buildLandscape } from './terrain';
 import { BANNER_HEIGHT, PENNANT_CENTER, buildPOIs, shapeBanner, type LoosePiece, type POI } from './pois';
 
 type Ride = { id: number; date: string; points: [number, number, number][] };
+type RegionContext = { group: THREE.Group; update(progress: number): void; dispose(): void };
 type HomeView = { position: [number, number, number]; target: [number, number, number]; zoom: number };
 
 export type RideViewerOptions = {
@@ -21,7 +22,7 @@ export type RideViewerOptions = {
   home: HomeView;
   entryView?: HomeView;
   initialView?: HomeView;
-  entryContext?: { group: THREE.Group; update(progress: number): void; dispose(): void };
+  entryContext?: RegionContext;
   onEntryComplete?: () => void;
   homeStorageKey?: string | null;
   pointsOfInterest?: POI[];
@@ -59,10 +60,10 @@ export async function mountRideViewer(options: RideViewerOptions) {
   // Reveal the detailed ground at the same location as the departing regional
   // surface, without dissolving the entire canvas into an empty background.
   const groundMaterials = landscape.group.children.map(child => (child as THREE.Mesh).material as THREE.ShaderMaterial);
-  if (options.entryContext) for (const material of groundMaterials) {
-    material.uniforms.uArrival = { value: 0 };
+  for (const material of groundMaterials) {
+    material.uniforms.uArrival = { value: options.entryContext ? 0 : 1 };
     material.fragmentShader = 'uniform float uArrival;\n' + material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uArrival;\n}');
-    material.transparent = true;
+    material.transparent = !!options.entryContext;
   }
   const pois = buildPOIs(map, terrain, options.pointsOfInterest, options.baseElevation);
   scene.add(pois.group);
@@ -150,6 +151,8 @@ export async function mountRideViewer(options: RideViewerOptions) {
     from: CameraPose; to: CameraPose; elapsed: number; duration: number; leadTime: number;
     startAngle: number; turn: number; startRadius: number; trackFollow: boolean;
   };
+  let exiting: {context: RegionContext; elapsed: number; duration: number; startProgress: number;
+    materials: Map<THREE.Material, number>; resolve: () => void} | null = null;
   let playbackTime = 0;
   let cameraTransition: CameraTransition | null = null;
   const { flightShot, timeAtProgress, progressAtTime, invalidate } = createFlightPlan({
@@ -281,7 +284,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     const height = THREE.MathUtils.lerp(
       transition.from.position.y - transition.from.target.y,
       to.position.y - to.target.y, t);
-    const zoom = entering ? Math.exp(THREE.MathUtils.lerp(Math.log(transition.from.zoom), Math.log(to.zoom), t))
+    const zoom = (entering || exiting) ? Math.exp(THREE.MathUtils.lerp(Math.log(transition.from.zoom), Math.log(to.zoom), t))
       : THREE.MathUtils.lerp(transition.from.zoom, to.zoom, t);
     const offset = new THREE.Vector3(Math.sin(angle) * radius, height, Math.cos(angle) * radius);
     if (entering) {
@@ -302,7 +305,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     if (transition.elapsed >= transition.duration) {
       cameraTransition = null;
       controls.enableDamping = false;
-      controls.minZoom = 0.65;
+      if (!exiting) controls.minZoom = 0.65;
       if (playing) play.textContent = 'Ⅱ Pause';
     }
   }
@@ -724,7 +727,18 @@ export async function mountRideViewer(options: RideViewerOptions) {
     }
     flagsFacing = true;
     rideContext.update(camera, innerWidth, innerHeight, contextExclusions);
+    if (exiting) {
+      exiting.elapsed = Math.min(exiting.duration, exiting.elapsed + dt);
+      const progress = exiting.elapsed / exiting.duration;
+      const regionalProgress = exiting.startProgress * (1 - progress);
+      exiting.context.update(regionalProgress);
+      for (const material of groundMaterials) material.uniforms.uArrival.value = THREE.MathUtils.smootherstep(regionalProgress, 0, 0.22);
+      const opacity = 1 - THREE.MathUtils.smootherstep(progress, 0.08, 0.55);
+      for (const [material, originalOpacity] of exiting.materials) material.opacity = originalOpacity * opacity;
+      rider.visible = false;
+    }
     renderer.render(scene, camera);
+    if (exiting && exiting.elapsed >= exiting.duration) exiting.resolve();
     animation = requestAnimationFrame(frame);
   }
   // Compile and draw the exact starting view before the host reveals this canvas.
@@ -745,6 +759,28 @@ export async function mountRideViewer(options: RideViewerOptions) {
     },
     goHome() { pauseForManualView(); home(); },
     pause() { pauseForManualView(); },
+    returnToOverview(view: HomeView, context: RegionContext): Promise<void> {
+      pauseForManualView();stopViewMotion();
+      const startProgress = entering ? entryElapsed / entryDuration : 1;
+      entering = false;options.entryContext?.dispose();
+      controls.enabled = false;controls.minZoom = Math.min(controls.minZoom, view.zoom);
+      context.update(startProgress);scene.add(context.group);
+      for (const material of groundMaterials) {material.transparent = true;material.depthWrite = false;}
+      const materials = new Map<THREE.Material, number>();
+      for (const object of [pois.group, rideContext.group, preview, previewCore, activeHalo, active, overlap]) object.traverse(child => {
+        const material = (child as THREE.Mesh).material;
+        for (const m of material ? (Array.isArray(material) ? material : [material]) : []) {
+          if (!materials.has(m)) materials.set(m, m.opacity);
+          m.transparent = true;
+        }
+      });
+      const duration = reducedMotion ? 0.25 : 3.2;
+      return new Promise<void>(resolve => {
+        exiting = {context, elapsed: 0, duration, startProgress, materials, resolve};
+        startCameraTransition({position: new THREE.Vector3(...view.position),target: new THREE.Vector3(...view.target),
+          zoom: view.zoom,offsetX: 0,offsetY: 0}, false, duration);
+      });
+    },
     dispose() {
     if (disposed) return;
     disposed = true;
@@ -754,6 +790,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     rideContext.dispose();
     // The regional meshes are borrowed, so detach them before disposing ride assets.
     options.entryContext?.dispose();
+    exiting?.context.dispose();exiting?.resolve();
     const textures = new Set<THREE.Texture>();
     scene.traverse(object => {
       const mesh = object as THREE.Mesh;
