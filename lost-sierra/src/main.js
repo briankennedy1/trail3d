@@ -1,6 +1,4 @@
-import './style.css';
-import './guide.css';
-import './ride-card.css';
+import { FrameHandoff } from './frame-handoff.js';
 import { Diorama } from './diorama.js';
 import {overviewRouteColor} from './overview-route-colors.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
@@ -9,6 +7,30 @@ import { groupRideEntries, familyOptions } from './ride-families.js';
 import { publicSlug, entryForSlug } from './entry-slugs.js';
 import { SURFACE_COLORS } from '../../src/route-surfaces';
 const $=s=>document.querySelector(s);
+const frameHandoff=new FrameHandoff($('#canvas'));
+const reducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fontsReady=Promise.all([document.fonts.load('600 32px Fraunces'),document.fonts.load('400 13px "DM Sans"')]).catch(()=>{});
+async function revealGuide(){
+  await fontsReady;
+  await new Promise(requestAnimationFrame);
+  document.body.classList.remove('is-booting');
+  const loading=$('#loading');
+  loading.classList.add('leaving');
+  if(reducedMotion())loading.hidden=true;
+  else setTimeout(()=>{loading.hidden=true;},280);
+}
+let cardAnimation,panelAnimation,contentAnimation;
+function beginCardChange(){
+  const card=$('.ride-card'),panel=$('.ride-panel'),before=card.getBoundingClientRect();
+  cardAnimation?.cancel();panelAnimation?.cancel();contentAnimation?.cancel();
+  return()=>{
+    if(reducedMotion()||document.body.classList.contains('is-booting'))return;
+    const after=card.getBoundingClientRect(),timing={duration:380,easing:'cubic-bezier(.22,1,.36,1)'};
+    cardAnimation=card.animate([{height:`${before.height}px`,overflow:'clip',flexShrink:0},{height:`${after.height}px`,overflow:'clip',flexShrink:0}],timing);
+    panelAnimation=panel.animate([{translate:`${before.left-after.left}px ${before.top-after.top}px`,width:`${before.width}px`},{translate:'0 0',width:`${after.width}px`}],timing);
+    contentAnimation=$('#detail').animate([{opacity:0,transform:'translateY(6px)'},{opacity:1,transform:'translateY(0)'}],{duration:280,easing:timing.easing});
+  };
+}
 const creditsDialog=$('#credits-dialog');
 $('#credits-open').onclick=()=>creditsDialog.showModal();
 creditsDialog.addEventListener('click',event=>{
@@ -202,6 +224,8 @@ function clearFilters(){const hadArea=!!$('#area').value;for(const id of ['searc
 async function reset(push=true){
   if(returning)return;
   const token=++selection,returnAnimation=returnToOverview;
+  document.body.classList.remove('route-loading');
+  frameHandoff.hold();
   trackRequest?.abort();trackRequest=null;
   returning=!!returnAnimation;
   if(returnAnimation){
@@ -212,6 +236,8 @@ async function reset(push=true){
       if(progress<.8||revealed||token!==selection)return;
       revealed=true;
       $('#browse').hidden=false;$('#detail').hidden=true;
+      $('#detail').querySelector('.show-notes')?.classList.remove('show-notes');
+      $('.sidebar').scrollTop=0;window.scrollTo({top:0,behavior:'instant'});
       document.body.classList.remove('ride-open');
       document.body.classList.add('overview-card-ready');
     });}catch(error){console.error(error);}
@@ -220,9 +246,12 @@ async function reset(push=true){
   }
   closeRide();track=null;map?.reset(!returnAnimation);
   $('#browse').hidden=false;$('#detail').hidden=true;$('#detail').removeAttribute('aria-busy');
+  $('#detail').querySelector('.show-notes')?.classList.remove('show-notes');
+  $('.sidebar').scrollTop=0;window.scrollTo({top:0,behavior:'instant'});
   $('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';
   $('#map-status').textContent='Pick a ride. Watch the landscape open up.';
   if(push)history.pushState({},'','/');renderList();showOverviewSettings();
+  await frameHandoff.reveal(reducedMotion());
 }
 
 async function selectEntry(id,push=true,animate=true){
@@ -236,15 +265,14 @@ async function selectEntry(id,push=true,animate=true){
   }
   trackRequest?.abort();trackRequest=null;
   map?.highlightOverviewRoute(null);
-  const transition=!animate?captureRideTransition?.():null;
-  if(transition){
-    transition.frame.className='ride-transition-frame';$('#canvas').append(transition.frame);
-  }
-  const token=++selection;closeRide();settingsContext=null;renderSettings();track=null;
+  const transition=frameHandoff.hold(captureRideTransition?.());
+  if(transition)animate=false;
+  const token=++selection;closeRide({preserveShell:!!transition});settingsContext=null;renderSettings();track=null;
+  document.body.classList.add('route-loading');
   if(transition){document.body.classList.add('ride-open');$('#map-labels').hidden=true;if(map)map.suspended=true;}
-  $('#browse').hidden=true;$('#detail').hidden=false;$('#detail').setAttribute('aria-busy','true');
-  if(!transition)$('#detail').innerHTML='<p class="muted" role="status">Opening the ride…</p>';
-  else for(const button of document.querySelectorAll('[data-route-option]'))button.disabled=true;
+  // Leave the outgoing card intact while assets load. Commit its replacement
+  // together with the painted canvas, rather than showing collapsing placeholders.
+  $('#detail').setAttribute('aria-busy','true');
   const publicUrl=`/?ride=${encodeURIComponent(publicSlug(entry))}`;
   if(push)history.pushState({},'',publicUrl);
   else if(new URLSearchParams(location.search).get('ride')!==publicSlug(entry))history.replaceState({},'',publicUrl);
@@ -255,39 +283,40 @@ async function selectEntry(id,push=true,animate=true){
       const response=await fetch(`/api/tracks/${encodeURIComponent(id)}`,{signal:request.signal});
       if(!response.ok)throw Error('Track request failed.');
       const loaded=await response.json();
-      if(token!==selection){transition?.frame.remove();return;}
+      if(token!==selection)return;
       track=loaded;
     }catch(error){
-      if(token!==selection||request.signal.aborted){transition?.frame.remove();return;}
+      if(token!==selection||request.signal.aborted)return;
       trackUnavailable=true;
     }finally{if(trackRequest===request)trackRequest=null;}
   }
-  if(token!==selection){transition?.frame.remove();return;}
+  if(token!==selection)return;
   if(track){
     try{await openRide(entry,track,token,animate,transition);}
     finally{
-      if(token===selection)$('#detail').removeAttribute('aria-busy');
-      if(transition){
-        if(token===selection&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
-          await transition.frame.animate([{opacity:1},{opacity:0}],{duration:420,easing:'ease-in-out',fill:'forwards'}).finished.catch(()=>{});
-        transition.frame.remove();
+      if(token===selection){
+        $('#detail').removeAttribute('aria-busy');document.body.classList.remove('route-loading');
+        await frameHandoff.reveal(reducedMotion());
       }
     }
     return;
   }
-  transition?.frame.remove();
-  
-  renderDetail(entry,trackUnavailable);$('#detail').removeAttribute('aria-busy');await map?.select(entry,null,animate);
+  const finishCard=beginCardChange();
+  document.body.classList.remove('ride-open','route-loading');
+  if(map)map.suspended=false;
+  $('#map-labels').hidden=false;$('#browse').hidden=true;$('#detail').hidden=false;
+  renderDetail(entry,trackUnavailable);$('#detail').removeAttribute('aria-busy');finishCard();await map?.select(entry,null,animate);
+  if(token===selection)await frameHandoff.reveal(reducedMotion());
   if(token!==selection)return;
   $('#map-kicker').textContent=entry.area.toUpperCase();$('#map-title').textContent=entry.name;$('#map-status').textContent='Approximate area location';
   $('.sidebar').scrollTop=0;
 }
 async function openRide(entry,rideTrack,token,animate=true,transition=null){
   const controller=new AbortController();let viewer,canvas,controls,context,cardResizeAnimation,panelMoveAnimation;
-  closeRide=()=>{
+  closeRide=({preserveShell=false}={})=>{
     captureRideTransition=null;
     returnToOverview=null;cardResizeAnimation?.cancel();panelMoveAnimation?.cancel();controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
-    controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
+    controls?.replaceWith(regionalControls);if(!preserveShell)document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
     $('#map-labels').hidden=false;
   };
@@ -312,8 +341,6 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
       ],{duration:280,easing:timing.easing});
     };
   }
-  if(!transition)$('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p class="muted" role="status">Opening the ride…</p>';
-  $('#back').onclick=()=>reset();
   try{
     const base=await prepareRide(entry,rideTrack,controller.signal);
     if(token!==selection)return;
@@ -322,8 +349,9 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
     async function showMode(mode,first=false){
       if(changing||controller.signal.aborted)return;
       changing=true;
-      const finishResize=first?()=>{}:beginCardResize();
+      const finishResize=beginCardChange();
       const initialView=viewer?.captureHome();
+      if(!first&&viewer)frameHandoff.hold({view:initialView,frame:viewer.captureFrame(),map:base.data.map,scale:base.scale??1});
       viewer?.dispose();canvas?.remove();context?.dispose();context=null;
       const variant=rideVariant(entry,rideTrack,base,mode),options=variant.options,display=variant.entry;
       if(initialView)options.initialView=initialView;
@@ -340,6 +368,7 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
       const separateParking=display.sameStartFinish===false;
       const original=entry.id==='beckwourth-peak'&&mode==='loop';
       const climbing=original?'2,083':number(display.climbingFt??(mode==='loop'&&rideTrack.properties.ascentM!=null?rideTrack.properties.ascentM*3.28084:null));
+      $('#browse').hidden=true;$('#detail').hidden=false;
       $('#detail').innerHTML=`${mustRideBanner(entry)}<div class="ride-meta-row"><button class="back-button" id="back">← All rides</button>${regionButton(entry.area)}</div><h2>${escape(entry.rideFamily?.name||entry.name)}</h2>
         ${familyPicker(entry)}
         ${hasShuttle?`<div class="ride-mode" role="group" aria-label="Ride option"><button type="button" data-mode="loop" aria-pressed="${mode==='loop'}">↻ Loop</button><button type="button" data-mode="shuttle" aria-pressed="${mode==='shuttle'}">↗ Shuttle</button></div>`:''}
@@ -404,6 +433,7 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
       };
       if(!options.entryView)enableRide();
       finishResize();
+      if(!first)await frameHandoff.reveal(reducedMotion());
       changing=false;
       if(!first)document.querySelector(`[data-mode="${mode}"]`)?.focus({preventScroll:true});
     }
@@ -411,6 +441,7 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
   }catch(error){
     if(controller.signal.aborted||token!==selection)return;
     closeRide();console.error(error);
+    $('#browse').hidden=true;$('#detail').hidden=false;
     $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p>The ride could not load.</p><button class="secondary" id="retry-ride">Try again</button>';
     $('#back').onclick=()=>reset();$('#retry-ride').onclick=()=>selectEntry(entry.id,false,animate);
   }
@@ -438,15 +469,15 @@ for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
 try{
-  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');const catalog=await response.json();entries=catalog.entries;slugAliases=catalog.slugAliases||{};overviewHome=catalog.settings.overviewHome||{version:0};regionHomes=catalog.settings.regionHomes||{};
+  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null),fontsReady]);canSetHome=!!session?.user&&!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');const catalog=await response.json();entries=catalog.entries;slugAliases=catalog.slugAliases||{};overviewHome=catalog.settings.overviewHome||{version:0};regionHomes=catalog.settings.regionHomes||{};
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
   const initial=new URLSearchParams(location.search).get('ride');
-  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:selectArea,onRide:id=>selectEntry(id)});await map.init(filtered(),overviewHome.home,regionHomes,entries);if(!initial)showOverviewSettings();if(!initial)$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
+  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:selectArea,onRide:id=>selectEntry(id)});await map.init(filtered(),overviewHome.home,regionHomes,entries);if(!initial)showOverviewSettings();}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride.';map=null;console.error(e);}
   if(initial){
     // Shared links and refreshes open at the saved home view, with no overview
     // flash or crumble. Only an in-page ride selection makes the approach.
     await selectEntry(initial,false,false);
-    if(map||document.querySelector('.ride-scene.ready'))$('#loading').hidden=true;
   }
-}catch(e){$('#loading').textContent=e.message;$('#entries').innerHTML='<p class="empty">Could not load the guide. Refresh to try again.</p>';console.error(e);}
+  await revealGuide();
+}catch(e){$('#loading').textContent=e.message;$('#entries').innerHTML='<p class="empty">Could not load the guide. Refresh to try again.</p>';document.body.classList.remove('is-booting');console.error(e);}

@@ -67,6 +67,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     material.uniforms.uArrival = { value: options.entryContext ? 0 : 1 };
     material.fragmentShader = 'uniform float uArrival;\n' + material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uArrival;\n}');
     material.transparent = !!options.entryContext;
+    material.depthWrite = !options.entryContext;
   }
   const pois = buildPOIs(map, terrain, options.pointsOfInterest, options.baseElevation);
   scene.add(pois.group);
@@ -387,6 +388,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     camera.top = 29 * viewScale; camera.bottom = -29 * viewScale; camera.updateProjectionMatrix();
     if (playing && !cameraTransition) frameRiderForMobile();
     for (const line of [preview, previewCore, active, activeHalo, overlap]) line.material.resolution.set(pixelWidth, pixelHeight);
+    renderer.render(scene, camera);
   }
   on(window, 'resize', resize);
   resize();
@@ -639,7 +641,11 @@ export async function mountRideViewer(options: RideViewerOptions) {
       entryElapsed = Math.min(entryDuration, entryElapsed + dt);
       const progress = entryElapsed / entryDuration;
       options.entryContext?.update(progress);
-      if (options.entryContext) for (const material of groundMaterials) material.uniforms.uArrival.value = THREE.MathUtils.smootherstep(progress, 0, 0.22);
+      if (options.entryContext) for (const material of groundMaterials) {
+        material.uniforms.uArrival.value = THREE.MathUtils.smootherstep(progress, 0, 0.22);
+        material.transparent = progress < 0.22;
+        material.depthWrite = progress >= 0.22;
+      }
     }
     const transitioning = cameraTransition !== null;
     if (transitioning) advanceCameraTransition(dt);
@@ -769,9 +775,10 @@ export async function mountRideViewer(options: RideViewerOptions) {
   // Compile and draw the exact starting view before the host reveals this canvas.
   // Loading GPU programs must not consume the approach animation's first beats.
   renderer.compile(scene, camera);
-  renderer.render(scene, camera);
   last = performance.now();
-  animation = requestAnimationFrame(frame);
+  // Apply the normal frame's flag orientation, visibility, and labels before
+  // revealing the canvas, so the first frame cannot flash default pennants.
+  frame(last);
   return {
     captureFrame(): HTMLCanvasElement {
       renderer.render(scene, camera);

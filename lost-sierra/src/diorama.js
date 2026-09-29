@@ -56,7 +56,7 @@ export class Diorama {
     this.last=performance.now();this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);
   }
   projection(){const w=this.element.clientWidth,h=this.element.clientHeight||1;const height=this.camera.position.distanceTo(this.controls.target)*.62*(w>700?1:1.45),width=height*w/h;const sx=w>700?width*180/w:0,sy=w>700?0:-height*.20;this.camera.left=-width/2+sx;this.camera.right=width/2+sx;this.camera.top=height/2+sy;this.camera.bottom=-height/2+sy;this.camera.updateProjectionMatrix();}
-  resize(){const {width,height}=this.element.getBoundingClientRect();this.renderer.setSize(width,height);this.projection();}
+  resize(){const {width,height}=this.element.getBoundingClientRect();this.renderer.setSize(width,height);this.projection();this.renderer.render(this.scene,this.camera);}
   async init(entries,savedHome,regionHomes={},regionEntries=entries){
     this.regionEntries=[...regionEntries];this.regionHomes={...regionHomes};this.area='';
     [this.region,this.beck,this.lakeWater]=await Promise.all([dataset('region'),dataset('beckwourth'),
@@ -69,6 +69,8 @@ export class Diorama {
     this.setEntries(entries);
     await Promise.all([this.loadHighways(),this.loadRiver(),...entries.filter(entry=>entry.hasTrack).map(entry=>this.loadOverviewRoute(entry))]);
     this.overviewRoutesReady=true;this.rebuildOverviewRoutes();
+    this.overviewNetwork.update(this.camera,this.element.clientWidth,this.element.clientHeight);
+    this.renderer.compile(this.scene,this.camera);this.renderer.render(this.scene,this.camera);
   }
   async loadRiver(){
     try{
@@ -308,11 +310,11 @@ export class Diorama {
     for(const [area,rows] of areas){
       if(rows.length<2)continue;
       const lon=rows.reduce((s,e)=>s+e.coordinates.lng,0)/rows.length,lat=rows.reduce((s,e)=>s+e.coordinates.lat,0)/rows.length;
-      const element=document.createElement('button');element.className='map-marker';element.textContent=area;
+      const element=document.createElement('button');element.className='map-marker';element.textContent=area;element.style.display='none';
       const count=document.createElement('span');count.className='marker-count';count.textContent=rows.length;element.append(count);element.ariaLabel=`Explore ${rows.length} places in ${area}`;element.title=`Go to ${area} home view`;element.onclick=()=>this.onArea(area);this.labels.append(element);
       this.markers.push({element,area,position:world(lon,lat,sample(this.region,lon,lat)).add(new THREE.Vector3(0,2,0))});
     }
-    const element=document.createElement('a');element.className='map-marker';element.textContent='Everstoke';element.href='https://everstoke.bike/';element.target='_blank';element.rel='noopener noreferrer';element.setAttribute('aria-label','Everstoke (opens in a new tab)');this.labels.append(element);
+    const element=document.createElement('a');element.className='map-marker';element.textContent='Everstoke';element.style.display='none';element.href='https://everstoke.bike/';element.target='_blank';element.rel='noopener noreferrer';element.setAttribute('aria-label','Everstoke (opens in a new tab)');this.labels.append(element);
     this.markers.push({element,area:null,position:world(-120.61053,39.78062,sample(this.region,-120.61053,39.78062)).add(new THREE.Vector3(0,2,0))});
   }
   move(target,position,duration=2.1,zoom=1){this.tween={zoom,start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
@@ -344,7 +346,9 @@ export class Diorama {
         material.vertexShader='uniform vec3 uRideAnchor;\n'+material.vertexShader.replace('vWorld = world.xyz * 10.0;','vWorld = world.xyz + uRideAnchor;');
         material.uniforms.uDeparture=fade;
         material.fragmentShader='uniform float uDeparture;\n'+material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uDeparture;\n}');
-        material.transparent=true;material.depthWrite=true;
+        // Fading geometry must never punch invisible holes in the arriving
+        // landscape. Composite it behind the detail, without retaining depth.
+        mesh.renderOrder=-20;material.transparent=true;material.depthWrite=false;
       });
       const bounds=new THREE.Box3().setFromObject(chunk.group);
       const a=world(map.bbox.west,map.bbox.north),b=world(map.bbox.east,map.bbox.south);
