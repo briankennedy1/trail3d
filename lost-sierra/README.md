@@ -1,127 +1,176 @@
-# Ride The Lost Sierra
+# Ride The Lost Sierra — guide and CMS
 
-A standalone, locally running ride guide: a regional 3D diorama, imported Everstoke field notes, a persistent database, and an admin workshop. This app lives separately from the original Beckwourth app. It has no ChatGPT Sites configuration or hosting dependency.
+A local Node/SQLite ride guide with a regional Three.js diorama and a private admin CMS. All tracked rides use the shared Beckwourth viewer within the guide’s existing page. Public visitors have no accounts, favorites, or saved personal views.
 
-## Run
+## Run locally
 
-Requires Node 24.12 or newer. From this directory:
+Requires **Node.js 24.12 or newer**. Install dependencies in both the repository root and this directory:
 
 ```sh
+# From the repository root
 npm ci
-npm run dev
+npm ci --prefix lost-sierra
+npm run dev --prefix lost-sierra
 ```
 
-Open **http://127.0.0.1:5318/**. The Node server serves both Vite and the API on the same origin. Reload the browser after frontend edits; hot reload is disabled to avoid a second exposed development port. Restart after backend edits.
+Open **http://127.0.0.1:5318/**. The same server serves the frontend and API. Reload after frontend changes; restart after backend changes. Hot reload is disabled to avoid a separate development port.
 
-For a production-style local preview:
+Production-style preview, from this directory:
 
 ```sh
 npm run build
 npm start
 ```
 
-The original Beckwourth deployment is unchanged; its source entry point now uses the same shared viewer as the guide. The regional guide is in this separate directory, backed up in the same Git repository.
+Build outputs go to `lost-sierra/dist/`. The root package builds the separate standalone Beckwourth app.
 
-## What works
+## Public ride experience
 
-- The original Beckwourth visual language: fullscreen map, Fraunces headings, floating cream ride card, watercolor terrain shaders, and the hold-to-move compass.
-- Regional relief from actual AWS Terrarium elevation tiles; no API key needed at runtime.
-- Select a ride to break away surrounding terrain and smoothly move into its area. Return to rebuild the regional map.
-- Every ride with a GPS track uses the original Beckwourth viewer: terrain, exact green marker, animated linked flags, elevation scrubbing, compass, and the 45-second helicopter playback. Beckwourth retains its detailed terrain and tuned home/camera preset. Playback ignores accidental profile scrubbing. The green rider only appears after interaction.
-- 19 rides and 10 off-bike adventures in the active guide, selected from 22 rides and 10 adventures imported from the public Everstoke planner. Search, area/effort filters, and external route/video links.
-- Route-specific URLs (`/?ride=beckwourth-peak`). Local links work only on this computer until hosted.
-- Username/password admin. Create/edit entries, draft/publish/archive, import GPX/GeoJSON, export structured content, and change the admin password.
-- SQLite persistence with source snapshots, version conflicts, sessions, and an audit trail of edits and replaced tracks.
-- Responsive layout and reduced-motion support.
+- Selecting a ride moves from the overview into its detailed terrain, with surrounding terrain crumbling away. Direct `/?ride=<id>` links load the ride intact.
+- **All rides** rebuilds the overview. The ride card fades out fully, and the overview card fades in at 80% of the return animation.
+- Switching route options keeps the camera moving between their views and dissolves the outgoing frame; it does not return to the overview or rebuild the whole terrain with a crumble animation.
+- **Play Ride** always uses the smooth helicopter follow camera, with a 45-second playback timeline independent of recorded ride speed. Camera positioning is eased, profile scrubbing is ignored while playing, and completion returns to the route home view.
+- Scrubbing the elevation profile moves the route highlight and green dot without moving the camera. The dot is hidden until interaction.
+- The compass supports held rotate/tilt controls. Its center faces north, then returns home on a subsequent click from north.
+- Flags remain occluded by terrain and unfurl labels on hover. Start/finish flags link to Google Maps parking. Loops have a combined start/finish flag; point-to-point rides have a green start and red finish.
+- The stats line displays miles, climbing feet, and moving time (`1h 25m`, with one `~` for estimates). Distance comes from the displayed geometry.
+- Route and profile surfaces share colors: singletrack yellow, asphalt dark gray, dirt road brown, unverified gray. Rider-confirmed corrections override mapped estimates.
+- Ride notes expand through the book icon. Intensity and Must Ride have dedicated displays. Roads and waterways can remain visible while their labels are hidden per ride.
 
-## Shared ride architecture
+## CMS and shared home views
 
-The original Beckwourth code is the baseline for **all** tracked rides. Ride selection mounts it in the guide's existing map/card; it does not load another website or an iframe. The regional renderer handles browsing and the crumble transition. At the start of the zoom, the ride renderer takes over from the matching regional camera framing and borrows the regional terrain chunks. One camera renders both the departing region and the detailed ride; surrounding chunks drop away while nearby chunks dissolve in place. A 3.4-second approach uses multiplicative zoom and keeps the destination on a continuous screen-space path into the saved home view. The regional renderer is suspended for the entire move. GPU setup completes before the first visible approach frame, and controls unlock on actual completion rather than a timer. Returning disposes the ride's frame loop, event listeners, controls, textures, geometry, and WebGL context, and resumes the region.
+The CMS is **`/admin.html`** (also `/admin`). The first server startup prints a one-time setup URL. Choose an admin username and a password of 12–256 characters. The local `.data/setup-token` is removed after setup; keep it private. Existing databases retain their admin accounts.
+
+The CMS supports:
+
+- Create, edit, draft, publish, and archive rides or off-bike adventures.
+- **Effort / intensity dropdown:** Not rated, Mellow-ish, Moderate, Challenging, Intense.
+- Must Ride, notes, season, climbing/descent totals, moving minutes, and estimated-time status.
+- Editable public Trailforks and video URLs; start/finish Google Maps links and a same-start/finish setting.
+- Route family ID, family name, option name, and ordering; independent Loop/Shuttle settings where applicable.
+- GPX/GeoJSON uploads, track downloads, provenance, original source records, and before/after audit history.
+- Viewer home, named POIs/flags, and camera/terrain settings.
+
+The bottom-right settings cog appears only for signed-in admins. Frame the overview or a ride, then use **Set current view as home** to save the shared default. Other visitors receive that framing. The ride cog also offers editing the current route. Home changes are version-checked and audited.
+
+Writes require an authenticated session and matching Origin. Passwords use salted scrypt; session tokens are hashed in SQLite, with HttpOnly/SameSite cookies and a 12-hour lifetime. HTTPS origins set Secure cookies. There is no public admin link or email password-reset flow.
+
+## Route families
+
+Each option is an independent entry, linked by `rideFamily: { id, name, option, order }`. Published options appear in the family selector; each keeps its own track, stats, notes, parking, home, and ride modes.
+
+| Family | Option | Entry ID | Trailforks plan |
+| --- | --- | --- | --- |
+| Mt. Elwell | The Hard Way | `mt-elwell-hard-way` | 785580 |
+| Mt. Elwell | The Not So Easy Way | `mt-elwell-not-so-easy` | 785598 |
+| Downieville | Original | `downieville-original` | 785605 |
+| Downieville | Adventure Mode | `downieville-adventure-mode` | 785607 |
+
+The old `mt-elwell` URL resolves to The Hard Way. Both Downieville options use finish parking at **39.559603, -120.830308**. Their incidental map labels are hidden. The former `gold-valley-rim-pauley-creek-dh` and `cal-ida-trail` entries are archived.
+
+## Architecture
 
 | Module | Responsibility |
 | --- | --- |
-| `../src/ride-viewer.ts` | Mount/dispose the shared viewer, playback, scrubbing and compass interaction |
-| `../src/ride-flight-plan.ts` | Original smooth helicopter planner and 45-second motion-based pacing |
-| `../src/ride-route.ts` | Original gold/overlap strokes, depth testing and green dot |
-| `../src/pois.ts` | Reusable flag geometry, labels, links and fabric animations |
-| `../src/terrain.ts` | Watercolor terrain, configurable cutout base |
-| `../src/ride-profile.css` | Shared elevation/playback styling |
-| `../src/beckwourth-preset.ts` | Beckwourth's exact home, flight beats and two named flags |
-| `src/ride-data.js` | GPS-to-local-meter adapter, regional terrain cutout and elevation fallback |
-| `src/ride-experience.js` | Choose terrain/preset and pass each ride's data into the shared viewer |
+| `src/main.js` | Guide cards, selection, route families, CMS-aware settings, transitions |
+| `src/ride-card.css` | Ride detail card typography and layout |
+| `src/ride-experience.js` | Assemble terrain, surfaces, flags, and ride-specific label rules |
+| `src/ride-data.js` | Geographic track projection, terrain crops, elevation sampling |
+| `src/ride-families.js` | Group route options without merging tracks or modes |
+| `src/ride-variants.js` | Loop/Shuttle geometry and statistics |
+| `src/ride-access.js` | Endpoint flags and parking links |
+| `../src/ride-viewer.ts` | Shared viewer lifecycle, interaction, camera transitions |
+| `../src/ride-flight-plan.ts` | Helicopter playback planning |
+| `../src/ride-route.ts` | Terrain-occluded route rendering and rider dot |
+| `../src/pois.ts` | Flag geometry, unfurling, labels, and links |
+| `../src/terrain.ts` | Watercolor terrain and cutout base |
+| `server/store.mjs` | SQLite records, validation, initialization and migrations |
 
-`../src/beckwourth.ts` is now a small compatibility entry point for the original standalone app. It loads the original data and mounts the same viewer. The guide reads tracks from its database, including replacement uploads. Other rides receive their own terrain crop and starting camera; they do not inherit Beckwourth's POI locations. Regional terrain is coarser than Beckwourth's detailed cutout, so additional high-resolution ride terrain is a future content improvement.
+The standalone `../src/beckwourth.ts` mounts the same viewer. Guide tracks come from SQLite. Detailed terrain is selected from the curated manifest; other tracks use a crop of the regional terrain. Public home views come from saved ride settings, not visitor local storage.
 
-`mountRideViewer({ data: { map, ride, heights }, home, pointsOfInterest, ... })` returns a controller with `dispose()`. Optional settings are `root` (DOM scope), `homeStorageKey`, `baseElevation`, `scale`, `angleBeats`, and `manageLoading`. The host supplies the original control element IDs. Public guide homes come from ride settings, never a visitor's saved local view.
+## Data and import workflow
 
-Entries can persist a validated `viewer` object through the admin API alongside normal content. Supported fields are `home` (`position`, `target`, `zoom`), `pointsOfInterest` (`name`, `latitude`, `longitude`, hex `color`, optional `url`/`elevationFt`), `baseElevation`, `scale`, and `angleBeats` (ordered `[progress, degrees]` pairs from 0 to 1). The CMS exposes these settings in grouped forms, including individual flag fields. Camera angles use JSON pairs; unset overrides retain the ride preset or terrain-derived defaults. The ride card’s cog menu includes **Set current view as home** and **Go to home view**. An empty flag list is valid until a ride's actual POIs are supplied. The public never needs an account.
+`data/planner-*.json` preserves the original Everstoke source snapshots. `data/curated-rides.json` supplies curated entries, track paths, detailed terrain paths, and initial editorial settings. Track GeoJSON properties record source URLs, GPX hashes, and relevant repair/elevation provenance.
 
-## Create the admin
+On first startup the database imports planner records. Curated imports and corrections run with one-time markers and audit entries. **Editing a seed file does not overwrite an existing CMS record.** Update an existing ride through the CMS or an explicit audited migration; preserve unrelated CMS edits and saved home views.
 
-The first server startup prints a **one-time admin setup URL**. Open it, keep or change the `admin` username, and choose a password of at least 12 characters. The setup key is generated locally in `.data/setup-token`; it is removed after setup. Do not commit or share the key. The CMS is `/admin.html` (also `/admin`). Search and filter by content type, publication status, or GPS readiness. Select an entry to edit its fields, flags, home camera, terrain settings, and camera angles. Expand the record inspector for every stored entry field, GPS metadata, original imported entry, import provenance, and the last 50 changes with before/after data. GPS geometry can be uploaded or downloaded as GeoJSON. Original source snapshots and computed GPS metadata are read-only. Unsaved edits prompt before leaving; version checks prevent overwriting newer edits. No credentials or sessions are returned by the inspector.
+For an imported route:
 
-Visitors do not have accounts or saved favorites. The public guide has no admin link; access the admin workshop directly at `/admin.html`. Admin writes require authentication and a matching Origin header. Passwords are hashed with salted scrypt. Session tokens are stored hashed in SQLite and sent in HttpOnly, SameSite=Strict cookies; HTTPS origins additionally set Secure. Sessions expire after 12 hours. Login/setup have a per-IP limit. The app binds only to loopback by default.
+1. Export the authorized GPX from its source and retain provenance.
+2. Store a continuous GeoJSON LineString in `data/routes/` and add/update the curated manifest entry.
+3. Preserve recorded elevations. For exports containing only zero elevations, omit those invalid elevation values before generating detailed terrain so the builder samples the DEM.
+4. Build detailed terrain using the track filename stem:
 
-## Data and provenance
+   ```sh
+   node scripts/build-ride-terrain.mjs downieville-original
+   ```
 
-`data/planner-rides.json` and `data/planner-adventures.json` retain every shipped source field, including null values. `data/planner-settings.json` preserves the eight named towns, default drive times, and Everstoke coordinates. `data/planner-source.json` records the source asset URL, fetch time, SHA-256, and counts. Import uses a restricted literal parser, never executes downloaded JavaScript.
+5. Classify surfaces and review the profile, parking, endpoint flags, statistics, and home view.
+6. Apply the import to the live database, build the frontend, and verify the ride in the guide.
+
+The terrain builder caches AWS Terrarium tiles and produces roughly 30-meter grids. Generated assets are checked in; normal startup does not download terrain or call Trailforks. Some rides intentionally share terrain (the Elwell variants use `/terrain/mt-elwell`); honor the manifest rather than assuming the terrain folder always matches the entry ID.
+
+Source pages provide processed climbing/descent and moving-time estimates. Raw GPS/DEM elevation sums can exaggerate climbing. Missing intensity remains Not rated until set in the CMS. Source snapshots contain some rides without tracks; those cannot show a traced route until imported.
+
+### Surface corrections
+
+- `data/route-surface-overrides.json`: confirmed ranges bound to the track’s coordinate SHA-256.
+- `public/terrain/route-surfaces.json`: generated classifications consumed by both map and elevation profile.
+- Ranges use segment indices `[from, to)`. Convert mile boundaries using the same projected geometry as the viewer.
 
 ```sh
-npm run import:planner
-# Or import an already downloaded bundle:
-python3 scripts/import-planner.py /path/to/planner.js
+node scripts/build-route-surfaces.mjs /absolute/path/to/cached-overpass-ways.json
 ```
 
-The importer refreshes the **source snapshot files**, not live admin edits. The database seeds these snapshots only once on its first launch. Subsequent restarts never overwrite edits. Review/diff future source imports before applying changes to existing records.
+The input is a cached Overpass response with highway ways and geometry. The builder rejects corrections whose coordinate hash no longer matches. After replacing a track, review and remap its corrections. For a correction to one ride, preserve other rides’ generated records rather than unintentionally reclassifying the entire catalog.
 
-The planner ships **location pins and external links, not GPS tracks**. Its coordinates are approximate area pins, often repeated for several rides. 18 active rides currently need a GPX/GeoJSON track before their actual route can be rendered. A direct request to the linked Trailforks ridelog returned HTTP 403; no access controls were bypassed. Export accessible GPX files normally and add them through the admin workshop.
+Recent Downieville corrections: Original is asphalt after mile 15.2; Adventure Mode’s previously unverified sections between miles 8 and 16 are singletrack. Existing classified sections in that Adventure Mode interval remain unchanged.
 
-The bundled Beckwourth track is the cleaned September 25, 2026 recording (Trailforks `124349783`) from the original diorama. It differs from the planner’s linked ride (`92464225`), and links directly to that recording. Beckwourth retains its original ride statistics. Untracked rides show planner climb/descent values; displayed distance comes from the shown track. Missing source statistics are never guessed. E-bike recommendations do not establish access permission. Current conditions are not tracked yet.
+### Coverage and provenance
 
-### Geographic coverage
+The regional terrain covers 39.49–40.20 N, 121.04–120.28 W. `data/guide-scope.json` lists excluded areas and archived entries. Nevada City, Truckee, and Susanville are excluded from the guide.
 
-The current terrain covers 39.49–40.20 N, 121.04–120.28 W. Nevada City, Truckee, and Susanville are archived and excluded from the guide; the untouched import snapshots preserve their original records. `data/guide-scope.json` defines this coverage. Uploads outside that region are rejected with an explanation. GPX accepts one continuous track segment or route; GeoJSON accepts one LineString with 2–30,000 points. Gaps longer than 5 km and nonfinite coordinates are rejected. Tracks without elevation are displayed on sampled terrain.
+Uploads accept one GPX track segment/route or a GeoJSON LineString with 2–30,000 points, within the regional bounds, without gaps longer than 5 km. Coordinates must be finite. Source recordings and repairs are documented in [data/routes/README.md](data/routes/README.md) and [the Elwell family notes](data/routes/mt-elwell-options.md).
 
-Regenerate elevation assets with `npm run terrain` (requires Internet access). The current script also copies the curated track/terrain from the sibling original Beckwourth app. The generated assets are checked in, so no terrain regeneration is needed. Build from this repository, which contains the shared viewer and original Beckwourth terrain. The production dist directory contains all required assets. Terrain source: https://registry.opendata.aws/terrain-tiles/.
+The Credits modal attributes Tahoe Trails, Trailforks, terrain and map data providers. Watercolor styling is rendered on the terrain; the fullscreen watercolor postprocessing effect is disabled. Current trail conditions and access permissions are not a live data feed.
 
 ## Database and backups
 
-`server/schema.sql` defines the schema:
-
-- `entries`: ID, kind, area, name, coordinates, publication status, typed content JSON, version, original source JSON.
-- `tracks`: GeoJSON, distance/elevation totals, track-specific provenance.
-- `sources`: original import metadata and hashes.
-- `settings`: imported towns, drive defaults, and the Everstoke base location.
-- `users`, `sessions`: admin identity and expiring sessions.
-- `audit_log`: content and track changes, with previous values.
-
-Runtime database and credentials live in `.data/` and are intentionally **not in Git**. Source data, generated terrain, code, and schema are in Git. Keep actual database backups separately:
+Runtime data lives in **`.data/guide.sqlite`**, including CMS edits, shared homes, accounts, sessions, and audit history. These are **not committed to Git**. Checked-in seeds are a reproducible starting point, not a backup of current editorial work.
 
 ```sh
 npm run backup
 ```
 
-This makes a consistent SQLite backup in `backups/` even while the server is running. The admin content export excludes credentials and sessions. To restore a database backup, stop the server, preserve the existing `.data` directory, and put the chosen backup at `.data/guide.sqlite` in a new data directory. Start with `DATA_DIR=/absolute/path/to/restored-data npm start`. Do not mix a restored database with old `-wal` or `-shm` files.
+This creates a consistent SQLite snapshot in `backups/`, including while the server runs. Keep separate off-machine backups. The admin content export excludes credentials and sessions.
 
-## Tests
+For restoration, stop the server, preserve the existing data directory, and put the selected backup at `guide.sqlite` in a new directory. Start with `DATA_DIR=/absolute/path/to/restored-data npm start`. Do not mix a restored database with old `-wal` or `-shm` files.
+
+## Validation
+
+From this directory:
 
 ```sh
 npm test
 npm run build
 ```
 
-Tests use a temporary database and localhost port 19531. They cover unauthenticated access, setup, session cookies, cross-origin writes, private drafts/tracks, edit conflicts, persistence through restart, publishing, track validation/provenance, content export, and login/logout.
+From the repository root:
+
+```sh
+npx tsc --noEmit
+```
+
+Tests cover authentication, publication and edit conflicts, track validation, curated import preservation, terrain coverage, families, access links, and route behavior. Browser review is still needed for camera motion, flags, layout, and transitions.
 
 ## Hosting later
 
-Use a Node host/container with a **persistent disk** for SQLite. Build assets first, then run `npm start`; this is not a static-only deployment. Set `DATA_DIR` to the persistent disk, `PORT` to the service port, `HOST=0.0.0.0` inside a container, and `APP_ORIGIN=https://your-domain.example`. Put HTTPS in front and preserve the original Host header. Keep a single server instance with SQLite; migrate to Postgres if multiple instances or editors require it. Arrange scheduled off-host database backups before public launch.
+The guide has no ChatGPT Sites hosting dependency. It needs a Node host with persistent storage, rather than static-only hosting:
 
-No domain, hosting account, live deployment, spending, public registration, or external messaging has been created. The next content milestone is obtaining/reviewing the other 18 GPS tracks and correcting the repeated approximate pins. Before launch, add password recovery/another admin provisioning workflow, operational monitoring, and a review of trail access and seasonal notes. The present admin can change their password after signing in; there is no email-based reset.
+- Build the guide, then run `npm start`.
+- Set `DATA_DIR` to persistent storage, `PORT` to the service port, `HOST=0.0.0.0` when needed in a container, and `APP_ORIGIN` to the exact public HTTPS origin.
+- Preserve the original Host header through the proxy; serve HTTPS.
+- Keep a single SQLite server instance and arrange off-host backups.
+- Before public launch, finish operational monitoring, admin recovery, and content/access review.
 
-Technical references: [Node SQLite](https://nodejs.org/api/sqlite.html), [Vite backend integration](https://vite.dev/guide/backend-integration.html).
-
-### Set a ride home view
-
-Sign in as an admin, open a tracked ride, position the camera, then choose **Ride settings (bottom-right cog) → Set current view as home**. This saves `viewer.home` in SQLite, preserves other ride settings, checks the entry version, and records the change in the audit log. Reloads and other visitors receive this shared default. The compass and helicopter playback use the new home immediately; saving does not move the camera.
-
-The cog is shown only to signed-in admins, and the home-setting API requires a valid admin session on both local and hosted servers. Matching Origin, version checks, and validation remain required.
+Local links at `127.0.0.1:5318` work only on the computer running the server.

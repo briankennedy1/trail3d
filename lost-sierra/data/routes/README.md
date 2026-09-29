@@ -56,7 +56,8 @@ polyline and can differ slightly from Trailforks' processed summary.
 Each new ride starts with a route-start flag and a fitted home view. Named peak
 flags require verified summit locations and are not guessed from GPS high points.
 
-Still pending: Cal-Ida, Hough–Taylor Creek, Hough Lower Loops and South Park need
+Cal-Ida and Gold Valley Rim to Pauley Creek are now archived.
+Still pending: Hough–Taylor Creek, Hough Lower Loops and South Park need
 confirmation for the Trailforks data-use checkbox. Lost & Found Half Calf has a
 RideWithGPS source rather than Trailforks and was outside this import batch.
 
@@ -87,3 +88,12 @@ For an existing database, first run `npm run backup --prefix lost-sierra`, then
 keeps an audit copy, preserves CMS edits, moves the original start flag and
 updates the home only if it still matches the imported default. Fresh databases
 seed the corrected route directly.
+
+## Downieville family
+
+- `downieville-original`: **Original**, Trailforks plan [785605](https://www.trailforks.com/routeplan/view/785605/), 1,442 points. Source totals: 16.18 miles, 781 ft climbing, 4,973 ft descending, estimated 2h 58m.
+- `downieville-adventure-mode`: **Adventure Mode**, plan [785607](https://www.trailforks.com/routeplan/view/785607/), 2,321 points. Source totals: 22.28 miles, 2,028 ft climbing, 6,214 ft descending, estimated 4h 31m.
+
+Both were exported through Trailforks on September 28, 2026. The exports had zero elevations; XY positions were retained and elevation sampled from AWS terrain. Both are point-to-point routes, with independent terrain, tracks, and CMS records under family ID `downieville`. Their shared finish parking link is **39.559603, -120.830308**; that parking pin does not alter the recorded track endpoint.
+
+Rider-confirmed corrections in `../route-surface-overrides.json` mark Original after mile 15.2 as asphalt, and Adventure Mode's previously unverified segments between miles 8 and 16 as singletrack. Other classified segments are preserved. Incidental road/waterway labels are hidden on these ride views; geometry and endpoint flags remain.
