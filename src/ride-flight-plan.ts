@@ -17,7 +17,7 @@ type FlightOptions = {
 // rider's pacing to it. No DOM or live camera corrections are needed here.
 export function createFlightPlan({ total, routePoint, clearSightHeight, getHome,
   orbitRadius, viewScale, introEnd, angleBeats }: FlightOptions) {
-  const flightSteps = 192, followDuration = 45;
+  const flightSteps = 192, followDuration = 22.5;
   let flightPath: Shot[] | null = null;
   let flightTimes: number[] = [];
   function splineValue(v0: number, v1: number, v2: number, v3: number, t: number) {
@@ -130,7 +130,7 @@ export function createFlightPlan({ total, routePoint, clearSightHeight, getHome,
       }
       flightTimes.push(flightTimes[i] + distance / weightSum);
     }
-    // Preserve the relative pacing while fitting the complete flight into 45 seconds.
+    // Preserve the relative pacing while fitting the complete flight into 22.5 seconds.
     const totalMotion = flightTimes[flightSteps];
     flightTimes = flightTimes.map(time => time / totalMotion * followDuration);
   }

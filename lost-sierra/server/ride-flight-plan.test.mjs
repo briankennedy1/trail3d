@@ -22,7 +22,7 @@ test('default follow keeps the home heading while following terrain and the rout
   checkHeading();
   assert.ok(clearanceChecks>0);
   assert.ok(plan.flightShot(1).center.distanceTo(plan.flightShot(0).center)>20,'Camera stopped following');
-  assert.equal(plan.timeAtProgress(1),45);
+  assert.equal(plan.timeAtProgress(1),22.5);
   home={...home,position:[130,70,90]};
   plan.invalidate();
   checkHeading();
@@ -35,5 +35,5 @@ test('explicit ride camera angles still control the flight',()=>{
     angleBeats:[[0,-155.6],[.44,-20],[.54,0],[.60,75],[.72,120],[.85,170],[1,170]],
   });
   assert.ok(plan.flightShot(1).angle-plan.flightShot(0).angle>5,'Custom visibility orbit was lost');
-  assert.equal(plan.timeAtProgress(1),45);
+  assert.equal(plan.timeAtProgress(1),22.5);
 });
