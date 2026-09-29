@@ -216,38 +216,23 @@
     "track": "routes/lower-lakes-basin-loop.geojson",
     "details": {
       "coordinates": {
-        "lat": 39.781702850014,
-        "lng": -120.61123802327
+        "lat": 39.76599,
+        "lng": -120.61788
       },
-      "climbingFt": 3417,
-      "summary": "A recorded Lakes Basin loop linking Grassy, Long and Smith Lake trails with Graeagle Creek.",
-      "notes": "Frazier Falls road - Grassy Lake - Long Lake (blue) - Smith Lake- Graeagle Creek",
+      "climbingFt": 2864,
+      "summary": "A Lakes Basin loop linking Grassy Lake, Long Lake and Smith Creek.",
+      "notes": "Climb Frazier Falls Road, then connect 21N04 and Lakes Basin Campground Road to Grassy Lake Trail.\n\nContinue on Long Lake Trail and Smith Lake Trail, then descend Smith Creek and the Graeagle Creek connector to finish the loop.\n\nTrailforks estimates approximately 2h 43m of moving time.",
       "incomplete": false,
       "viewer": {
-        "pointsOfInterest": [
-          {
-            "name": "Route start",
-            "latitude": 39.781702850014,
-            "longitude": -120.61123802327,
-            "color": "#34877b",
-            "url": "https://www.trailforks.com/ridelog/view/100899059"
-          }
-        ],
-        "home": {
-          "position": [
-            -121.09257225208883,
-            115.17052617459919,
-            -252.70207302111848
-          ],
-          "target": [
-            -16.43270080772002,
-            -2.5533424119070367,
-            -12.045169692058774
-          ],
-          "zoom": 0.85
-        }
+        "pointsOfInterest": []
       },
-      "descendingFt": 3417
+      "descendingFt": 2863,
+      "routeUrl": "https://www.trailforks.com/routeplan/view/785884/",
+      "movingMinutes": 163,
+      "movingTimeEstimated": true,
+      "sameStartFinish": true,
+      "startMapsUrl": "https://www.google.com/maps?q=39.76599,-120.61788",
+      "finishMapsUrl": ""
     }
   },
   {

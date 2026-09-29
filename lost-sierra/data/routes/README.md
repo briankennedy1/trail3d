@@ -134,3 +134,11 @@ Imported from [Trailforks plan 785881](https://www.trailforks.com/routeplan/view
 The one-time `curated-family-v2` migration adds missing family metadata to previously imported routes without changing saved camera views, tracks, notes or explicit CMS family choices.
 
 Both Mills Peak options include an orange summit flag at **39.70481, -120.62281**, labeled **Mills Peak · 7,365 ft**. Location and rounded elevation follow [Peakbagger's Mills Peak entry](https://www.peakbagger.com/peak.aspx?pid=89288), which reports a LiDAR summit elevation of 7,364.5 ft NAVD88 (verified September 29, 2026). The flag opens that source and is separate from the route-start marker. Road and waterway nameplates remain hidden.
+
+## Lower Lakes Basin replacement — Lakes Basin Blue
+
+The existing `lower-lakes-basin-loop` guide now uses [Trailforks plan 785884, Lakes Basin Blue](https://www.trailforks.com/routeplan/view/785884/), replacing ridelog 100899059. Exported September 29, 2026: all 1,394 XY points retained, 16.21 miles calculated (16.20 on Trailforks), 2,864 ft climbing, 2,863 ft descending, estimated 2h 43m. The endpoints are about 10.5 m apart and share one Route Start / Finish flag. The Maps link uses the supplied start coordinate rather than a separately verified parking lot.
+
+Zero GPX elevations were replaced with AWS/USGS terrain samples. Detailed terrain was rebuilt for the new bounds. Map-derived surfaces total about 7.43 miles singletrack, 4.51 asphalt, 2.41 dirt road and 1.87 unverified; none of those classifications is rider-confirmed yet. The old imported camera default is cleared so the new route is fitted automatically; custom CMS home views are preserved.
+
+For existing databases, back up first (`npm run backup --prefix lost-sierra`), then run `node lost-sierra/scripts/apply-lower-lakes-replacement.mjs`. It guards against an unexpected track, retains the prior entry and track in audit history, and preserves unrelated CMS settings. Fresh databases seed the replacement directly.
