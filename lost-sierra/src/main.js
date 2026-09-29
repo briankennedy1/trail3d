@@ -108,8 +108,7 @@ function renderDetail(e){
 for(const button of document.querySelectorAll('[data-kind]'))button.onclick=()=>{kind=button.dataset.kind;for(const b of document.querySelectorAll('[data-kind]'))b.classList.toggle('active',b===button);$('#intensity').disabled=kind!=='ride';$('#intensity').value='';reset();};
 for(const id of ['search','area','intensity'])$('#'+id).addEventListener(id==='search'?'input':'change',renderList);
 $('#clear').onclick=clearFilters;
-$('#explore').onclick=()=>{clearFilters();reset();};
-$('#about').onclick=()=>$('#about-dialog').showModal();$('.dialog-close').onclick=()=>$('#about-dialog').close();$('#north').onclick=()=>map?.north();
+$('#north').onclick=()=>map?.north();
 for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt-up','up'],['tilt-down','down']]){const button=$('#'+id);button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);if(map)map.held=action;};for(const type of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(type,()=>{if(map)map.held=null;});button.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();if(map)map.held=action;}};button.onkeyup=()=>{if(map)map.held=null;};button.onblur=()=>{if(map)map.held=null;};}
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
