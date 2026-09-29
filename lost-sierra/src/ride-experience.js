@@ -42,7 +42,7 @@ export async function prepareRide(entry,track,signal){
     const creek=options.contextFeatures?.find(feature=>feature.name==='Gray Eagle Creek');
     if(creek)creek.labelCoordinates=[-120.6551813,39.7361773];
     options.contextFeatures??=[];
-    options.contextFeatures.unshift({name:'Mill Pond',kind:'waterway',importance:3,length:0,lines:[],labelCoordinates:[-120.6154,39.7671]});
+    options.contextFeatures.unshift({name:'Mill Pond',kind:'waterway',importance:3,length:0,lines:[],labelCoordinates:[-120.61335,39.7671]});
   }
   if(entry.id==='buzzards-roost-ridge'){
     const namedWaterways=new Set(['Nelson Creek','Middle Fork Feather River']);
