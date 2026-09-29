@@ -176,23 +176,15 @@
     "track": "routes/jamison-creek-loop.geojson",
     "details": {
       "coordinates": {
-        "lat": 39.74231813103,
-        "lng": -120.70741944015
+        "lat": 39.74231,
+        "lng": -120.70742
       },
-      "climbingFt": 2837,
+      "climbingFt": 2897,
       "summary": "A rocky backcountry loop through the Jamison Creek area.",
       "notes": "Park at Plumas-Eureka State Park.\nRocky backcountry.",
       "incomplete": false,
       "viewer": {
-        "pointsOfInterest": [
-          {
-            "name": "Route start",
-            "latitude": 39.74231813103,
-            "longitude": -120.70741944015,
-            "color": "#34877b",
-            "url": "https://www.trailforks.com/ridelog/view/93636482/"
-          }
-        ],
+        "pointsOfInterest": [],
         "home": {
           "position": [
             -73.75821092245879,
@@ -207,7 +199,13 @@
           "zoom": 0.85
         }
       },
-      "descendingFt": 2836
+      "descendingFt": 2898,
+      "routeUrl": "https://www.trailforks.com/routeplan/view/785988/",
+      "movingMinutes": 180,
+      "movingTimeEstimated": true,
+      "sameStartFinish": true,
+      "startMapsUrl": "https://www.google.com/maps?q=39.74231,-120.70742",
+      "finishMapsUrl": ""
     }
   },
   {

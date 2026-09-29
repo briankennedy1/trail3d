@@ -80,6 +80,14 @@ Still pending: Hough–Taylor Creek, Hough Lower Loops and South Park need
 confirmation for the Trailforks data-use checkbox. Lost & Found Half Calf has a
 RideWithGPS source rather than Trailforks and was outside this import batch.
 
+## Jamison Creek Loop replacement — September 29, 2026
+
+The existing `jamison-creek-loop` now uses [Trailforks plan 785988](https://www.trailforks.com/routeplan/view/785988/), exported through its GPX download. All 1,542 XY points are retained. Calculated distance is 14.95 miles; Trailforks displays 14.94 miles, 2,897 ft climbing, 2,898 ft descending, and an estimated three hours.
+
+Zero GPX elevation placeholders were replaced with AWS/USGS terrain samples. The terrain and OSM surface classification were rebuilt for this track. Classification estimates 6.49 miles singletrack, 7.85 dirt road, 0.36 asphalt and 0.26 unverified. These are mapped classifications, not rider confirmation. The route is a loop with one combined start/finish flag; its Maps link matches the source's driving-directions pin.
+
+After a database backup, run `node lost-sierra/scripts/apply-jamison-replacement.mjs` from the repository root. The update checks the previous coordinate hash, retains the old entry and complete track in audit history, and preserves CMS notes, naming, intensity and saved camera views. Fresh databases seed the new plan directly. The original planner snapshot remains unchanged.
+
 ## Buzzards Roost missing start repair
 
 The rider confirmed recording began late and requested the existing finish as
