@@ -2,6 +2,7 @@ import './style.css';
 import './guide.css';
 import { Diorama } from './diorama.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
+import { rideVariant, shuttleStartIndex } from './ride-variants.js';
 import { SURFACE_COLORS } from '../../src/route-surfaces';
 const $=s=>document.querySelector(s);
 const creditsDialog=$('#credits-dialog');
@@ -140,52 +141,71 @@ async function openRide(entry,rideTrack,token,animate=true){
   $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p class="muted" role="status">Opening the ride…</p>';
   $('#back').onclick=()=>reset();
   try{
-    const options=await prepareRide(entry,rideTrack,controller.signal);
+    const base=await prepareRide(entry,rideTrack,controller.signal);
     if(token!==selection)return;
-    const original=entry.id==='beckwourth-peak';
-    const climbing=original?'2,083':number(entry.climbingFt??(rideTrack.properties.ascentM==null?null:rideTrack.properties.ascentM*3.28084));
-    $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
-      <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(entry)}</strong><span>Moving Time</span></div></div>
-      ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
-      <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
-      ${surfaceKey(options.surfaceTypes)}`,`${accessLinks(entry)}${external(rideTrack.properties.sourceUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`)}`;
-    $('#back').onclick=()=>reset();
-    wireRideNotes(()=>viewer?.pause());
-    let ready=false;
-    settingsContext={
-      label:'Ride settings',entryId:entry.id,ready:()=>ready,
-      capture:()=>viewer.captureHome(),goHome:()=>viewer.goHome(),
-      async save(home){
-        const response=await fetch(`/api/ride-home/${entry.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:entry.version,home})});
-        const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the home view.');
-        Object.assign(entry,result.entry);
-        if(token===selection)viewer.setHome(result.entry.viewer.home);
+    const hasShuttle=shuttleStartIndex(entry,rideTrack)!==null;
+    let changing=false;
+    async function showMode(mode,first=false){
+      if(changing||controller.signal.aborted)return;
+      changing=true;
+      const initialView=viewer?.captureHome();
+      viewer?.dispose();canvas?.remove();context?.dispose();context=null;
+      const variant=rideVariant(entry,rideTrack,base,mode),options=variant.options,display=variant.entry;
+      if(initialView)options.initialView=initialView;
+      options.home=entry.viewer?.home||base.home;
+      const original=entry.id==='beckwourth-peak'&&mode==='loop';
+      const climbing=original?'2,083':number(display.climbingFt??(mode==='loop'&&rideTrack.properties.ascentM!=null?rideTrack.properties.ascentM*3.28084:null));
+      $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
+        ${hasShuttle?`<div class="ride-mode" role="group" aria-label="Ride option"><button type="button" data-mode="loop" aria-pressed="${mode==='loop'}">↻ Loop</button><button type="button" data-mode="shuttle" aria-pressed="${mode==='shuttle'}">↗ Shuttle</button></div>`:''}
+        <div class="stats"><div><strong id="ride-distance">—</strong><span>Miles</span></div><div><strong>${climbing}</strong><span>Climbing Ft</span></div><div><strong>${movingTime(display)}</strong><span>Moving Time</span></div></div>
+        ${ridePanels(entry,`<div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span id="profile-end">—</span></div></div>
+        <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
+        ${surfaceKey(options.surfaceTypes)}`,`${accessLinks(display)}${external(rideTrack.properties.sourceUrl,'Route on Trailforks')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}`)}`;
+      $('#back').onclick=()=>reset();
+      wireRideNotes(()=>viewer?.pause());
+      for(const button of document.querySelectorAll('[data-mode]'))button.onclick=()=>{
+        if(button.dataset.mode===mode||changing)return;
+        showMode(button.dataset.mode).catch(error=>{console.error(error);toast('Could not switch ride options. Please reopen the ride.');});
+      };
+      let ready=false;
+      settingsContext={
+        label:'Ride settings',entryId:entry.id,ready:()=>ready,
+        capture:()=>viewer.captureHome(),goHome:()=>viewer.goHome(),
+        async save(home){
+          const response=await fetch(`/api/ride-home/${entry.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:entry.version,home})});
+          const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the home view.');
+          Object.assign(entry,result.entry);
+          if(token===selection)viewer.setHome(result.entry.viewer.home);
+        }
+      };
+      renderSettings();
+      const nextControls=regionalControls.cloneNode(true);(controls||regionalControls).replaceWith(nextControls);controls=nextControls;
+      canvas=document.createElement('canvas');canvas.id='scene';canvas.className='ride-scene';
+      canvas.setAttribute('aria-label',`3D terrain map of ${entry.name}. Hover or tap a flag to reveal its place name.`);
+      $('#canvas').append(canvas);
+      if(map){
+        map.suspended=true;map.controls.enabled=false;map.held=null;map.tween=null;
+        if(first&&animate){
+          options.entryView=map.rideEntryView(options.data.map,options.scale);
+          context=map.rideContext(options.data.map);options.entryContext=context;
+        }
       }
-    };
-    renderSettings();
-    controls=regionalControls.cloneNode(true);regionalControls.replaceWith(controls);
-    canvas=document.createElement('canvas');canvas.id='scene';canvas.className='ride-scene';
-    canvas.setAttribute('aria-label',`3D terrain map of ${entry.name}. Hover or tap a flag to reveal its place name.`);
-    $('#canvas').append(canvas);
-    if(map){
-      map.suspended=true;map.controls.enabled=false;map.held=null;map.tween=null;
-      if(animate){
-        options.entryView=map.rideEntryView(options.data.map,options.scale);
-        context=map.rideContext(options.data.map);options.entryContext=context;
-      }
+      const enableRide=()=>{
+        if(token!==selection)return;
+        ready=true;controls.inert=false;$('#play').disabled=false;
+        for(const button of document.querySelectorAll('.ride-settings button'))button.disabled=false;
+      };
+      controls.inert=true;options.onEntryComplete=enableRide;
+      viewer=await mountRideViewer(options);
+      if(token!==selection){viewer.dispose();canvas.remove();return;}
+      $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
+      $('#map-labels').hidden=true;
+      canvas.classList.add('ready');
+      if(!options.entryView)enableRide();
+      changing=false;
+      if(!first)document.querySelector(`[data-mode="${mode}"]`)?.focus({preventScroll:true});
     }
-    const enableRide=()=>{
-      if(token!==selection)return;
-      ready=true;controls.inert=false;$('#play').disabled=false;
-      for(const button of document.querySelectorAll('.ride-settings button'))button.disabled=false;
-    };
-    controls.inert=true;options.onEntryComplete=enableRide;
-    viewer=await mountRideViewer(options);
-    if(token!==selection){viewer.dispose();canvas.remove();return;}
-    $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
-    $('#map-labels').hidden=true;
-    canvas.classList.add('ready');
-    if(!options.entryView)enableRide();
+    await showMode('loop',true);
   }catch(error){
     if(controller.signal.aborted||token!==selection)return;
     closeRide();console.error(error);

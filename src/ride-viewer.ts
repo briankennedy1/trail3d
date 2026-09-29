@@ -20,6 +20,7 @@ export type RideViewerOptions = {
   data: { map: MapData; ride: Ride; heights: ArrayBuffer };
   home: HomeView;
   entryView?: HomeView;
+  initialView?: HomeView;
   entryContext?: { group: THREE.Group; update(progress: number): void; dispose(): void };
   onEntryComplete?: () => void;
   homeStorageKey?: string | null;
@@ -388,7 +389,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
     else applyCameraPose(pose);
   }
   function home() { applyHome(savedHome ?? defaultHome); }
-  applyHome(options.entryView ?? savedHome ?? defaultHome, false);
+  applyHome(options.entryView ?? options.initialView ?? savedHome ?? defaultHome, false);
   if (options.entryView) {
     const view = savedHome ?? defaultHome;
     startCameraTransition({ position: new THREE.Vector3(...view.position), target: new THREE.Vector3(...view.target),

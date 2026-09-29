@@ -51,7 +51,7 @@ export function rowEntry(row) {
 export function listEntries(db,admin=false) {
   return db.prepare(`SELECT e.*, EXISTS(SELECT 1 FROM tracks t WHERE t.entry_id=e.id) AS has_track FROM entries e ${admin?'':"WHERE e.status='published'"} ORDER BY area,name`).all().map(rowEntry);
 }
-const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl','sameStartFinish','climbingFt','descendingFt','movingMinutes','movingTimeEstimated','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer'];
+const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','startMapsUrl','finishMapsUrl','sameStartFinish','climbingFt','descendingFt','movingMinutes','movingTimeEstimated','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer','shuttle'];
 export function validateHome(home) {
   const vector=a=>Array.isArray(a)&&a.length===3&&a.every(n=>Number.isFinite(n)&&Math.abs(n)<100000);
   if(!home||!vector(home.position)||!vector(home.target)||!Number.isFinite(home.zoom)||home.zoom<.65||home.zoom>22)
@@ -78,6 +78,18 @@ export function validateEntry(input) {
   if(result.seasonMonths && (!Array.isArray(result.seasonMonths)||result.seasonMonths.some(n=>!Number.isInteger(n)||n<1||n>12))) fail('Season months must be 1–12.');
   for(const f of ['incomplete','ebikeRecommended','sameStartFinish','movingTimeEstimated']) if(result[f]!=null && typeof result[f]!=='boolean') fail(`Invalid ${f}.`);
   if(result.shuttleOption!=null&&!['no','yes','partial'].includes(result.shuttleOption)) fail('Invalid shuttle option.');
+  if(result.shuttle!=null){
+    const s=result.shuttle;
+    if(typeof s!=='object'||Array.isArray(s)||typeof s.enabled!=='boolean')fail('Invalid shuttle settings.');
+    if(s.enabled){
+      const {lat,lng}=s.coordinates||{};
+      if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat<bounds.south||lat>bounds.north||lng<bounds.west||lng>bounds.east)fail('Set shuttle start coordinates inside the Lost Sierra map.');
+      try {const u=new URL(s.startMapsUrl);if(u.protocol!=='https:'||!['maps.app.goo.gl','maps.google.com','google.com','www.google.com','goo.gl'].includes(u.hostname))throw 0;}catch{fail('Add a Google Maps link for the shuttle start.');}
+    }
+    for(const key of ['climbingFt','movingMinutes'])if(s[key]!=null&&(!Number.isFinite(s[key])||s[key]<0||s[key]>100000))fail(`Invalid shuttle ${key}.`);
+    if(s.movingTimeEstimated!=null&&typeof s.movingTimeEstimated!=='boolean')fail('Invalid shuttle moving time estimate.');
+    result.shuttle={enabled:s.enabled,coordinates:s.coordinates,startMapsUrl:s.startMapsUrl||'',climbingFt:s.climbingFt??null,movingMinutes:s.movingMinutes??null,movingTimeEstimated:s.movingTimeEstimated!==false};
+  }
   if(result.viewer!=null){
     const v=result.viewer;
     if(typeof v!=='object'||Array.isArray(v)||Object.keys(v).some(k=>!['home','pointsOfInterest','baseElevation','scale','angleBeats'].includes(k)))fail('Invalid ride viewer settings.');

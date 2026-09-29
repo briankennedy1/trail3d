@@ -339,7 +339,19 @@
       "finishMapsUrl": null,
       "sameStartFinish": true,
       "movingMinutes": 85,
-      "movingTimeEstimated": true
+      "movingTimeEstimated": true,
+      "shuttle": {
+        "enabled": true,
+        "startMapsUrl": "https://www.google.com/maps?q=39.800400,+-120.882580",
+        "coordinates": {
+          "lat": 39.8004,
+          "lng": -120.88258
+        },
+        "climbingFt": 1100,
+        "movingMinutes": 45,
+        "movingTimeEstimated": true
+      },
+      "shuttleOption": "yes"
     }
   },
   {
