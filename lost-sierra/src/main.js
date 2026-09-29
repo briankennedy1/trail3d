@@ -323,6 +323,9 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
       $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
       $('#map-labels').hidden=true;
       canvas.classList.add('ready');
+      // Start at the outgoing geographic view, then fly to this option's home.
+      // The short terrain crossfade overlaps the eased start of the camera move.
+      if(first&&transition)viewer.goHome();
       captureRideTransition=()=>({view:viewer.captureHome(),frame:viewer.captureFrame(),map:options.data.map,scale:options.scale??1});
       if(map)returnToOverview=()=>{
         controls.inert=true;
