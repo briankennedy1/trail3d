@@ -49,7 +49,7 @@ export function rowEntry(row) {
 export function listEntries(db,admin=false) {
   return db.prepare(`SELECT e.*, EXISTS(SELECT 1 FROM tracks t WHERE t.entry_id=e.id) AS has_track FROM entries e ${admin?'':"WHERE e.status='published'"} ORDER BY area,name`).all().map(rowEntry);
 }
-const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','climbingFt','descendingFt','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary'];
+const fields=['driveMinutes','bkxcVideoUrl','routeUrl','shuttleRouteUrl','climbingFt','descendingFt','intensity','season','seasonMonths','shuttleOption','ebikeRecommended','notes','incomplete','type','summary','viewer'];
 export function validateEntry(input) {
   const fail=message=>{throw Object.assign(new Error(message),{status:400});};
   if (!input || typeof input!=='object') fail('Entry is required.');
@@ -70,6 +70,28 @@ export function validateEntry(input) {
   if(result.seasonMonths && (!Array.isArray(result.seasonMonths)||result.seasonMonths.some(n=>!Number.isInteger(n)||n<1||n>12))) fail('Season months must be 1–12.');
   for(const f of ['incomplete','ebikeRecommended']) if(result[f]!=null && typeof result[f]!=='boolean') fail(`Invalid ${f}.`);
   if(result.shuttleOption!=null&&!['no','yes','partial'].includes(result.shuttleOption)) fail('Invalid shuttle option.');
+  if(result.viewer!=null){
+    const v=result.viewer;
+    if(typeof v!=='object'||Array.isArray(v)||Object.keys(v).some(k=>!['home','pointsOfInterest','baseElevation','scale','angleBeats'].includes(k)))fail('Invalid ride viewer settings.');
+    if(v.home){
+      const h=v.home,vector=a=>Array.isArray(a)&&a.length===3&&a.every(n=>Number.isFinite(n)&&Math.abs(n)<100000);
+      if(!vector(h.position)||!vector(h.target)||!Number.isFinite(h.zoom)||h.zoom<.65||h.zoom>22)fail('Invalid ride home view.');
+    }
+    if(v.scale!=null&&(!Number.isFinite(v.scale)||v.scale<.1||v.scale>25))fail('Invalid viewer scale.');
+    if(v.baseElevation!=null&&(!Number.isFinite(v.baseElevation)||v.baseElevation< -1000||v.baseElevation>9000))fail('Invalid terrain base.');
+    if(v.angleBeats!=null){
+      const beats=v.angleBeats;
+      if(!Array.isArray(beats)||beats.length<2||beats.length>32||beats.some((b,i)=>!Array.isArray(b)||b.length!==2||!b.every(Number.isFinite)||b[0]<0||b[0]>1||Math.abs(b[1])>1440||(i>0&&b[0]<=beats[i-1][0]))||beats[0][0]!==0||beats.at(-1)[0]!==1)fail('Camera beats must progress from 0 to 1.');
+    }
+    if(v.pointsOfInterest!=null){
+      if(!Array.isArray(v.pointsOfInterest)||v.pointsOfInterest.length>50)fail('Use up to 50 ride flags.');
+      for(const point of v.pointsOfInterest){
+        if(!point||typeof point.name!=='string'||!point.name.trim()||point.name.length>120||!/^#[0-9a-f]{6}$/i.test(point.color)||!Number.isFinite(point.latitude)||!Number.isFinite(point.longitude)||point.latitude<bounds.south||point.latitude>bounds.north||point.longitude<bounds.west||point.longitude>bounds.east)fail('Flags need a name, hex color, and location within the map.');
+        if(point.elevationFt!=null&&(!Number.isFinite(point.elevationFt)||point.elevationFt<0||point.elevationFt>30000))fail('Invalid flag elevation.');
+        if(point.url){try{if(!['https:','http:'].includes(new URL(point.url).protocol))throw 0;}catch{fail('Use a full http or https flag URL.');}}
+      }
+    }
+  }
   return result;
 }
 export function trackStats(feature) {

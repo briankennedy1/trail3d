@@ -12,8 +12,8 @@ function world(lon,lat,e=0){return new THREE.Vector3((lon+120.6)*X,e/1000*EX,(39
 async function dataset(name){const [meta,buffer]=await Promise.all([fetch(`/terrain/${name}.json`).then(r=>{if(!r.ok)throw Error('Terrain unavailable');return r.json();}),fetch(`/terrain/${name}.bin`).then(r=>{if(!r.ok)throw Error('Terrain unavailable');return r.arrayBuffer();})]);return {...meta,data:new Uint16Array(buffer)};}
 function sample(d,lon,lat){const xx=clamp((lon-d.bbox.west)/(d.bbox.east-d.bbox.west))*(d.width-1),yy=clamp((d.bbox.north-lat)/(d.bbox.north-d.bbox.south))*(d.height-1),x=Math.min(Math.floor(xx),d.width-2),y=Math.min(Math.floor(yy),d.height-2),u=xx-x,v=yy-y,a=d.data[y*d.width+x],b=d.data[y*d.width+x+1],c=d.data[(y+1)*d.width+x],e=d.data[(y+1)*d.width+x+1];return (a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+e*u*v)/d.scale;}
 export class Diorama {
-  constructor(element,labels,{onArea,onProgress,onEnd,onManual}) {
-    Object.assign(this,{element,labels,onArea,onProgress,onEnd,onManual});
+  constructor(element,labels,{onArea}) {
+    Object.assign(this,{element,labels,onArea});
     this.reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.scene=new THREE.Scene();
     this.camera=new THREE.OrthographicCamera(-1,1,1,-1,.05,1200);
@@ -25,17 +25,15 @@ export class Diorama {
     this.controls=new OrbitControls(this.camera,this.renderer.domElement);
     this.controls.enableDamping=false;this.controls.panSpeed=1.6;this.controls.zoomSpeed=1.4;this.controls.screenSpacePanning=false;this.controls.zoomToCursor=true;this.controls.minZoom=.65;this.controls.maxZoom=22;this.controls.minPolarAngle=.55;this.controls.maxPolarAngle=1.35;this.controls.mouseButtons={LEFT:THREE.MOUSE.PAN,MIDDLE:THREE.MOUSE.DOLLY,RIGHT:THREE.MOUSE.ROTATE};
     this.controls.minDistance=2;this.controls.maxDistance=420;
-    this.controls.addEventListener('start',()=>{this.tween=null;if(this.playing){this.pause();this.onManual?.();}});
+    this.controls.addEventListener('start',()=>{this.tween=null;});
     this.scene.add(new THREE.HemisphereLight(0xf6f2e2,0x6b7863,2.1));
     const sun=new THREE.DirectionalLight(0xfff5da,2);sun.position.set(-70,150,90);this.scene.add(sun);
     const mask=new THREE.DataTexture(new Uint8Array([0,0,255,255]),1,1);mask.needsUpdate=true;
     this.topMat=new THREE.ShaderMaterial({vertexShader:TERRAIN_VERT,fragmentShader:TERRAIN_FRAG,uniforms:{uMask:{value:mask},uLightDir:{value:new THREE.Vector3(-.55,.9,-.45).normalize()},uFocus:{value:0}}});
     this.home={target:new THREE.Vector3(0,3,0),position:new THREE.Vector3(-90,125,-160)};
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.controls.update();
-    this.chunks=[];this.markers=[];this.progress=0;this.crumble=0;this.crumbleTarget=0;this.active=null;
+    this.chunks=[];this.markers=[];this.crumble=0;this.crumbleTarget=0;this.active=null;
     this.routeGroup=new THREE.Group();this.scene.add(this.routeGroup);
-    this.rider=new THREE.Mesh(new THREE.SphereGeometry(.055,12,8),new THREE.MeshBasicMaterial({color:0x23704b}));
-    this.rider.visible=false;this.scene.add(this.rider);
     this.observer=new ResizeObserver(()=>this.resize());this.observer.observe(element);this.resize();
     this.last=performance.now();this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);
   }
@@ -90,16 +88,14 @@ export class Diorama {
   }
   move(target,position,duration=2.1){this.tween={start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
   async select(entry,track){
-    this.pause();this.active=entry;this.track=track;this.progress=0;this.rider.visible=false;this.clearRoute();
+    this.active=entry;this.track=track;this.clearRoute();
     let center,span;
     if(track){
       this.points=track.geometry.coordinates.map(([lon,lat])=>world(lon,lat,this.elevation(lon,lat)).add(new THREE.Vector3(0,.014,0)));
-      this.distances=[0];for(let i=1;i<this.points.length;i++)this.distances.push(this.distances[i-1]+Math.hypot((track.geometry.coordinates[i][0]-track.geometry.coordinates[i-1][0])*X,(track.geometry.coordinates[i][1]-track.geometry.coordinates[i-1][1])*Z));
       const box=new THREE.Box3().setFromPoints(this.points);center=box.getCenter(new THREE.Vector3());const size=box.getSize(new THREE.Vector3());span=Math.max(size.x,size.z,4);
       const positions=this.points.flatMap(p=>p.toArray());
-      const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
       const wideGeo=new LineGeometry();wideGeo.setPositions(positions);this.route=new Line2(wideGeo,new LineMaterial({color:0xedaa29,linewidth:3.375,depthTest:true}));this.routeGroup.add(this.route);
-      this.completed=new THREE.Line(geo.clone(),new THREE.LineBasicMaterial({color:0xf4cb4c,depthTest:true}));this.completed.position.y=.004;this.completed.geometry.setDrawRange(0,0);this.routeGroup.add(this.completed);geo.dispose();
+
     }else{
       this.points=null;center=world(entry.coordinates.lng,entry.coordinates.lat,this.elevation(entry.coordinates.lng,entry.coordinates.lat));span=15;
     }
@@ -115,15 +111,12 @@ export class Diorama {
     this.focusPose={target:center.clone(),position:center.clone().add(new THREE.Vector3(-distance*.45,distance*.48,-distance))};
     this.move(this.focusPose.target,this.focusPose.position,2.7);
   }
-  clearRoute(){for(const c of [...this.routeGroup.children]){c.geometry.dispose();c.material.dispose();this.routeGroup.remove(c);}this.route=null;this.completed=null;}
-  reset(){this.pause();this.active=null;this.points=null;this.track=null;this.rider.visible=false;this.clearRoute();this.crumbleTarget=0;this.move(this.home.target,this.home.position,2.5);}
-  setProgress(f,show=true){if(!this.points)return;this.progress=clamp(f);const distance=this.distances.at(-1)*this.progress;let lo=0,hi=this.distances.length-1;while(lo<hi){const mid=(lo+hi)>>1;if(this.distances[mid]<distance)lo=mid+1;else hi=mid;}const i=Math.max(1,lo),t=(distance-this.distances[i-1])/(this.distances[i]-this.distances[i-1]||1);this.rider.position.copy(this.points[i-1]).lerp(this.points[i],clamp(t));this.rider.visible=show;this.completed?.geometry.setDrawRange(0,i+1);this.onProgress?.(this.progress);}
-  play(){if(!this.points)return;if(this.progress>=.999)this.setProgress(0);this.playing=true;this.playStartProgress=this.progress;this.playStarted=performance.now();this.followStart=this.followPose(this.progress);this.move(this.followStart.target,this.followStart.position,2);}
-  pause(){this.playing=false;}
-  followPose(f){const angle=.5+f*.55,span=this.focusSpan*1.65;return {target:this.focusCenter.clone(),position:this.focusCenter.clone().add(new THREE.Vector3(-Math.sin(angle)*span,span*.48,-Math.cos(angle)*span))};}
-  north(){this.pause();this.onManual?.();const offset=this.camera.position.clone().sub(this.controls.target),radius=offset.length();if(Math.abs(Math.atan2(offset.x,offset.z))<.02){const pose=this.active?this.focusPose:this.home;this.move(pose.target,pose.position,1.5);}else this.move(this.controls.target,this.controls.target.clone().add(new THREE.Vector3(0,radius*.68,radius*.733)),1.5);}
-  control(action,dt){this.tween=null;if(this.playing){this.pause();this.onManual?.();}const offset=this.camera.position.clone().sub(this.controls.target);if(action==='left'||action==='right')offset.applyAxisAngle(new THREE.Vector3(0,1,0),(action==='left'?1:-1)*dt*.8);else{const spherical=new THREE.Spherical().setFromVector3(offset);spherical.phi=clamp(spherical.phi+(action==='up'?-1:1)*dt*.6,.55,1.35);offset.setFromSpherical(spherical);}this.camera.position.copy(this.controls.target).add(offset);}
+  clearRoute(){for(const c of [...this.routeGroup.children]){c.geometry.dispose();c.material.dispose();this.routeGroup.remove(c);}this.route=null;}
+  reset(){this.active=null;this.points=null;this.track=null;this.clearRoute();this.crumbleTarget=0;this.move(this.home.target,this.home.position,2.5);}
+  north(){const offset=this.camera.position.clone().sub(this.controls.target),radius=offset.length();if(Math.abs(Math.atan2(offset.x,offset.z))<.02){const pose=this.active?this.focusPose:this.home;this.move(pose.target,pose.position,1.5);}else this.move(this.controls.target,this.controls.target.clone().add(new THREE.Vector3(0,radius*.68,radius*.733)),1.5);}
+  control(action,dt){this.tween=null;const offset=this.camera.position.clone().sub(this.controls.target);if(action==='left'||action==='right')offset.applyAxisAngle(new THREE.Vector3(0,1,0),(action==='left'?1:-1)*dt*.8);else{const spherical=new THREE.Spherical().setFromVector3(offset);spherical.phi=clamp(spherical.phi+(action==='up'?-1:1)*dt*.6,.55,1.35);offset.setFromSpherical(spherical);}this.camera.position.copy(this.controls.target).add(offset);}
   frame(now){requestAnimationFrame(this.frame);const dt=Math.min((now-this.last)/1000,.05);this.last=now;
+    if(this.suspended)return;
     const speed=this.reduced?8:.57;this.crumble+=Math.sign(this.crumbleTarget-this.crumble)*Math.min(Math.abs(this.crumbleTarget-this.crumble),dt*speed);
     if(this.region){
       for(const c of this.chunks){const a=c.keep?0:ease(clamp((this.crumble-c.phase*.22)/.78));c.group.visible=a<.995;c.group.position.copy(c.home);c.group.position.y=-a*(85+c.phase*40);c.group.rotation.set(a*.3*(c.phase-.5),a*.12,a*.3*(.5-c.phase));c.group.scale.setScalar(1-a*.75);}
@@ -131,15 +124,6 @@ export class Diorama {
     }
     if(this.held)this.control(this.held,dt);
     if(this.tween){const t=this.tween,p=clamp((now-t.start)/1000/t.duration),s=ease(p);this.camera.zoom=THREE.MathUtils.lerp(t.fromZoom,1,s);this.camera.position.lerpVectors(t.from,t.to,s);this.controls.target.lerpVectors(t.fromTarget,t.target,s);if(p>=1)this.tween=null;}
-    if(this.playing){
-      const elapsed=(now-this.playStarted)/1000;
-      // Ease into the orbit and progress during the end of the camera approach.
-      const running=Math.max(0,elapsed-1.4),ramp=.8;
-      const effective=running<ramp?running*running/(2*ramp):running-ramp/2;
-      const f=clamp(this.playStartProgress+effective/45);this.setProgress(f);
-      if(!this.tween){const pose=this.followPose(f),s=1-Math.exp(-dt*2.2);this.camera.position.lerp(pose.position,s);this.controls.target.lerp(pose.target,s);}
-      if(f>=1){this.pause();this.onEnd?.();}
-    }
     this.controls.update();this.projection();
     const needle=document.querySelector('#compass-needle');if(needle){const delta=this.camera.position.clone().sub(this.controls.target);needle.style.transform=`rotate(${Math.atan2(delta.x,delta.z)}rad)`;}
     const boxes=[];

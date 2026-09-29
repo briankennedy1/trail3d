@@ -10,7 +10,7 @@ export interface Landscape {
   focusUniform: { value: number };
 }
 
-export function buildLandscape(terrain: Terrain, { trees = true }: { trees?: boolean } = {}): Landscape {
+export function buildLandscape(terrain: Terrain, { trees = true, baseElevation = BASE_ELEVATION }: { trees?: boolean; baseElevation?: number } = {}): Landscape {
   const group = new THREE.Group();
   const focusUniform = { value: 0 };
   const mask = buildMaskTexture(terrain);
@@ -22,7 +22,7 @@ export function buildLandscape(terrain: Terrain, { trees = true }: { trees?: boo
   });
   group.add(new THREE.Mesh(buildSurface(terrain), terrainMat));
 
-  const base = ((BASE_ELEVATION - LAKE_LEVEL) / WORLD_SCALE) * EXAGGERATION;
+  const base = ((baseElevation - LAKE_LEVEL) / WORLD_SCALE) * EXAGGERATION;
   const sideMat = new THREE.ShaderMaterial({
     vertexShader: SIDE_VERT,
     fragmentShader: SIDE_FRAG,

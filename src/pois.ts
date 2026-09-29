@@ -2,16 +2,7 @@ import * as THREE from 'three';
 import { EXAGGERATION, LAKE_LEVEL, Terrain, WORLD_SCALE, toWorld, type MapData } from './data';
 import { BASE_ELEVATION } from './terrain';
 
-type POI = { name: string; latitude: number; longitude: number; color: string; elevationFt?: number; url?: string };
-
-// Summit: lidar-based high point, which is southwest of the older GNIS waypoint.
-// https://www.peakbagger.com/peak.aspx?pid=2554
-// Park: Sierra Trails trail plan.
-// https://sierratrails.org/wp-content/uploads/2024/05/TMP-DRAFT-V3-052223.pdf
-const places: POI[] = [
-  { name: 'Beckwourth Peak', latitude: 39.7725, longitude: -120.43315, elevationFt: 7267, color: '#c8613d', url: 'https://www.peakbagger.com/peak.aspx?pid=2554' },
-  { name: 'Portola City Park', latitude: 39.80559, longitude: -120.46534, color: '#34877b', url: 'https://maps.app.goo.gl/hbWBTh69hicjwSwB6' },
-];
+export type POI = { name: string; latitude: number; longitude: number; color: string; elevationFt?: number; url?: string };
 
 // Banner height in world units; its width follows the text on it.
 export const BANNER_HEIGHT = 1.97;
@@ -292,7 +283,7 @@ function subdividedTriangle(a: [number, number], b: [number, number], c: [number
   return new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)).setIndex(index);
 }
 
-export function buildPOIs(map: MapData, terrain: Terrain) {
+export function buildPOIs(map: MapData, terrain: Terrain, ridePlaces: POI[] = [], baseElevation = BASE_ELEVATION) {
   const group = new THREE.Group();
   const flags: Flag[] = [];
   // The POI group sits at the scene origin, so its local space is world space.
@@ -302,7 +293,7 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     return toWorld(map, mapX, mapY, terrain.heightAt(mapX, mapY))[1];
   };
   const lift = 0.05;
-  const base = (BASE_ELEVATION - LAKE_LEVEL) / WORLD_SCALE * EXAGGERATION;
+  const base = (baseElevation - LAKE_LEVEL) / WORLD_SCALE * EXAGGERATION;
   const landing: Landing = {
     ground: (x, z) => Math.abs(x) > halfWidth || Math.abs(z) > halfDepth ? null : heightAt(x, z),
     drape: (x, z) => {
@@ -320,7 +311,7 @@ export function buildPOIs(map: MapData, terrain: Terrain) {
     },
   };
   const metersLon = 111320 * Math.cos((map.bbox.south + map.bbox.north) * Math.PI / 360);
-  for (const place of places) {
+  for (const place of ridePlaces) {
     const x = (place.longitude - map.bbox.west) * metersLon;
     const y = (place.latitude - map.bbox.south) * 111320;
     const marker = new THREE.Group();

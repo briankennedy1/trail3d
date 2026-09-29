@@ -20,19 +20,41 @@ npm run build
 npm start
 ```
 
-The original Beckwourth site and its existing server are unchanged. The regional guide is in this separate directory, backed up in the same Git repository.
+The original Beckwourth deployment is unchanged; its source entry point now uses the same shared viewer as the guide. The regional guide is in this separate directory, backed up in the same Git repository.
 
 ## What works
 
 - The original Beckwourth visual language: fullscreen map, Fraunces headings, floating cream ride card, watercolor terrain shaders, and the hold-to-move compass.
 - Regional relief from actual AWS Terrarium elevation tiles; no API key needed at runtime.
 - Select a ride to break away surrounding terrain and smoothly move into its area. Return to rebuild the regional map.
-- The curated Beckwourth route has its own detailed terrain, elevation scrubbing, and a 45-second orbit playback. Playback ignores accidental profile scrubbing. The green rider only appears after interaction.
+- Every ride with a GPS track uses the original Beckwourth viewer: terrain, exact green marker, animated linked flags, elevation scrubbing, compass, and the 45-second helicopter playback. Beckwourth retains its detailed terrain and tuned home/camera preset. Playback ignores accidental profile scrubbing. The green rider only appears after interaction.
 - 19 rides and 10 off-bike adventures in the active guide, selected from 22 rides and 10 adventures imported from the public Everstoke planner. Search, area/effort filters, and external route/video links.
 - Route-specific URLs (`/?ride=beckwourth-peak`). Local links work only on this computer until hosted.
 - Username/password admin. Create/edit entries, draft/publish/archive, import GPX/GeoJSON, export structured content, and change the admin password.
 - SQLite persistence with source snapshots, version conflicts, sessions, and an audit trail of edits and replaced tracks.
 - Responsive layout and reduced-motion support.
+
+## Shared ride architecture
+
+The original Beckwourth code is the baseline for **all** tracked rides. Ride selection mounts it in the guide's existing map/card; it does not load another website or an iframe. The regional renderer handles browsing and the crumble transition, then suspends while the ride renderer runs. Returning disposes the ride's frame loop, event listeners, controls, textures, geometry, and WebGL context, and resumes the region.
+
+| Module | Responsibility |
+| --- | --- |
+| `../src/ride-viewer.ts` | Mount/dispose the shared viewer, playback, scrubbing and compass interaction |
+| `../src/ride-flight-plan.ts` | Original smooth helicopter planner and 45-second motion-based pacing |
+| `../src/ride-route.ts` | Original gold/overlap strokes, depth testing and green dot |
+| `../src/pois.ts` | Reusable flag geometry, labels, links and fabric animations |
+| `../src/terrain.ts` | Watercolor terrain, configurable cutout base |
+| `../src/ride-profile.css` | Shared elevation/playback styling |
+| `../src/beckwourth-preset.ts` | Beckwourth's exact home, flight beats and two named flags |
+| `src/ride-data.js` | GPS-to-local-meter adapter, regional terrain cutout and elevation fallback |
+| `src/ride-experience.js` | Choose terrain/preset and pass each ride's data into the shared viewer |
+
+`../src/beckwourth.ts` is now a small compatibility entry point for the original standalone app. It loads the original data and mounts the same viewer. The guide reads tracks from its database, including replacement uploads. Other rides receive their own terrain crop and starting camera; they do not inherit Beckwourth's POI locations. Regional terrain is coarser than Beckwourth's detailed cutout, so additional high-resolution ride terrain is a future content improvement.
+
+`mountRideViewer({ data: { map, ride, heights }, home, pointsOfInterest, ... })` returns a controller with `dispose()`. Optional settings are `root` (DOM scope), `homeStorageKey`, `baseElevation`, `scale`, `angleBeats`, and `manageLoading`. The host supplies the original control element IDs. Public guide homes come from ride settings, never a visitor's saved local view.
+
+Entries can persist a validated `viewer` object through the admin API alongside normal content. Supported fields are `home` (`position`, `target`, `zoom`), `pointsOfInterest` (`name`, `latitude`, `longitude`, hex `color`, optional `url`/`elevationFt`), `baseElevation`, `scale`, and `angleBeats` (ordered `[progress, degrees]` pairs from 0 to 1). These settings survive normal admin form saves; a visual flag/home editor has not been added yet. An empty flag list is valid until a ride's actual POIs are supplied. The public never needs an account.
 
 ## Create the admin
 
@@ -54,13 +76,13 @@ The importer refreshes the **source snapshot files**, not live admin edits. The 
 
 The planner ships **location pins and external links, not GPS tracks**. Its coordinates are approximate area pins, often repeated for several rides. 18 active rides currently need a GPX/GeoJSON track before their actual route can be rendered. A direct request to the linked Trailforks ridelog returned HTTP 403; no access controls were bypassed. Export accessible GPX files normally and add them through the admin workshop.
 
-The bundled Beckwourth track is the cleaned September 25, 2026 recording (Trailforks `124349783`) from the original diorama. It differs from the planner’s linked ride (`92464225`), and the UI labels this distinction. Imported climb/descent values remain marked as planner values; displayed distance comes from the shown track. Missing source statistics are never guessed. E-bike recommendations do not establish access permission. Current conditions are not tracked yet.
+The bundled Beckwourth track is the cleaned September 25, 2026 recording (Trailforks `124349783`) from the original diorama. It differs from the planner’s linked ride (`92464225`), and links directly to that recording. Beckwourth retains its original ride statistics. Untracked rides show planner climb/descent values; displayed distance comes from the shown track. Missing source statistics are never guessed. E-bike recommendations do not establish access permission. Current conditions are not tracked yet.
 
 ### Geographic coverage
 
 The current terrain covers 39.49–40.20 N, 121.04–120.28 W. Nevada City, Truckee, and Susanville are archived and excluded from the guide; the untouched import snapshots preserve their original records. `data/guide-scope.json` defines this coverage. Uploads outside that region are rejected with an explanation. GPX accepts one continuous track segment or route; GeoJSON accepts one LineString with 2–30,000 points. Gaps longer than 5 km and nonfinite coordinates are rejected. Tracks without elevation are displayed on sampled terrain.
 
-Regenerate elevation assets with `npm run terrain` (requires Internet access). The current script also copies the curated track/terrain from the sibling original Beckwourth app. The generated assets are checked in, so the app runs independently without regeneration. Terrain source: https://registry.opendata.aws/terrain-tiles/.
+Regenerate elevation assets with `npm run terrain` (requires Internet access). The current script also copies the curated track/terrain from the sibling original Beckwourth app. The generated assets are checked in, so no terrain regeneration is needed. Build from this repository, which contains the shared viewer and original Beckwourth terrain. The production dist directory contains all required assets. Terrain source: https://registry.opendata.aws/terrain-tiles/.
 
 ## Database and backups
 

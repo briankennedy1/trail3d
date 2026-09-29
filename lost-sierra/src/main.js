@@ -1,51 +1,85 @@
 import './style.css';
 import './guide.css';
 import { Diorama } from './diorama.js';
+import { prepareRide, mountRideViewer } from './ride-experience.js';
 const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const external=(url,label)=>{try{if(!['https:','http:'].includes(new URL(url).protocol))return '';return `<a href="${escape(url)}" target="_blank" rel="noopener">${escape(label)} ↗</a>`;}catch{return '';}};
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
 let entries=[],kind='ride',selection=0,map,track=null;
+let closeRide=()=>{};
+const regionalControls=$('.map-controls');
+$('.masthead').id='masthead';$('.sidebar').id='ride-card';
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').classList.remove('show'),3000);}
 function filtered(){const query=$('#search').value.toLowerCase().trim(),area=$('#area').value,intensity=$('#intensity').value;return entries.filter(e=>e.kind===kind&&(!area||e.area===area)&&(!intensity||e.intensity===intensity)&&`${e.name} ${e.area} ${e.notes||''} ${e.summary||''}`.toLowerCase().includes(query));}
 function renderList(){const rows=filtered().sort((a,b)=>Number(b.hasTrack)-Number(a.hasTrack));$('#result-count').textContent=`${rows.length} ${kind==='ride'?(rows.length===1?'ride':'rides'):(rows.length===1?'adventure':'adventures')}`;$('#clear').hidden=!($('#search').value||$('#area').value||$('#intensity').value);$('#entries').innerHTML=rows.length?rows.map(e=>`<article class="entry-card"><button class="entry-open" data-id="${escape(e.id)}"><span class="area"><i class="dot"></i>${escape(e.area)}</span><h3>${escape(e.name)}</h3><div class="entry-meta">${e.kind==='ride'?`<span>${escape(e.intensity||'Effort not listed')}</span>${e.climbingFt!=null?`<span>·</span><span>↑ ${number(e.climbingFt)} ft</span>`:''}`:`<span>${escape((e.type||'Explore').replaceAll('-',' + '))}</span>`}${e.hasTrack?'<span class="track-tag">· 3D route</span>':''}</div></button></article>`).join(''):'<p class="empty">No places match your search. Try another filter.</p>';for(const b of document.querySelectorAll('[data-id]'))b.onclick=()=>selectEntry(b.dataset.id);map?.setEntries(rows);}
 function clearFilters(){for(const id of ['search','area','intensity'])$('#'+id).value='';renderList();}
-function reset(push=true){selection++;track=null;map?.reset();$('#browse').hidden=false;$('#detail').hidden=true;$('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';$('#map-status').textContent='Pick a ride. Watch the landscape open up.';if(push)history.pushState({},'','/');renderList();}
+function reset(push=true){selection++;closeRide();track=null;map?.reset();$('#browse').hidden=false;$('#detail').hidden=true;$('#map-kicker').textContent='NORTHERN CALIFORNIA · 3D FIELD GUIDE';$('#map-title').innerHTML='A little further<br>from the ordinary.';$('#map-status').textContent='Pick a ride. Watch the landscape open up.';if(push)history.pushState({},'','/');renderList();}
 async function selectEntry(id,push=true){
   const entry=entries.find(e=>e.id===id);if(!entry){toast('That ride is not published.');return;}
-  const token=++selection;track=null;map?.pause();
+  const token=++selection;closeRide();track=null;
   $('#browse').hidden=true;$('#detail').hidden=false;$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
   if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
   if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection)return;track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
   if(token!==selection)return;
-  renderDetail(entry,track);await map?.select(entry,track);
+  if(track){await openRide(entry,track,token);return;}
+  renderDetail(entry);await map?.select(entry,null);
   $('#map-kicker').textContent=entry.area.toUpperCase();$('#map-title').textContent=entry.name;$('#map-status').textContent=track?'A closer look. Drag to explore.': 'Approximate area location · add a GPS track for the full route';
   $('.sidebar').scrollTop=0;
 }
-function renderDetail(e,t){
-  const distance=t?`${(t.properties.distanceM/1609.344).toFixed(1)}`:'—';
-  const stats=e.kind==='ride'?`<div class="stats"><div><b>${distance}</b><span>MILES ${t?'· SHOWN TRACK':''}</span></div><div><b>${number(e.climbingFt)}</b><span>FT CLIMB · PLANNER</span></div><div><b>${number(e.descendingFt)}</b><span>FT DESCENT · PLANNER</span></div></div>`:'';
-  $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.name)}</h1><div class="entry-meta">${escape(e.intensity||e.type||'Explore')}</div><div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}${t?'<canvas class="profile" id="profile" aria-label="Interactive elevation profile" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></canvas><div class="profile-labels"><span id="profile-elevation">Elevation</span><span id="profile-distance"></span></div><button class="primary play-button" id="play">▶ Play Ride</button><p class="track-source" id="track-source"></p>':`<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>`}
+async function openRide(entry,rideTrack,token){
+  const controller=new AbortController();let viewer,canvas,controls,revealTimer;
+  closeRide=()=>{
+    controller.abort();clearTimeout(revealTimer);viewer?.dispose();canvas?.remove();
+    controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
+    if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
+  };
+  $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p class="muted" role="status">Opening the ride…</p>';
+  $('#back').onclick=()=>reset();
+  const started=performance.now();await map?.select(entry,rideTrack);
+  try{
+    const options=await prepareRide(entry,rideTrack,controller.signal);
+    if(token!==selection)return;
+    const original=entry.id==='beckwourth-peak';
+    const climbing=original?'2,083':number(rideTrack.properties.ascentM==null?entry.climbingFt:rideTrack.properties.ascentM*3.28084);
+    $('#detail').innerHTML=`<button class="back-button" id="back">← All rides</button><p class="detail-area">${escape(entry.area)}</p><h2>${escape(entry.name)}</h2>
+      <div class="stats"><div><strong id="ride-distance">—</strong><span>miles</span></div><div><strong>${climbing}</strong><span>ft climbing</span></div><div><strong>${original?'2:01':number(rideTrack.properties.descentM==null?entry.descendingFt:rideTrack.properties.descentM*3.28084)}</strong><span>${original?'moving time':'ft descending'}</span></div></div>
+      <div class="elevation"><div class="elevation-head"><span>Elevation profile</span><output id="elevation-readout">—</output></div><div id="elevation-chart" class="elevation-chart" role="slider" tabindex="0" aria-label="Elevation profile, ride position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><svg id="elevation-svg" viewBox="0 0 280 96" preserveAspectRatio="none" aria-hidden="true"></svg></div><div class="elevation-axis"><span>0 mi</span><span>Hover or drag to explore</span><span id="profile-end">—</span></div></div>
+      <div class="playback"><button id="play" type="button" disabled>▶ Play Ride</button></div>
+      <div class="detail-links">${external(rideTrack.properties.sourceUrl,'View original ride')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}</div>
+      ${entry.notes||entry.summary?`<details class="ride-notes"><summary>Ride notes</summary><p class="detail-copy">${escape(entry.notes||entry.summary)}</p></details>`:''}`;
+    $('#back').onclick=()=>reset();
+    controls=regionalControls.cloneNode(true);regionalControls.replaceWith(controls);
+    canvas=document.createElement('canvas');canvas.id='scene';canvas.className='ride-scene';
+    canvas.setAttribute('aria-label',`3D terrain map of ${entry.name}. Hover or tap a flag to reveal its place name.`);
+    $('#canvas').append(canvas);
+    if(map){map.controls.enabled=false;map.held=null;}
+    viewer=await mountRideViewer(options);
+    if(token!==selection){viewer.dispose();canvas.remove();return;}
+    $('.sidebar').scrollTop=0;document.body.classList.add('ride-open');
+    const approach=map?(map.reduced?250:2700):0;
+    revealTimer=setTimeout(()=>{
+      if(token!==selection)return;
+      if(map)map.suspended=true;
+      canvas.classList.add('ready');$('#play').disabled=false;
+    },Math.max(0,approach-(performance.now()-started)));
+  }catch(error){
+    if(controller.signal.aborted||token!==selection)return;
+    closeRide();console.error(error);
+    $('#detail').innerHTML='<button class="back-button" id="back">← All rides</button><p>The ride could not load.</p><button class="secondary" id="retry-ride">Try again</button>';
+    $('#back').onclick=()=>reset();$('#retry-ride').onclick=()=>selectEntry(entry.id,false);
+  }
+}
+function renderDetail(e){
+  const distance='—';
+  const stats=e.kind==='ride'?`<div class="stats"><div><b>${distance}</b><span>MILES</span></div><div><b>${number(e.climbingFt)}</b><span>FT CLIMB · PLANNER</span></div><div><b>${number(e.descendingFt)}</b><span>FT DESCENT · PLANNER</span></div></div>`:'';
+  $('#detail').innerHTML=`<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button><p class="detail-area">${escape(e.area)}</p><h1 class="detail-title">${escape(e.name)}</h1><div class="entry-meta">${escape(e.intensity||e.type||'Explore')}</div><div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice">${e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}</div>
   ${e.notes||e.summary?`<h3>Field notes</h3><p class="detail-copy">${escape(e.notes||e.summary)}</p>`:''}
   <div class="facts">${e.season?`<div class="fact-row"><span>Season</span><b>${escape(e.season)}</b></div>`:''}${e.driveMinutes!=null?`<div class="fact-row"><span>Drive from Everstoke</span><b>~${e.driveMinutes} min</b></div>`:''}${e.shuttleOption&&e.shuttleOption!=='no'?`<div class="fact-row"><span>Shuttle option</span><b>${e.shuttleOption==='partial'?'Partial':'Yes'}</b></div>`:''}${e.ebikeRecommended?'<p class="small muted">The planner recommends an e-bike. Confirm current e-bike access for each trail.</p>':''}</div>
   <div class="detail-links">${external(e.routeUrl,'Open original route')}${external(e.shuttleRouteUrl,'Shuttle route')}${external(e.bkxcVideoUrl,'Watch BKXC’s ride')}</div>${e.incomplete?'<p class="notice">These notes are still being filled in.</p>':''}<p class="track-source">From the Everstoke planner. Locations and seasonal notes need local confirmation; this is not a live trail conditions feed.</p>`;
   $('#back').onclick=()=>reset();
   $('#share').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast('Ride link copied. This local link works on this computer.');}catch{toast('Copy this ride’s URL from your address bar.');}};
-  if(t){$('#track-source').innerHTML=`Showing ${escape(t.properties.sourceLabel)}. ${external(t.properties.sourceUrl,'Track source')}${e.id==='beckwourth-peak'?'<br>This cleaned recording is separate from the planner’s original linked ride.':''}`;$('#play').onclick=()=>{if(map?.playing){map.pause();updatePlayback();}else{map?.play();updatePlayback();}};attachProfile(t);}
-}
-function updatePlayback(){const button=$('#play');if(button)button.textContent=map?.playing?'Ⅱ Pause':'▶ Play Ride';}
-let profileDraw=()=>{};
-function attachProfile(t){
-  const canvas=$('#profile'),coords=t.geometry.coordinates,elevations=coords.map(p=>p[2]??map?.elevation(p[0],p[1])??0),min=Math.min(...elevations),max=Math.max(...elevations);
-  const distances=[0];for(let i=1;i<coords.length;i++)distances.push(distances.at(-1)+Math.hypot((coords[i][0]-coords[i-1][0])*85390,(coords[i][1]-coords[i-1][1])*111320));
-  const total=distances.at(-1)||1;
-  profileDraw=(f=0)=>{
-    if(!canvas.isConnected)return;const w=canvas.clientWidth||280,h=86,dpr=Math.min(devicePixelRatio,2);canvas.width=w*dpr;canvas.height=h*dpr;const c=canvas.getContext('2d');c.scale(dpr,dpr);c.clearRect(0,0,w,h);
-    const xy=i=>[distances[i]/total*w,h-10-(elevations[i]-min)/(max-min||1)*(h-20)];c.beginPath();c.moveTo(0,h);for(let i=0;i<coords.length;i++)c.lineTo(...xy(i));c.lineTo(w,h);c.closePath();c.fillStyle='#d7debf';c.fill();c.beginPath();for(let i=0;i<coords.length;i++)c.lineTo(...xy(i));c.strokeStyle='#7a895a';c.lineWidth=1.3;c.stroke();
-    const index=Math.min(coords.length-1,distances.findIndex(d=>d>=f*total));c.fillStyle='#d7b75d55';c.fillRect(0,0,f*w,h);c.beginPath();c.moveTo(f*w,0);c.lineTo(f*w,h);c.strokeStyle='#947644';c.stroke();canvas.setAttribute('aria-valuenow',String(Math.round(f*100)));canvas.setAttribute('aria-valuetext',`${(f*t.properties.distanceM/1609.344).toFixed(1)} miles`);$('#profile-elevation').textContent=`${number(elevations[Math.max(0,index)]*3.28084)} ft`;$('#profile-distance').textContent=`${(f*t.properties.distanceM/1609.344).toFixed(1)} / ${(t.properties.distanceM/1609.344).toFixed(1)} mi`;
-  };
-  const scrub=event=>{if(map?.playing)return;const r=canvas.getBoundingClientRect();map?.setProgress(Math.max(0,Math.min(1,(event.clientX-r.left)/r.width)));};
-  canvas.onpointermove=e=>{if(e.pointerType==='mouse'||e.buttons)scrub(e);};canvas.onpointerdown=e=>{if(map?.playing)return;canvas.setPointerCapture(e.pointerId);scrub(e);};canvas.onkeydown=e=>{if(map?.playing)return;if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();map?.setProgress(e.key==='Home'?0:e.key==='End'?1:(map?.progress||0)+(e.key==='ArrowLeft'?-.01:.01));}};profileDraw(0);
+
 }
 for(const button of document.querySelectorAll('[data-kind]'))button.onclick=()=>{kind=button.dataset.kind;for(const b of document.querySelectorAll('[data-kind]'))b.classList.toggle('active',b===button);$('#intensity').disabled=kind!=='ride';$('#intensity').value='';reset();};
 for(const id of ['search','area','intensity'])$('#'+id).addEventListener(id==='search'?'input':'change',renderList);
@@ -59,6 +93,6 @@ try{
   const response=await fetch('/api/catalog');if(!response.ok)throw Error('The guide database could not be reached.');entries=(await response.json()).entries;
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
-  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},onProgress:f=>profileDraw(f),onEnd:updatePlayback,onManual:updatePlayback});await map.init(filtered());$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
+  try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},});await map.init(filtered());$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}
   const initial=new URLSearchParams(location.search).get('ride');if(initial)await selectEntry(initial,false);
 }catch(e){$('#loading').textContent=e.message;$('#entries').innerHTML='<p class="empty">Could not load the guide. Refresh to try again.</p>';console.error(e);}
