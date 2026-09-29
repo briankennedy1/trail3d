@@ -32,6 +32,7 @@ export type RideViewerOptions = {
   surfaceTypes?: RouteSurface[];
   baseElevation?: number;
   scale?: number;
+  followZoom?: number;
   angleBeats?: [number, number][];
   manageLoading?: boolean;
 };
@@ -218,7 +219,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       position: new THREE.Vector3(...view.position).lerp(new THREE.Vector3(
         shot.center.x + Math.sin(shot.angle) * orbitRadius,
         shot.height, shot.center.z + Math.cos(shot.angle) * orbitRadius), intro),
-      zoom: THREE.MathUtils.lerp(view.zoom, 1.1, intro),
+      zoom: THREE.MathUtils.lerp(view.zoom, options.followZoom ?? 1.1, intro),
       offsetX: offset.x, offsetY: offset.y,
     };
   }
