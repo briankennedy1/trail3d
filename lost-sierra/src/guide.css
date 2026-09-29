@@ -6,6 +6,8 @@
 .guide-page .masthead h1{font-size:clamp(30px,3.7vw,56px);line-height:1.02;margin:0 0 7px;color:#314f53;font-weight:700}
 .guide-page .masthead h1 em{color:#b95a37;font-weight:600}
 .guide-page .masthead p{margin:0;font-size:14px;font-weight:600;color:#5e6865}
+.guide-page .masthead .region-title{font-family:Fraunces,Georgia,serif;font-size:clamp(18px,1.7vw,24px);line-height:1.2;color:#315653}
+.guide-page.ride-open .region-title{display:none}
 .guide-page main{display:block;height:100dvh}
 .guide-page #map{position:fixed;inset:0;height:100%;border:0;background:#f6efe0}
 .guide-page .map-heading{display:none}

@@ -395,7 +395,10 @@ export class Diorama {
   clearRoute(){for(const c of [...this.routeGroup.children]){c.geometry.dispose();c.material.dispose();this.routeGroup.remove(c);}this.route=null;}
   captureHome(){return {position:this.camera.position.toArray(),target:this.controls.target.toArray(),zoom:this.camera.zoom};}
   setHome(home){this.home={position:new THREE.Vector3(...home.position),target:new THREE.Vector3(...home.target),zoom:home.zoom};}
-  setArea(area){this.area=area;}
+  setArea(area){
+    this.area=area;
+    if(area)for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers])marker.element.style.display='none';
+  }
   setRegionHome(area,home){this.regionHomes={...this.regionHomes,[area]:{home}};}
   regionPose(area){
     const saved=Object.hasOwn(this.regionHomes,area)?this.regionHomes[area].home:null;
@@ -457,7 +460,7 @@ export class Diorama {
     const needle=document.querySelector('#compass-needle');if(needle){const delta=this.camera.position.clone().sub(this.controls.target);needle.style.transform=`rotate(${Math.atan2(delta.x,delta.z)}rad)`;}
     const boxes=[];
     for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers]){
-      if(this.active||((this.highwayMarkers.includes(marker)||this.riverMarkers.includes(marker))&&!this.highways.visible)){marker.element.style.display='none';continue;}
+      if(this.area||this.active||((this.highwayMarkers.includes(marker)||this.riverMarkers.includes(marker))&&!this.highways.visible)){marker.element.style.display='none';continue;}
       const p=marker.position.clone().project(this.camera);const w=this.element.clientWidth,h=this.element.clientHeight,x=(p.x*.5+.5)*w+(marker.offsetX||0),y=(-p.y*.5+.5)*h;
       const visible=p.z>-1&&p.z<1&&x>20&&x<w-20&&y>45&&y<h-(marker.destination?25:85);
       const width=marker.element.offsetWidth||90;const rect={x:x-width/2,y:y-25,w:width,h:32};const overlap=boxes.some(b=>rect.x<b.x+b.w&&rect.x+rect.w>b.x&&rect.y<b.y+b.h&&rect.y+rect.h>b.y);

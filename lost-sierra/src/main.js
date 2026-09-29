@@ -179,7 +179,9 @@ function renderList(){
     hover.onpointerenter=b.onfocus=()=>map?.highlightOverviewRoute(b.dataset.id);
     hover.onpointerleave=b.onblur=()=>map?.highlightOverviewRoute(null);
   }
-  map?.setEntries(rows);map?.setArea($('#area').value);
+  const area=$('#area').value;
+  $('#region-title').textContent=area;$('#region-title').hidden=!area;
+  map?.setEntries(rows);map?.setArea(area);
   if(!$('#browse').hidden)showOverviewSettings();
 }
 function familyPicker(entry){
