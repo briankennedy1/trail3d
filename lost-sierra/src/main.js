@@ -4,18 +4,20 @@ import { Diorama } from './diorama.js';
 import { prepareRide, mountRideViewer } from './ride-experience.js';
 const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const external=(url,label)=>{
+const external=(url,label,iconName)=>{
   try{
     const {protocol,hostname}=new URL(url);if(!['https:','http:'].includes(protocol))return '';
     const on=domain=>hostname===domain||hostname.endsWith(`.${domain}`);
     const brand=on('youtube.com')||on('youtu.be')?'youtube':on('trailforks.com')?'trailforks':null;
-    const icon=brand?`<img class="link-brand-icon" src="/icons/${brand}.svg" alt="" aria-hidden="true" width="22" height="22">`:'';
-    return `<a href="${escape(url)}" target="_blank" rel="noopener">${icon}<span>${escape(label)} ↗</span></a>`;
+    const icon=iconName==='parking'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>'
+      :brand?`<img class="link-brand-icon" src="/icons/${brand}.svg" alt="" aria-hidden="true" width="22" height="22">`
+      :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3 10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg>';
+    return `<a href="${escape(url)}" target="_blank" rel="noopener noreferrer" title="${escape(label)}" aria-label="${escape(label)}">${icon}</a>`;
   }catch{return '';}
 };
 const accessLinks=e=>{
   const same=e.sameStartFinish||(e.startMapsUrl&&e.startMapsUrl===e.finishMapsUrl);
-  return external(e.startMapsUrl,same?'Start / Finish · Google Maps':'Start · Google Maps')+(same?'':external(e.finishMapsUrl,'Finish · Google Maps'));
+  return external(e.startMapsUrl,same?'Parking · Google Maps':'Start parking · Google Maps','parking')+(same?'':external(e.finishMapsUrl,'Finish parking · Google Maps','parking'));
 };
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
 let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
