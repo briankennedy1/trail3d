@@ -163,7 +163,7 @@ function renderList(){
 function familyPicker(entry){
   if(!entry.rideFamily)return '';
   const options=familyOptions(entry,entries);
-  return `<div class="ride-family-option"><span class="family-eyebrow">Choose your route</span>${options.length>1?`<div class="route-option-picker" role="group" aria-label="Route option">${options.map(e=>`<button type="button" class="route-option-button" data-route-option="${escape(e.id)}" aria-pressed="${e.id===entry.id}"><span class="route-option-indicator" aria-hidden="true">${e.id===entry.id?'✓':'↗'}</span><span>${escape(e.rideFamily.option)}</span></button>`).join('')}</div>`:`<strong>${escape(entry.rideFamily.option)}</strong>`}</div>`;
+  return `<div class="ride-family-option"><span class="family-eyebrow">Choose your route</span>${options.length>1?`<div class="route-option-picker" role="group" aria-label="Route option">${options.map(e=>`<button type="button" class="route-option-button" data-route-option="${escape(e.id)}" aria-pressed="${e.id===entry.id}"><span>${escape(e.rideFamily.option)}</span></button>`).join('')}</div>`:`<strong>${escape(entry.rideFamily.option)}</strong>`}</div>`;
 }
 function wireFamilyPicker(){for(const button of document.querySelectorAll('[data-route-option]'))button.onclick=()=>{if(button.getAttribute('aria-pressed')!=='true')selectEntry(button.dataset.routeOption,true,false);};}
 

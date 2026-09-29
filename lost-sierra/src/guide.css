@@ -167,8 +167,6 @@
 .route-option-button{display:flex;flex-direction:row;align-items:center;gap:10px;min-height:48px;padding:10px 11px;text-align:left;border:1px solid transparent;border-radius:8px;background:transparent;color:#68716c;font:600 12px/1.35 'DM Sans',sans-serif;transition:background .18s,color .18s,box-shadow .18s,transform .18s}
 .route-option-button:hover{background:#f8f3e8;color:#315653;transform:translateY(-1px)}
 .route-option-button[aria-pressed="true"]{background:#fffaf0;border-color:#cba78d;color:#963f2e;box-shadow:0 2px 5px #5f49321a}
-.route-option-indicator{flex:none;display:flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid #c9c7ba;border-radius:50%;font-size:11px}
-.route-option-button[aria-pressed="true"] .route-option-indicator{background:#a84d36;border-color:#a84d36;color:#fff}
 .route-option-button:focus-visible{outline:2px solid #315653;outline-offset:2px}
 .route-option-button:disabled{cursor:progress}
 @media(prefers-reduced-motion:reduce){.route-option-button{transition:none}}
