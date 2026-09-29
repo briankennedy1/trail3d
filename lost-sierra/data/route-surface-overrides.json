@@ -36,5 +36,16 @@
         "source": "Entire route confirmed as singletrack by Brian, 2026-09-28"
       }
     ]
+  },
+  "mt-elwell": {
+    "coordinatesSha256": "7d2d45cf6eb0dbc1cd77429b894e2be5a3f626a43885b6ed591590c775bd8769",
+    "ranges": [
+      {
+        "from": 2487,
+        "to": 2504,
+        "type": "asphalt",
+        "source": "Loop closure along mapped Highway 89, OSM way 712509475"
+      }
+    ]
   }
 }

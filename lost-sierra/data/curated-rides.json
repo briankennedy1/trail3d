@@ -11,7 +11,7 @@
       "climbingFt": 472,
       "descendingFt": 463,
       "summary": "A mellow loop around Lake Davis, mixing lakeside singletrack with gravel roads.",
-      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth–Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
+      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth\u2013Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
       "season": "Snow-free months",
       "seasonMonths": [],
       "incomplete": false,
@@ -291,9 +291,9 @@
       "routeUrl": "https://www.trailforks.com/routeplan/view/785580/",
       "movingMinutes": 275,
       "movingTimeEstimated": true,
-      "sameStartFinish": false,
+      "sameStartFinish": true,
       "startMapsUrl": "https://www.google.com/maps?q=39.76578,-120.61828",
-      "finishMapsUrl": "https://www.google.com/maps?q=39.76677,-120.61901"
+      "finishMapsUrl": "https://www.google.com/maps?q=39.76578,-120.61828"
     }
   },
   {
