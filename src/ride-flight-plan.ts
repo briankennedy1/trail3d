@@ -173,5 +173,5 @@ export function createFlightPlan({ total, routePoint, clearSightHeight, getHome,
       height: cubic(a.height, b.height, c.height, d.height),
     };
   }
-  return { flightShot, timeAtProgress, progressAtTime };
+  return { flightShot, timeAtProgress, progressAtTime, invalidate() { flightPath = null; flightTimes = []; } };
 }

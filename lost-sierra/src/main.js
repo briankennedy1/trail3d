@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const external=(url,label)=>{try{if(!['https:','http:'].includes(new URL(url).protocol))return '';return `<a href="${escape(url)}" target="_blank" rel="noopener">${escape(label)} ↗</a>`;}catch{return '';}};
 const number=n=>n==null?'—':Math.round(n).toLocaleString();
-let entries=[],kind='ride',selection=0,map,track=null;
+let entries=[],kind='ride',selection=0,map,track=null,canSetHome=false;
 let closeRide=()=>{};
 const regionalControls=$('.map-controls');
 $('.masthead').id='masthead';$('.sidebar').id='ride-card';
@@ -49,6 +49,21 @@ async function openRide(entry,rideTrack,token){
       <div class="detail-links">${external(rideTrack.properties.sourceUrl,'View original ride')}${external(entry.bkxcVideoUrl,'Watch BKXC’s ride')}</div>
       ${entry.notes||entry.summary?`<details class="ride-notes"><summary>Ride notes</summary><p class="detail-copy">${escape(entry.notes||entry.summary)}</p></details>`:''}`;
     $('#back').onclick=()=>reset();
+    if(canSetHome){
+      const settings=document.createElement('details');settings.className='ride-settings';
+      settings.innerHTML='<summary aria-label="Ride settings" title="Ride settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.1-2 .9-2.1-.5-2 3.5 1.5 1.6v2.3L2.3 15l2 3.5 2.1-.5 2 .9L9 21h4l.6-2.1 2-.9 2.1.5 2-3.5-1.5-1.6v-2.3L19.7 9l-2-3.5-2.1.5-2-.9L13 3Z"/><circle cx="11" cy="12" r="3"/></svg></summary><div class="ride-settings-menu"><button type="button" id="set-home" disabled>Set current view as home</button><button type="button" id="go-home" disabled>Go to home view</button><p>Saves the default view for everyone.</p></div>';
+      $('#detail').prepend(settings);
+      $('#set-home').onclick=async()=>{
+        const button=$('#set-home'),home=viewer.captureHome();button.disabled=true;button.textContent='Saving…';
+        try{
+          const response=await fetch(`/api/ride-home/${entry.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({version:entry.version,home})});
+          const result=await response.json();if(!response.ok)throw Error(result.error||'Could not save the home view.');
+          Object.assign(entry,result.entry);
+          if(token===selection){viewer.setHome(result.entry.viewer.home);settings.open=false;toast('Home view saved for this ride.');}
+        }catch(error){toast(error.message);}finally{button.disabled=false;button.textContent='Set current view as home';}
+      };
+      $('#go-home').onclick=()=>{viewer.goHome();settings.open=false;};
+    }
     controls=regionalControls.cloneNode(true);regionalControls.replaceWith(controls);
     canvas=document.createElement('canvas');canvas.id='scene';canvas.className='ride-scene';
     canvas.setAttribute('aria-label',`3D terrain map of ${entry.name}. Hover or tap a flag to reveal its place name.`);
@@ -62,6 +77,7 @@ async function openRide(entry,rideTrack,token){
       if(token!==selection)return;
       if(map)map.suspended=true;
       canvas.classList.add('ready');$('#play').disabled=false;
+      for(const button of document.querySelectorAll('.ride-settings button'))button.disabled=false;
     },Math.max(0,approach-(performance.now()-started)));
   }catch(error){
     if(controller.signal.aborted||token!==selection)return;
@@ -90,7 +106,7 @@ for(const [id,action] of [['rotate-left','left'],['rotate-right','right'],['tilt
 window.addEventListener('blur',()=>{if(map)map.held=null;});
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('ride');id?selectEntry(id,false):reset(false);});
 try{
-  const response=await fetch('/api/catalog');if(!response.ok)throw Error('The guide database could not be reached.');entries=(await response.json()).entries;
+  const [response,session]=await Promise.all([fetch('/api/catalog'),fetch('/api/session').then(r=>r.ok?r.json():null).catch(()=>null)]);canSetHome=!!session?.canSetHome;if(!response.ok)throw Error('The guide database could not be reached.');entries=(await response.json()).entries;
   for(const area of [...new Set(entries.map(e=>e.area))].sort())$('#area').add(new Option(area,area));for(const value of [...new Set(entries.map(e=>e.intensity).filter(Boolean))])$('#intensity').add(new Option(value,value));
   renderList();
   try{map=new Diorama($('#canvas'),$('#map-labels'),{onArea:area=>{$('#area').value=area;renderList();},});await map.init(filtered());$('#loading').hidden=true;}catch(e){$('#loading').textContent='The 3D map could not load. You can still browse every ride on the left.';map=null;console.error(e);}

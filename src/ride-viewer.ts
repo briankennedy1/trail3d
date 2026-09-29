@@ -111,7 +111,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
   };
   let playbackTime = 0;
   let cameraTransition: CameraTransition | null = null;
-  const { flightShot, timeAtProgress, progressAtTime } = createFlightPlan({
+  const { flightShot, timeAtProgress, progressAtTime, invalidate } = createFlightPlan({
     total, routePoint, clearSightHeight, orbitRadius, viewScale, introEnd,
     getHome: () => savedHome ?? defaultHome, angleBeats: options.angleBeats,
   });
@@ -342,7 +342,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       return value;
     } catch { return null; }
   }
-  const savedHome = options.homeStorageKey ? readHome() : null;
+  let savedHome = options.homeStorageKey ? readHome() : null;
   function applyHome(view: HomeView, animate = true) {
     const pose: CameraPose = {
       position: new THREE.Vector3(...view.position), target: new THREE.Vector3(...view.target),
@@ -614,7 +614,18 @@ export async function mountRideViewer(options: RideViewerOptions) {
     animation = requestAnimationFrame(frame);
   }
   animation = requestAnimationFrame(frame);
-  return { dispose() {
+  return {
+    captureHome(): HomeView {
+      // Clear playback framing without changing the visible camera composition.
+      pauseForManualView();
+      return { position: camera.position.toArray(), target: controls.target.toArray(), zoom: camera.zoom };
+    },
+    setHome(view: HomeView) {
+      savedHome = { position: [...view.position], target: [...view.target], zoom: view.zoom };
+      invalidate();
+    },
+    goHome() { pauseForManualView(); home(); },
+    dispose() {
     if (disposed) return;
     disposed = true;
     cancelAnimationFrame(animation);

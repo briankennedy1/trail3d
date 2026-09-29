@@ -25,7 +25,7 @@ async function readBody(req) {
   for await(const chunk of req) {size+=chunk.length;if(size>4_000_000) throw error(413,'Upload is too large (4 MB maximum).');chunks.push(chunk);}
   try {return JSON.parse(Buffer.concat(chunks).toString());} catch {throw error(400,'Invalid JSON.');}
 }
-export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join(root,'.data'),origin=process.env.APP_ORIGIN||'http://127.0.0.1:5318',development=false}={}) {
+export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join(root,'.data'),origin=process.env.APP_ORIGIN||'http://127.0.0.1:5318',development=false,localEditing=false}={}) {
   const db=openStore(dataDir),originUrl=new URL(origin),secure=originUrl.protocol==='https:';
   const tokenFile=path.join(dataDir,'setup-token');
   if(!db.prepare('SELECT id FROM users LIMIT 1').get()&&!fs.existsSync(tokenFile)) fs.writeFileSync(tokenFile,randomBytes(32).toString('hex'),{mode:0o600});
@@ -51,7 +51,7 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
     db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(sha(token),userId,Date.now()+12*60*60*1000);
     res.setHeader('Set-Cookie',`sierra_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secure?'; Secure':''}`);
   }
-  function audit(user,action,id,before,after) {db.prepare('INSERT INTO audit_log(user_id,action,entry_id,before_json,after_json,created_at) VALUES(?,?,?,?,?,?)').run(user.id,action,id||null,before?JSON.stringify(before):null,after?JSON.stringify(after):null,new Date().toISOString());}
+  function audit(user,action,id,before,after) {db.prepare('INSERT INTO audit_log(user_id,action,entry_id,before_json,after_json,created_at) VALUES(?,?,?,?,?,?)').run(user?.id??null,action,id||null,before?JSON.stringify(before):null,after?JSON.stringify(after):null,new Date().toISOString());}
   const server=http.createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');
     res.setHeader('X-Frame-Options','DENY');
@@ -70,7 +70,26 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
           if(!allowedOrigins.has(req.headers.origin)) throw error(403,'Request must come from this site.');
         }
         const user=currentUser(req);
-        if(p==='/api/session'&&method==='GET') return json(200,{user:user?{username:user.username}:null,needsSetup:!db.prepare('SELECT id FROM users LIMIT 1').get()});
+        // Local authoring only on a loopback-bound server with a loopback origin
+        // and client. Hosted visitors still need an authenticated admin session.
+        const loopback=address=>['127.0.0.1','::1','::ffff:127.0.0.1'].includes(address);
+        const canSetHome=!!user||(localEditing&&localAlias&&loopback(server.address()?.address)&&loopback(req.socket.remoteAddress));
+        if(p==='/api/session'&&method==='GET') return json(200,{user:user?{username:user.username}:null,needsSetup:!db.prepare('SELECT id FROM users LIMIT 1').get(),canSetHome});
+        const homeRoute=p.match(/^\/api\/ride-home\/([a-z0-9-]+)$/);
+        if(homeRoute&&method==='PUT'){
+          if(!canSetHome)throw error(401,'Sign in as an admin to set the ride home view.');
+          const body=await readBody(req),id=homeRoute[1];
+          const before=listEntries(db,true).find(e=>e.id===id);
+          if(!before||before.kind!=='ride'||!before.hasTrack)throw error(404,'Ride not found.');
+          if(body.version!==before.version)throw error(409,'This ride changed. Reload before setting its home view.');
+          if(!body.home||typeof body.home!=='object')throw error(400,'A home view is required.');
+          const entry=validateEntry({...before,viewer:{...before.viewer,home:body.home}});
+          db.exec('BEGIN');try{
+            db.prepare('UPDATE entries SET content_json=?,version=version+1,updated_at=? WHERE id=?').run(JSON.stringify(entry),new Date().toISOString(),id);
+            audit(user,'ride-home-update',id,before.viewer?.home,entry.viewer.home);db.exec('COMMIT');
+          }catch(e){db.exec('ROLLBACK');throw e;}
+          return json(200,{entry:listEntries(db,true).find(e=>e.id===id)});
+        }
         if(p==='/api/setup'&&method==='POST') {
           limited(req);const body=await readBody(req);
           if(db.prepare('SELECT id FROM users LIMIT 1').get()) throw error(409,'Admin is already set up.');
@@ -167,7 +186,7 @@ export async function createGuideServer({dataDir=process.env.DATA_DIR||path.join
 if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1])) {
   const port=Number(process.env.PORT||5318),host=process.env.HOST||'127.0.0.1';
   const origin=process.env.APP_ORIGIN||`http://127.0.0.1:${port}`;
-  const app=await createGuideServer({origin,development:!process.argv.includes('--production')});
+  const app=await createGuideServer({origin,development:!process.argv.includes('--production'),localEditing:['127.0.0.1','::1','localhost'].includes(host)});
   app.server.listen(port,host,()=>{
     console.log(`Ride The Lost Sierra: ${origin}`);
     if(app.setupToken) console.log(`One-time admin setup: ${origin}/admin.html#setup=${app.setupToken}`);

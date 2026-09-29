@@ -43,3 +43,12 @@
 .guide-page .ride-notes{font-size:12px;color:#68716c}.ride-notes summary{cursor:pointer;font-weight:600}
 .guide-page.ride-open .detail-links{margin:12px 0}.guide-page.ride-open h2{margin-bottom:8px}
 @media(prefers-reduced-motion:reduce){#canvas .ride-scene{transition:none}}
+
+#detail{position:relative}
+.ride-settings{position:absolute;right:0;top:-5px;z-index:5;font-size:12px}
+.ride-settings summary{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;cursor:pointer;color:#315653;list-style:none}
+.ride-settings summary::-webkit-details-marker{display:none}.ride-settings summary:hover,.ride-settings[open] summary{background:#e7eee8}
+.ride-settings summary:focus-visible{outline:2px solid #b95a37;outline-offset:2px}.ride-settings summary svg{width:20px;height:20px}
+.ride-settings-menu{position:absolute;right:0;top:37px;width:235px;padding:8px;border:1px solid #ddd7c7;border-radius:12px;background:#fffaf0;box-shadow:0 8px 25px #30362924}
+.ride-settings-menu button{display:block;width:100%;border:0;border-radius:7px;background:none;text-align:left;padding:10px;color:#315653;font-size:12px;font-weight:600}
+.ride-settings-menu button:hover{background:#e7eee8}.ride-settings-menu p{margin:8px 10px 5px;font-size:10px;line-height:1.5;color:#68716c}

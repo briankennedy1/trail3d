@@ -54,7 +54,7 @@ The original Beckwourth code is the baseline for **all** tracked rides. Ride sel
 
 `mountRideViewer({ data: { map, ride, heights }, home, pointsOfInterest, ... })` returns a controller with `dispose()`. Optional settings are `root` (DOM scope), `homeStorageKey`, `baseElevation`, `scale`, `angleBeats`, and `manageLoading`. The host supplies the original control element IDs. Public guide homes come from ride settings, never a visitor's saved local view.
 
-Entries can persist a validated `viewer` object through the admin API alongside normal content. Supported fields are `home` (`position`, `target`, `zoom`), `pointsOfInterest` (`name`, `latitude`, `longitude`, hex `color`, optional `url`/`elevationFt`), `baseElevation`, `scale`, and `angleBeats` (ordered `[progress, degrees]` pairs from 0 to 1). These settings survive normal admin form saves; a visual flag/home editor has not been added yet. An empty flag list is valid until a ride's actual POIs are supplied. The public never needs an account.
+Entries can persist a validated `viewer` object through the admin API alongside normal content. Supported fields are `home` (`position`, `target`, `zoom`), `pointsOfInterest` (`name`, `latitude`, `longitude`, hex `color`, optional `url`/`elevationFt`), `baseElevation`, `scale`, and `angleBeats` (ordered `[progress, degrees]` pairs from 0 to 1). These settings survive normal admin form saves; a visual flag editor has not been added yet. The ride card’s cog menu includes **Set current view as home** and **Go to home view**. An empty flag list is valid until a ride's actual POIs are supplied. The public never needs an account.
 
 ## Create the admin
 
@@ -119,3 +119,9 @@ Use a Node host/container with a **persistent disk** for SQLite. Build assets fi
 No domain, hosting account, live deployment, spending, public registration, or external messaging has been created. The next content milestone is obtaining/reviewing the other 18 GPS tracks and correcting the repeated approximate pins. Before launch, add password recovery/another admin provisioning workflow, operational monitoring, and a review of trail access and seasonal notes. The present admin can change their password after signing in; there is no email-based reset.
 
 Technical references: [Node SQLite](https://nodejs.org/api/sqlite.html), [Vite backend integration](https://vite.dev/guide/backend-integration.html).
+
+### Set a ride home view
+
+Open a tracked ride, position the camera, then choose **Ride settings (cog) → Set current view as home**. This saves `viewer.home` in SQLite, preserves other ride settings, checks the entry version, and records the change in the audit log. Reloads and other visitors receive this shared default. The compass and helicopter playback use the new home immediately; saving does not move the camera.
+
+On the local loopback server, this one home-setting action is available without creating an admin account. It requires a loopback bind address, a loopback configured origin, a loopback client, and a matching request Origin. It does not grant access to other admin operations. On a hosted/non-loopback server the control is hidden and the endpoint requires the existing admin session.
