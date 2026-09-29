@@ -168,9 +168,9 @@ async function selectEntry(id,push=true,animate=true){
   $('.sidebar').scrollTop=0;
 }
 async function openRide(entry,rideTrack,token,animate=true){
-  const controller=new AbortController();let viewer,canvas,controls,context;
+  const controller=new AbortController();let viewer,canvas,controls,context,cardResizeAnimation;
   closeRide=()=>{
-    returnToOverview=null;controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
+    returnToOverview=null;cardResizeAnimation?.cancel();controller.abort();viewer?.dispose();context?.dispose();canvas?.remove();settingsContext=null;renderSettings();
     controls?.replaceWith(regionalControls);document.body.classList.remove('ride-open');
     if(map){map.suspended=false;map.controls.enabled=true;map.held=null;}
     $('#map-labels').hidden=false;
@@ -185,6 +185,9 @@ async function openRide(entry,rideTrack,token,animate=true){
     async function showMode(mode,first=false){
       if(changing||controller.signal.aborted)return;
       changing=true;
+      const card=$('#ride-card'),previousHeight=first?null:card.getBoundingClientRect().height;
+      // Read the in-flight size before cancelling so rapid toggles stay continuous.
+      cardResizeAnimation?.cancel();
       const initialView=viewer?.captureHome();
       viewer?.dispose();canvas?.remove();context?.dispose();context=null;
       const variant=rideVariant(entry,rideTrack,base,mode),options=variant.options,display=variant.entry;
@@ -246,6 +249,16 @@ async function openRide(entry,rideTrack,token,animate=true){
         return viewer.returnToOverview(destination,map.rideContext(options.data.map));
       };
       if(!options.entryView)enableRide();
+      if(!first&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+        const nextHeight=card.getBoundingClientRect().height;
+        cardResizeAnimation=card.animate([
+          {height:`${previousHeight}px`,overflow:'clip'},
+          {height:`${nextHeight}px`,overflow:'clip'},
+        ],{duration:380,easing:'cubic-bezier(.22,1,.36,1)'});
+        for(const section of card.querySelectorAll('.stats,.ride-content,.detail-links'))section.animate([
+          {opacity:.45,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'},
+        ],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+      }
       changing=false;
       if(!first)document.querySelector(`[data-mode="${mode}"]`)?.focus({preventScroll:true});
     }
