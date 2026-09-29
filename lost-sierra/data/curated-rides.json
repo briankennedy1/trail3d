@@ -11,7 +11,7 @@
       "climbingFt": 472,
       "descendingFt": 463,
       "summary": "A mellow loop around Lake Davis, mixing lakeside singletrack with gravel roads.",
-      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth\u2013Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
+      "notes": "Start at the Lake Davis trailhead. This 19.2-mile loop combines the Lake Davis Trail with Beckwourth–Taylorsville Road and Delleker Forest Road. Mostly gentle terrain and a mix of singletrack and gravel make it an easy-day option. The route can be ridden in either direction. Trailforks lists e-bikes as allowed. Ride when the trail is snow-free and dry; check current conditions before heading out.",
       "season": "Snow-free months",
       "seasonMonths": [],
       "incomplete": false,
@@ -596,8 +596,8 @@
     "track": "routes/mt-elwell-not-so-easy.geojson",
     "details": {
       "coordinates": {
-        "lat": 39.69309,
-        "lng": -120.65588
+        "lat": 39.69307,
+        "lng": -120.65623
       },
       "rideFamily": {
         "id": "mt-elwell",
@@ -605,13 +605,13 @@
         "option": "The Not So Easy Way",
         "order": 1
       },
-      "routeUrl": "https://www.trailforks.com/route/elwell-to-mill-pond/",
-      "startMapsUrl": "https://www.google.com/maps?q=39.69309,-120.65588",
-      "finishMapsUrl": "https://www.google.com/maps?q=39.76677,-120.61606",
+      "routeUrl": "https://www.trailforks.com/routeplan/view/785598/",
+      "startMapsUrl": "https://www.google.com/maps?q=39.69307,-120.65623",
+      "finishMapsUrl": "https://www.google.com/maps?q=39.76665,-120.61774",
       "sameStartFinish": false,
-      "climbingFt": 2081,
-      "descendingFt": 4327,
-      "movingMinutes": 155,
+      "climbingFt": 1952,
+      "descendingFt": 4185,
+      "movingMinutes": 158,
       "movingTimeEstimated": true,
       "intensity": "Challenging",
       "shuttleOption": "yes",
@@ -631,16 +631,16 @@
         ],
         "home": {
           "position": [
-            -111.41019377596085,
+            -111.09816773873739,
             107.07203095948367,
-            -232.49639841046627
+            -232.51866241046542
           ],
           "target": [
-            -10.915749749795593,
+            -10.60372371257213,
             -1.2388155883496192,
-            -11.08205618642683
+            -11.104320186425987
           ],
-          "zoom": 0.85
+          "zoom": 0.8488741721854851
         }
       }
     }
