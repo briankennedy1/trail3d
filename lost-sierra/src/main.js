@@ -198,8 +198,8 @@ async function selectEntry(id,push=true,animate=true){
   if(!transition)$('#detail').innerHTML='<p class="muted">Opening the ride…</p>';
   else if($('#family-option'))$('#family-option').disabled=true;
   if(push)history.pushState({},'',`/?ride=${encodeURIComponent(id)}`);
-  if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection){transition?.frame.remove();return;}track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
-  if(token!==selection){transition?.frame.remove();return;}
+  if(entry.hasTrack){try{const response=await fetch(`/api/tracks/${id}`);if(!response.ok)throw Error();const loaded=await response.json();if(token!==selection){transition?.frame.remove();transition?.departure.dispose();return;}track=loaded;}catch{toast('The track could not load. The ride notes are still available.');}}
+  if(token!==selection){transition?.frame.remove();transition?.departure.dispose();return;}
   if(track){
     try{await openRide(entry,track,token,animate,transition);}
     finally{
@@ -207,11 +207,13 @@ async function selectEntry(id,push=true,animate=true){
         if(token===selection&&!matchMedia('(prefers-reduced-motion: reduce)').matches)
           await transition.frame.animate([{opacity:1},{opacity:0}],{duration:420,easing:'ease-in-out',fill:'forwards'}).finished.catch(()=>{});
         transition.frame.remove();
+        if(token!==selection)transition.departure.dispose();
       }
     }
     return;
   }
   transition?.frame.remove();
+  transition?.departure.dispose();
   renderDetail(entry);await map?.select(entry,null,animate);
   $('#map-kicker').textContent=entry.area.toUpperCase();$('#map-title').textContent=entry.name;$('#map-status').textContent=track?'A closer look. Drag to explore.': 'Approximate area location · add a GPS track for the full route';
   $('.sidebar').scrollTop=0;
@@ -268,6 +270,8 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
         const lat=(old.bbox.south+old.bbox.north-next.bbox.south-next.bbox.north)/2;
         const dx=lon*111320*Math.cos((next.bbox.south+next.bbox.north)*Math.PI/360)/100,dz=-lat*111320/100;
         const shift=v=>[v[0]+dx,v[1],v[2]+dz];
+        transition.departure.group.position.set(dx,0,dz);
+        options.routeDeparture=transition.departure;
         options.initialView={...transition.view,zoom:transition.view.zoom*(options.scale??1)/transition.scale,position:shift(transition.view.position),target:shift(transition.view.target)};
       }
       options.home=entry.viewer?.home||base.home;
@@ -326,7 +330,7 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
       // Start at the outgoing geographic view, then fly to this option's home.
       // The short terrain crossfade overlaps the eased start of the camera move.
       if(first&&transition)viewer.goHome();
-      captureRideTransition=()=>({view:viewer.captureHome(),frame:viewer.captureFrame(),map:options.data.map,scale:options.scale??1});
+      captureRideTransition=()=>({view:viewer.captureHome(),frame:viewer.captureFrame(),departure:viewer.captureDeparture(),map:options.data.map,scale:options.scale??1});
       if(map)returnToOverview=()=>{
         controls.inert=true;
         map.reset(false);
