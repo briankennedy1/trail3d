@@ -53,6 +53,18 @@
 .guide-page #credits-dialog .dialog-close{width:36px;height:36px;right:10px;top:10px;line-height:1}
 .guide-page .map-marker{background:#fffaf0e8;color:#315653;border-color:#b6b69b;border-radius:6px}.guide-page .map-marker:hover{background:#315653;color:#fffaf0}
 .guide-page a.map-marker{text-decoration:none}
+.guide-page .overview-place-marker{z-index:2;max-width:min(240px,calc(100vw - 32px));font-weight:650;text-align:center;white-space:normal;line-height:1.25;justify-content:center}
+.guide-page .overview-place-marker::after{width:40px;height:20px;left:50%;transform:translateX(-50%);background:linear-gradient(#667f73,#667f73) center top/1px 15px no-repeat}
+.guide-page .overview-place-marker::before{content:'';position:absolute;left:50%;top:calc(100% + 12px);width:6px;height:6px;transform:translateX(-50%);border:1px solid #fffaf0;border-radius:50%;background:#b95a37;box-shadow:0 0 0 1px #405f55}
+.guide-page .overview-place-marker.is-highlighted,.guide-page .overview-place-marker.is-active{z-index:5;background:#315653;color:#fffaf0;border-color:#315653;box-shadow:0 4px 12px #283c2c40}
+.guide-page .overview-place-marker.is-active{background:#b95a37;border-color:#b95a37}
+.guide-page .overview-place-marker.compact,.guide-page .overview-place-marker.compact:hover{width:24px;height:24px;min-width:24px;max-width:24px;padding:0;border:0;border-radius:50%;background:transparent;box-shadow:none;transform:translate(-50%,-50%)}
+.guide-page .overview-place-marker.compact .place-name{display:none}
+.guide-page .overview-place-marker.compact::before{display:block;left:50%;top:50%;width:11px;height:11px;transform:translate(-50%,-50%);border:2px solid #fffaf0;background:#b95a37;box-shadow:0 0 0 1px #405f55,0 2px 6px #263c3330}
+.guide-page .overview-place-marker.compact::after{display:none;top:50%;height:1px;width:var(--place-leader-length);background:#667f73}
+.guide-page .overview-place-marker.compact.dot-left::after{display:block;left:50%;right:auto;transform:none;background:#667f73}
+.guide-page .overview-place-marker.compact.dot-right::after{display:block;left:auto;right:50%;transform:none;background:#667f73}
+.guide-page .overview-place-marker:focus-visible{outline:2px solid #b95a37;outline-offset:3px}
 .ride-context-labels{position:fixed;inset:0;z-index:1;pointer-events:none}
 .guide-page .ride-context-label{pointer-events:none}
 .map-controls{order:1;display:flex;flex:none;justify-content:center;pointer-events:auto}

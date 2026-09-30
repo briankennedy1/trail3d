@@ -5,9 +5,11 @@ import {migrateRideSlugs} from './ride-slugs.mjs';
 import {importCuratedRides} from './curated-rides.mjs';
 import {correctBeckwourthLoop} from './beckwourth-loop.mjs';
 import {simplifyRideSignage} from './ride-signage.mjs';
+import {importAdventureLocations} from './adventure-locations.mjs';
 export const root = path.resolve(import.meta.dirname, '..');
 const scope=JSON.parse(fs.readFileSync(path.join(root,'data/guide-scope.json'),'utf8'));
 const bounds=scope.bbox;
+const adventureLocations=JSON.parse(fs.readFileSync(path.join(root,'data/adventure-locations.json'),'utf8'));
 export function openStore(dir) {
   fs.mkdirSync(dir, {recursive:true, mode:0o700});
   const db = new DatabaseSync(path.join(dir,'guide.sqlite'), {timeout:5000});
@@ -48,6 +50,7 @@ export function openStore(dir) {
   importCuratedRides(db,root,saveTrack);
   correctBeckwourthLoop(db);
   simplifyRideSignage(db);
+  importAdventureLocations(db,root);
   for(const id of scope.excludedEntries||[]){
     const key=`guide-archive-v1:${id}`;
     if(db.prepare('SELECT key FROM settings WHERE key=?').get(key))continue;
@@ -78,7 +81,9 @@ export function openStore(dir) {
 export function rowEntry(row) {
   if(!row) return null;
   const content=JSON.parse(row.content_json);
-  return {...content,id:row.id,slug:content.slug||row.id,kind:row.kind,name:row.name,area:row.area,coordinates:{lat:row.latitude,lng:row.longitude},status:row.status,version:row.version,updatedAt:row.updated_at,hasTrack:!!row.has_track};
+  const location=row.kind==='adventure'&&adventureLocations.find(place=>place.id===row.id&&Math.abs(place.coordinates.lat-row.latitude)<1e-7&&Math.abs(place.coordinates.lng-row.longitude)<1e-7);
+  return {...content,id:row.id,slug:content.slug||row.id,kind:row.kind,name:row.name,area:row.area,coordinates:{lat:row.latitude,lng:row.longitude},status:row.status,version:row.version,updatedAt:row.updated_at,hasTrack:!!row.has_track,
+    ...(location?{mapLocationVerified:location.verified!==false,mapLocationAnchor:location.accessPoint?location.anchor:null}:{})};
 }
 export function listEntries(db,admin=false) {
   return db.prepare(`SELECT e.*, EXISTS(SELECT 1 FROM tracks t WHERE t.entry_id=e.id) AS has_track FROM entries e ${admin?'':"WHERE e.status='published'"} ORDER BY area,name`).all().map(rowEntry);

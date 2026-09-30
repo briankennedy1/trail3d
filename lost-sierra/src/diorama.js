@@ -59,8 +59,10 @@ export class Diorama {
   resize(){const {width,height}=this.element.getBoundingClientRect();this.renderer.setSize(width,height);this.projection();this.renderer.render(this.scene,this.camera);}
   async init(entries,savedHome,regionHomes={},regionEntries=entries){
     this.regionEntries=[...regionEntries];this.regionHomes={...regionHomes};this.area='';
-    [this.region,this.beck,this.lakeWater]=await Promise.all([dataset('region'),dataset('beckwourth'),
-      fetch('/terrain/lake-davis-loop/terrain.json').then(r=>{if(!r.ok)throw Error('Lake shoreline unavailable');return r.json();}).then(meta=>meta.waterbodies||[]).catch(error=>{console.warn(error);return [];})]);
+    [this.region,this.beck,this.lakeWater,this.adventureWater]=await Promise.all([dataset('region'),dataset('beckwourth'),
+      fetch('/terrain/lake-davis-loop/terrain.json').then(r=>{if(!r.ok)throw Error('Lake shoreline unavailable');return r.json();}).then(meta=>meta.waterbodies||[]).catch(error=>{console.warn(error);return [];}),
+      fetch('/terrain/adventure-water.json').then(r=>{if(!r.ok)throw Error('Adventure shorelines unavailable');return r.json();}).catch(error=>{console.warn(error);return [];})]);
+    this.lakeWater.push(...this.adventureWater);
     const rb=this.region.bbox;const center=world((rb.west+rb.east)/2,(rb.south+rb.north)/2,1400);this.home.target.copy(center);this.home.position.copy(center).add(new THREE.Vector3(-75,105,-135).multiplyScalar(Math.max((rb.north-rb.south)*Z,(rb.east-rb.west)*X)/111.32));this.camera.position.copy(this.home.position);this.controls.target.copy(center);
     this.overviewTerrain=this.buildTerrain(this.region,16,false);
     this.detailTerrain=this.buildTerrain(this.beck,Math.max(this.beck.width,this.beck.height),true);this.detailTerrain.visible=false;
@@ -281,6 +283,7 @@ export class Diorama {
   }
   highlightOverviewRoute(id){
     this.highlightedOverview=id;
+    for(const marker of this.markers)if(marker.entry)marker.element.classList.toggle('is-highlighted',marker.entry.id===id);
     const selected=this.overviewRoute.children.find(group=>group.userData.entry.id===id);
     this.overviewNetwork?.setDimmed(!!selected);
     for(const group of this.overviewRoute.children){
@@ -306,7 +309,7 @@ export class Diorama {
     this.highlightOverviewRoute(null);
     this.entries=entries;this.markers.forEach(m=>m.element.remove());this.markers=[];
     this.rebuildOverviewRoutes();
-    const areas=new Map();for(const e of entries){if(!areas.has(e.area))areas.set(e.area,[]);areas.get(e.area).push(e);}
+    const areas=new Map();for(const e of entries.filter(entry=>entry.kind!=='adventure')){if(!areas.has(e.area))areas.set(e.area,[]);areas.get(e.area).push(e);}
     for(const [area,rows] of areas){
       if(rows.length<2)continue;
       const lon=rows.reduce((s,e)=>s+e.coordinates.lng,0)/rows.length,lat=rows.reduce((s,e)=>s+e.coordinates.lat,0)/rows.length;
@@ -314,8 +317,28 @@ export class Diorama {
       const count=document.createElement('span');count.className='marker-count';count.textContent=rows.length;element.append(count);element.ariaLabel=`Explore ${rows.length} places in ${area}`;element.title=`Go to ${area} home view`;element.onclick=()=>this.onArea(area);this.labels.append(element);
       this.markers.push({element,area,position:world(lon,lat,sample(this.region,lon,lat)).add(new THREE.Vector3(0,2,0))});
     }
+    for(const entry of entries)if(entry.kind==='adventure')this.ensurePlaceMarker(entry);
     const element=document.createElement('a');element.className='map-marker';element.textContent='Everstoke';element.style.display='none';element.href='https://everstoke.bike/';element.target='_blank';element.rel='noopener noreferrer';element.setAttribute('aria-label','Everstoke (opens in a new tab)');this.labels.append(element);
     this.markers.push({element,area:null,position:world(-120.61053,39.78062,sample(this.region,-120.61053,39.78062)).add(new THREE.Vector3(0,2,0))});
+  }
+  ensurePlaceMarker(entry){
+    if(entry.kind!=='adventure'||entry.mapLocationVerified===false)return null;
+    const existing=this.markers.find(marker=>marker.entry?.id===entry.id);if(existing)return existing;
+    const {lng,lat}=entry.coordinates;
+    const element=document.createElement('button');element.type='button';
+    element.className='map-marker overview-place-marker';element.setAttribute('aria-label',`Explore ${entry.name}`);
+    const name=document.createElement('span');name.className='place-name';name.textContent=entry.name;element.append(name);
+    element.onclick=()=>this.onRide?.(entry.id);
+    element.onpointerenter=()=>this.highlightOverviewRoute(entry.id);
+    element.onpointerleave=()=>{if(this.highlightedOverview===entry.id)this.highlightOverviewRoute(null);};
+    element.onfocus=()=>this.highlightOverviewRoute(entry.id);
+    element.onblur=()=>{if(this.highlightedOverview===entry.id)this.highlightOverviewRoute(null);};
+    this.labels.append(element);
+    const marker={element,entry,area:entry.area,position:world(lng,lat,surfaceElevation(this.region,lng,lat)).add(new THREE.Vector3(0,.015,0))};
+    marker.labelWidth=element.offsetWidth||Math.min(240,entry.name.length*6+18);
+    marker.labelHeight=element.offsetHeight||25;
+    element.style.display='none';this.markers.push(marker);
+    return marker;
   }
   move(target,position,duration=2.1,zoom=1){this.tween={zoom,start:performance.now(),duration:this.reduced?.25:duration,fromZoom:this.camera.zoom,from:this.camera.position.clone(),fromTarget:this.controls.target.clone(),to:position.clone(),target:target.clone()};}
   rideAnchor(map){
@@ -369,6 +392,7 @@ export class Diorama {
     };
   }
   async select(entry,track,animate=true){
+    if(entry.kind==='adventure'&&entry.mapLocationVerified===false){this.reset(animate);return;}
     this.active=entry;this.track=track;this.clearRoute();
     let center,span;
     if(track){
@@ -378,7 +402,8 @@ export class Diorama {
       const wideGeo=new LineGeometry();wideGeo.setPositions(positions);this.route=new Line2(wideGeo,new LineMaterial({color:0xedaa29,linewidth:3.375,depthTest:true}));this.routeGroup.add(this.route);
 
     }else{
-      this.points=null;center=world(entry.coordinates.lng,entry.coordinates.lat,this.elevation(entry.coordinates.lng,entry.coordinates.lat));span=15;
+      this.points=null;center=world(entry.coordinates.lng,entry.coordinates.lat,this.elevation(entry.coordinates.lng,entry.coordinates.lat));span=entry.kind==='adventure'?4:15;
+      if(entry.kind==='adventure')this.ensurePlaceMarker(entry);
     }
     // Use the detailed cutout only for the bundled, matching track; new uploads use the regional terrain.
     this.useDetail=entry.id==='beckwourth-peak'&&track?.properties.sourceUrl==='https://www.trailforks.com/ridelog/view/124349783/';
@@ -388,8 +413,8 @@ export class Diorama {
     this.detailTerrain.scale.setScalar(1);
     for(const c of this.chunks)c.keep=!this.useDetail&&Math.hypot(c.home.x-center.x,c.home.z-center.z)<Math.max(span*.72,11);
     this.crumbleTarget=1;
-    const distance=this.useDetail?span*1.6:Math.max(span*1.65,26);
-    this.focusPose={target:center.clone(),position:center.clone().add(new THREE.Vector3(-distance*.45,distance*.48,-distance))};
+    const distance=this.useDetail?span*1.6:entry.kind==='adventure'?Math.max(span*1.65,7):Math.max(span*1.65,26);
+    this.focusPose={target:center.clone(),position:center.clone().add(new THREE.Vector3(-distance*.45,distance*(entry.kind==='adventure'?.9:.48),-distance))};
     if(animate)this.move(this.focusPose.target,this.focusPose.position,2.7);
     else{
       this.tween=null;this.crumble=1;this.camera.zoom=1;
@@ -402,7 +427,7 @@ export class Diorama {
   setHome(home){this.home={position:new THREE.Vector3(...home.position),target:new THREE.Vector3(...home.target),zoom:home.zoom};}
   setArea(area){
     this.area=area;
-    if(area)for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers])marker.element.style.display='none';
+    if(area)for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers])if(!marker.entry)marker.element.style.display='none';
   }
   setRegionHome(area,home){this.regionHomes={...this.regionHomes,[area]:{home}};}
   regionPose(area){
@@ -463,10 +488,39 @@ export class Diorama {
     }
     if(!this.routePopup.hidden)this.positionRoutePopup();
     const needle=document.querySelector('#compass-needle');if(needle){const delta=this.camera.position.clone().sub(this.controls.target);needle.style.transform=`rotate(${Math.atan2(delta.x,delta.z)}rad)`;}
-    const boxes=[];
-    for(const marker of [...this.markers,...this.highwayMarkers,...this.riverMarkers]){
-      if(this.area||this.active||((this.highwayMarkers.includes(marker)||this.riverMarkers.includes(marker))&&!this.highways.visible)){marker.element.style.display='none';continue;}
+    const boxes=[],placedPoints=[];
+    const priority=marker=>!marker.entry?0:marker.entry.id===this.active?.id?2:marker.entry.id===this.highlightedOverview?1:0;
+    const allMarkers=[...this.markers,...this.highwayMarkers,...this.riverMarkers].sort((a,b)=>priority(b)-priority(a));
+    for(const marker of allMarkers){
+      const isPlace=!!marker.entry,selected=isPlace&&marker.entry.id===this.active?.id;
+      if((this.active&&!selected)||(this.area&&!selected&&(!isPlace||marker.entry.area!==this.area))||
+        ((this.highwayMarkers.includes(marker)||this.riverMarkers.includes(marker))&&!this.highways.visible)){
+        marker.element.style.display='none';continue;
+      }
       const p=marker.position.clone().project(this.camera);const w=this.element.clientWidth,h=this.element.clientHeight,x=(p.x*.5+.5)*w+(marker.offsetX||0),y=(-p.y*.5+.5)*h;
+      if(isPlace){
+        const visible=p.z>-1&&p.z<1&&x>8&&x<w-8&&y>8&&y<h-8;
+        const width=marker.labelWidth,height=marker.labelHeight;
+        const rect={x:x-width/2,y:y-15-height,w:width,h:height+19};
+        const overlap=boxes.some(b=>rect.x<b.x+b.w&&rect.x+rect.w>b.x&&rect.y<b.y+b.h&&rect.y+rect.h>b.y);
+        const named=selected||marker.entry.id===this.highlightedOverview||marker.element.matches(':hover,:focus-visible')||
+          (!overlap&&rect.x>8&&rect.x+rect.w<w-8&&rect.y>8);
+        let dotOffset=0;
+        if(visible&&!named){
+          const offsets=[0,14,-14,28,-28,42,-42,56,-56,70,-70];
+          dotOffset=offsets.find(offset=>x+offset>=12&&x+offset<=w-12&&
+            placedPoints.every(point=>Math.hypot(point.x-x-offset,point.y-y)>=13))??0;
+        }
+        marker.element.classList.toggle('compact',!named);
+        marker.element.classList.toggle('is-active',selected);
+        marker.element.classList.toggle('dot-left',!named&&dotOffset<0);
+        marker.element.classList.toggle('dot-right',!named&&dotOffset>0);
+        marker.element.style.setProperty('--place-leader-length',`${Math.abs(dotOffset)}px`);
+        marker.element.style.display=visible?'flex':'none';marker.element.style.left=`${x+(named?0:dotOffset)}px`;marker.element.style.top=`${named?y-15:y}px`;
+        if(visible&&named)boxes.push(rect);
+        if(visible)placedPoints.push({x:x+(named?0:dotOffset),y});
+        continue;
+      }
       const visible=p.z>-1&&p.z<1&&x>20&&x<w-20&&y>45&&y<h-(marker.destination?25:85);
       const width=marker.element.offsetWidth||90;const rect={x:x-width/2,y:y-25,w:width,h:32};const overlap=boxes.some(b=>rect.x<b.x+b.w&&rect.x+rect.w>b.x&&rect.y<b.y+b.h&&rect.y+rect.h>b.y);
       marker.element.style.display=visible&&!overlap?'flex':'none';marker.element.style.left=`${x}px`;marker.element.style.top=`${y}px`;if(visible&&!overlap)boxes.push(rect);

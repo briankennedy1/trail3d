@@ -43,6 +43,16 @@ Build outputs go to `lost-sierra/dist/`. The root package builds the separate st
 - Ride notes expand through the book icon. Intensity and Must Ride have dedicated displays. Roads and waterways can remain visible while their labels are hidden per ride.
 - Ride maps show context labels only for features the GPS route touches, using a 10 m tolerance for mapped/GPS alignment and segment intersections between recorded points. This restriction also applies after CMS selections, including **Show all route labels**. Existing hide selections still apply; terrain linework and endpoint/POI flags remain intact.
 
+## Off-bike destinations
+
+The off-bike tab has individual, clickable destination labels anchored to the terrain. Crowded labels collapse into hoverable dots; selecting a destination frames it more closely and keeps its name visible. Shared adventure links open the correct off-bike detail and return to **All adventures**.
+
+`data/adventure-locations.json` records checked coordinates, their sources, and what each pin represents. Nine imported destinations have checked locations. **Cuccia’s River Access remains unverified**: its original planner coordinates are retained in the CMS, but no precise map pin or coordinate-based directions are shown until the access point is confirmed. Johnsville Swimming Hole uses the supplied cemetery parking / trail access pin, explicitly labeled as access rather than the swimming hole itself.
+
+`public/terrain/adventure-water.json` contains OpenStreetMap shorelines for Smith Lake, Upper Salmon Lake (including island holes), Lower Sardine Lake, and Sand Pond. These use the regional terrain’s existing watercolor water rendering and remain attached to the terrain during transitions.
+
+The one-time `server/adventure-locations.mjs` migration corrects imported placeholders and records source/audit history. It preserves independently edited coordinates, names, notes, publication status, and saved views. Later CMS coordinate edits take precedence; original planner snapshots remain unchanged.
+
 ## CMS and shared home views
 
 The CMS is **`/admin.html`** (also `/admin`). The first server startup prints a one-time setup URL. Choose an admin username and a password of 12–256 characters. The local `.data/setup-token` is removed after setup; keep it private. Existing databases retain their admin accounts.

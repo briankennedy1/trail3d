@@ -1,0 +1,121 @@
+[
+  {
+    "id": "sierra-valley-preserve",
+    "coordinates": {
+      "lat": 39.810095,
+      "lng": -120.386797
+    },
+    "anchor": "Nature Center north entrance and visitor parking",
+    "sources": [
+      "https://www.frlt.org/outdoor-adventures-lost-sierra/sierra-valley-preserve-nature-center/",
+      "https://maps.app.goo.gl/DHtfxrU6ZJVhvr4o6"
+    ]
+  },
+  {
+    "id": "western-pacific-railroad-museum",
+    "coordinates": {
+      "lat": 39.80379,
+      "lng": -120.476325
+    },
+    "anchor": "Museum grounds",
+    "sources": [
+      "https://www.openstreetmap.org/node/368174010",
+      "https://www.wplives.org/visitwprm.html"
+    ]
+  },
+  {
+    "id": "cuccias-river-access",
+    "coordinates": {
+      "lat": 39.757,
+      "lng": -120.54
+    },
+    "verified": false,
+    "anchor": "Access location needs confirmation; original planner placeholder retained",
+    "sources": [
+      "https://everstokeplanner.netlify.app/"
+    ]
+  },
+  {
+    "id": "plumas-eureka-state-park",
+    "coordinates": {
+      "lat": 39.7564976,
+      "lng": -120.697696
+    },
+    "anchor": "Park museum and visitor center",
+    "sources": [
+      "https://www.openstreetmap.org/node/8014659874",
+      "https://www.parks.ca.gov/?page_id=507"
+    ]
+  },
+  {
+    "id": "johnsville-swimming-hole",
+    "coordinates": {
+      "lat": 39.7625211,
+      "lng": -120.6925092
+    },
+    "anchor": "Johnsville Cemetery parking / trail access; walk down to the swimming hole",
+    "accessPoint": true,
+    "sources": [
+      "https://maps.app.goo.gl/2FNNfhESdmtF86R97",
+      "https://lostsierrachamber.org/scavenger-hunt-adventures/"
+    ]
+  },
+  {
+    "id": "eureka-peak-hike",
+    "coordinates": {
+      "lat": 39.7471962,
+      "lng": -120.7215957
+    },
+    "anchor": "Eureka Peak summit",
+    "sources": [
+      "https://www.openstreetmap.org/node/358806428"
+    ]
+  },
+  {
+    "id": "frazier-falls",
+    "coordinates": {
+      "lat": 39.7066578,
+      "lng": -120.642637
+    },
+    "anchor": "Frazier Falls destination; use the trail and overlook",
+    "sources": [
+      "https://www.openstreetmap.org/node/1076633551"
+    ]
+  },
+  {
+    "id": "smith-lake",
+    "coordinates": {
+      "lat": 39.732134,
+      "lng": -120.673387
+    },
+    "anchor": "Smith Lake",
+    "sources": [
+      "https://www.openstreetmap.org/way/93298377",
+      "https://www.fs.usda.gov/Internet/FSE_DOCUMENTS/fseprd1093267.pdf"
+    ]
+  },
+  {
+    "id": "lower-sardine-sand-lake",
+    "coordinates": {
+      "lat": 39.61448,
+      "lng": -120.6261
+    },
+    "anchor": "Lower Sardine Lake, beside Sand Pond",
+    "sources": [
+      "https://www.openstreetmap.org/way/93196321",
+      "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=210626"
+    ]
+  },
+  {
+    "id": "salmon-lake",
+    "coordinates": {
+      "lat": 39.6571364,
+      "lng": -120.6520084
+    },
+    "anchor": "Upper Salmon Lake interior, derived from its mapped shoreline; matching the supplied hike",
+    "sources": [
+      "https://www.trailforks.com/routeplan/view/600811/",
+      "https://www.openstreetmap.org/relation/1355360"
+    ]
+  }
+]

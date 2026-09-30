@@ -259,6 +259,12 @@ async function selectEntry(id,push=true,animate=true){
   if(id==='mt-elwell')id='mt-elwell-hard-way';
   const entry=entryForSlug(entries,id,slugAliases);if(!entry){toast('That ride is not published.');return;}
   id=entry.id;
+  if(kind!==entry.kind){
+    kind=entry.kind;
+    for(const button of document.querySelectorAll('[data-kind]'))button.classList.toggle('active',button.dataset.kind===kind);
+    $('#intensity').disabled=kind!=='ride';$('#intensity').value='';
+    map?.setEntries(filtered());
+  }
   if(returning){
     returning=false;
     document.body.classList.remove('returning-overview','overview-card-ready');
@@ -449,16 +455,18 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
 }
 function renderDetail(e,trackUnavailable=false){
   const distance='—';
+  const unverified=e.kind==='adventure'&&e.mapLocationVerified===false;
   const stats=e.kind==='ride'?`${intensityDisplay(e)}<div class="stats"><div><b>${distance}</b><span>Miles</span></div><div><b>${number(e.climbingFt)}</b><span>Climbing Ft</span></div><div><b>${movingTime(e)}</b><span>Moving Time</span></div></div>`:'';
-  $('#detail').innerHTML=`${mustRideBanner(e)}<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button>${regionButton(e.area)}<h1 class="detail-title">${escape(e.rideFamily?.name||e.name)}</h1>${familyPicker(e)}${e.kind==='ride'?'':`<div class="entry-meta">${escape(e.type||'Explore')}</div>`}<div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}<div class="notice" role="status">${trackUnavailable?'The GPS track could not load. Ride notes are still available.':e.kind==='ride'?'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.':'The map shows the location from the original planner.'}${trackUnavailable?'<button type="button" class="secondary retry-track" id="retry-track">Try loading the route again</button>':''}</div>
+  $('#detail').innerHTML=`${mustRideBanner(e)}<button class="back-button" id="back">← All ${kind==='ride'?'rides':'adventures'}</button>${regionButton(e.area)}<h1 class="detail-title">${escape(e.rideFamily?.name||e.name)}</h1>${familyPicker(e)}${e.kind==='ride'?'':`<div class="entry-meta">${escape((e.type||'Explore').replaceAll('-',' + '))}</div>`}<div class="detail-actions"><button class="secondary" id="share">Copy link ↗</button></div>${stats}${e.kind==='ride'?`<div class="notice" role="status">${trackUnavailable?'The GPS track could not load. Ride notes are still available.':'The route’s GPS track has not been added yet. Explore this area in 3D or open the original route below.'}${trackUnavailable?'<button type="button" class="secondary retry-track" id="retry-track">Try loading the route again</button>':''}</div>`:''}
+  ${unverified?'<p class="notice">The river access location still needs confirmation. A precise map pin will appear once it is confirmed.</p>':''}${e.mapLocationAnchor?`<p class="small muted">Map marker: ${escape(e.mapLocationAnchor)}.</p>`:''}
   ${e.notes||e.summary?`<h3>Field notes</h3><div class="detail-copy ride-description markdown-copy">${descriptionMarkdown(e.notes||e.summary)}</div>`:''}
   <div class="facts">${e.season?`<div class="fact-row"><span>Season</span><b>${escape(e.season)}</b></div>`:''}${e.driveMinutes!=null?`<div class="fact-row"><span>Drive from Everstoke</span><b>~${e.driveMinutes} min</b></div>`:''}${e.shuttleOption&&e.shuttleOption!=='no'?`<div class="fact-row"><span>Shuttle option</span><b>${e.shuttleOption==='partial'?'Partial':'Yes'}</b></div>`:''}${e.ebikeRecommended?'<p class="small muted">The planner recommends an e-bike. Confirm current e-bike access for each trail.</p>':''}</div>
-  <div class="detail-links">${e.kind==='ride'?accessLinks(e):''}${external(e.routeUrl,'Open original route')}${external(e.shuttleRouteUrl,'Shuttle route')}${external(e.bkxcVideoUrl,'Watch BKXC’s ride')}</div>${e.incomplete?'<p class="notice">These notes are still being filled in.</p>':''}<p class="track-source">From the Everstoke planner. Locations and seasonal notes need local confirmation; this is not a live trail conditions feed.</p>`;
+  <div class="detail-links">${e.kind==='ride'?accessLinks(e):unverified?'':external(`https://www.google.com/maps/search/?api=1&query=${e.coordinates.lat},${e.coordinates.lng}`,'View on Google Maps')}${external(e.routeUrl,e.kind==='ride'?'Open original route':'More information')}${external(e.shuttleRouteUrl,'Shuttle route')}${external(e.bkxcVideoUrl,'Watch BKXC’s ride')}</div>${e.incomplete?'<p class="notice">These notes are still being filled in.</p>':''}<p class="track-source">${e.kind==='ride'?'From the Everstoke planner. Locations and seasonal notes need local confirmation; this is not a live trail conditions feed.':'From the Everstoke planner.'}</p>`;
   $('#back').onclick=()=>reset();
   $('#detail-region').onclick=()=>returnToRegion(e.area);
   if(trackUnavailable)$('#retry-track').onclick=()=>selectEntry(e.id,false,false);
   wireFamilyPicker();
-  $('#share').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast('Ride link copied. This local link works on this computer.');}catch{toast('Copy this ride’s URL from your address bar.');}};
+  $('#share').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);toast('Link copied. This local link works on this computer.');}catch{toast('Copy this page’s URL from your address bar.');}};
 
 }
 for(const button of document.querySelectorAll('[data-kind]'))button.onclick=()=>{kind=button.dataset.kind;for(const b of document.querySelectorAll('[data-kind]'))b.classList.toggle('active',b===button);$('#intensity').disabled=kind!=='ride';$('#intensity').value='';reset();};
