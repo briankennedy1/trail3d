@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {FrameHandoff} from '../src/frame-handoff.js';
 import {Diorama} from '../src/diorama.js';
 import * as THREE from 'three';
+import {buildCrumble} from '../src/crumble-terrain.js';
+import {arrivalAt} from '../../src/arrival-bloom.ts';
 
 function fixture(){
   const children=[];
@@ -44,15 +46,53 @@ test('a newer painted frame replaces the old one without leaving layered stale f
   await handoff.reveal(true);assert.deepEqual(children,[]);
 });
 
-test('fading regional terrain cannot write invisible depth over the incoming landscape',()=>{
-  const source=new THREE.ShaderMaterial({uniforms:{uMask:{value:new THREE.Texture()}},vertexShader:'vWorld = world.xyz * 10.0;',fragmentShader:'void main(){gl_FragColor=vec4(1.0);}'});
-  const chunk=new THREE.Group();chunk.add(new THREE.Mesh(new THREE.BoxGeometry(1,1,1),source));
-  const context=Diorama.prototype.rideContext.call({rideAnchor:()=>new THREE.Vector3(),chunks:[{group:chunk,phase:0}]},{bbox:{west:-120.6,east:-120.59,south:39.835,north:39.84}});
-  const copy=context.group.children[0].children[0];
-  for(const progress of [0,.1,.2,.5,.9,1]){
-    context.update(progress);
-    assert.equal(copy.material.depthWrite,false);assert.equal(copy.renderOrder,-20);
+// A small sloping landscape in the regional dataset format.
+function region(){
+  const width=48,height=48,data=new Uint16Array(width*height);
+  for(let j=0;j<height;j++)for(let i=0;i<width;i++)data[j*width+i]=(1500+i*7+j*5+40*Math.sin(i*.4)*Math.cos(j*.3))*4;
+  return {bbox:{west:-120.7,east:-120.5,south:39.75,north:39.9},width,height,scale:4,data};
+}
+const X=111.32*Math.cos(39.835*Math.PI/180),Z=111.32,EX=2.3,world=(lon,lat)=>[(lon+120.6)*X,(39.835-lat)*Z];
+
+test('the regional ground breaks exactly along the detailed ride terrain',()=>{
+  const [minX,minZ]=world(-120.63,39.84),[maxX,maxZ]=world(-120.57,39.8);
+  const built=buildCrumble(region(),{X,Z,EX,base:.345,focus:{rect:{minX,minZ,maxX,maxZ}}});
+  const position=built.top.attributes.position,seed=built.top.attributes.aSeed,pivot=built.top.attributes.aPivot,index=built.top.index.array;
+  assert.ok(built.pieces>3,'The surrounding land breaks into several pieces');
+  const inside=(x,z)=>x>=minX-1e-4&&x<=maxX+1e-4&&z>=minZ-1e-4&&z<=maxZ+1e-4;
+  for(let t=0;t<index.length;t+=3){
+    const v=[index[t],index[t+1],index[t+2]],core=seed.getX(v[0])<0;
+    for(const k of v){
+      assert.equal(seed.getX(k)<0,core,'A triangle belongs to one piece');
+      assert.equal(pivot.getX(k),pivot.getX(v[0]));
+      // Static ground lies inside the ride rectangle; nothing outside stays.
+      if(core)assert.ok(inside(position.getX(k),position.getZ(k)));
+    }
+    if(!core){const cx=(position.getX(v[0])+position.getX(v[1])+position.getX(v[2]))/3,cz=(position.getZ(v[0])+position.getZ(v[1])+position.getZ(v[2]))/3;assert.ok(!inside(cx,cz)||cx===minX||cx===maxX||cz===minZ||cz===maxZ);}
   }
-  assert.equal(source.depthWrite,true,'Borrowed overview material must be unchanged');
-  context.dispose();chunk.children[0].geometry.dispose();source.dispose();
+  assert.ok(built.side.index.count>0,'Broken edges get rock walls');
+});
+
+test('the departing regional ground stays opaque and depth-tested during the ride handoff',()=>{
+  const map={bbox:{west:-120.63,east:-120.57,south:39.8,north:39.84}};
+  const diorama={region:region(),lakeMask:new THREE.Texture(),topMat:{uniforms:{uLightDir:{value:new THREE.Vector3(0,1,0)}}},rideAnchor:()=>new THREE.Vector3()};
+  const context=Diorama.prototype.rideContext.call(diorama,map);
+  const meshes=context.group.children;
+  assert.equal(meshes.length,2);
+  for(const progress of [0,.1,.3,.6,1]){
+    context.update(progress);
+    for(const mesh of meshes){
+      assert.equal(mesh.material.transparent,false);assert.equal(mesh.material.depthWrite,true);
+      assert.equal(mesh.material.uniforms.uProgress.value,progress);
+      // The core hands each pixel to the detailed terrain on the same schedule.
+      assert.equal(mesh.material.uniforms.uArrival.value,arrivalAt(progress));
+      assert.equal(mesh.material.uniforms.uRebuild.value,0);
+    }
+  }
+  context.dispose();
+  // Returning rebuilds outward from the ride, unless it interrupts the entry.
+  const back=Diorama.prototype.rideContext.call(diorama,map,{rebuild:true});back.update(1);back.update(.4);
+  assert.equal(back.group.children[0].material.uniforms.uRebuild.value,1);back.dispose();
+  const early=Diorama.prototype.rideContext.call(diorama,map,{rebuild:true});early.update(.6);early.update(.3);
+  assert.equal(early.group.children[0].material.uniforms.uRebuild.value,0);early.dispose();
 });

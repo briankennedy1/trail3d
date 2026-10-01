@@ -3,6 +3,8 @@ import {overviewRouteColor} from './overview-route-colors.js';
 import {OverviewRouteStripes} from './overview-route-stripes.js';
 import {overviewLineDepth} from './overview-line-depth.js';
 import { TERRAIN_VERT, TERRAIN_FRAG, SIDE_VERT, SIDE_FRAG } from './terrain-shaders.js';
+import { buildCrumble, crumbleUniforms, crumbleMaterials, applyCrumble } from './crumble-terrain.js';
+import { arrivalAt } from '../../src/arrival-bloom.ts';
 THREE.ColorManagement.enabled=false;
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
@@ -11,7 +13,7 @@ import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { roadEdgePoint } from '../../src/ride-context-data.ts';
-const D2R=Math.PI/180, X=111.32*Math.cos(39.835*D2R), Z=111.32, EX=2.3;
+const D2R=Math.PI/180, X=111.32*Math.cos(39.835*D2R), Z=111.32, EX=2.3, BASE=150/1000*EX;
 const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const ease=t=>t*t*t*(t*(t*6-15)+10);
 function world(lon,lat,e=0){return new THREE.Vector3((lon+120.6)*X,e/1000*EX,(39.835-lat)*Z);}
@@ -45,7 +47,7 @@ export class Diorama {
     this.topMat=new THREE.ShaderMaterial({vertexShader:TERRAIN_VERT,fragmentShader:TERRAIN_FRAG,uniforms:{uMask:{value:mask},uLightDir:{value:new THREE.Vector3(-.55,.9,-.45).normalize()},uFocus:{value:0}}});
     this.home={target:new THREE.Vector3(0,3,0),position:new THREE.Vector3(-90,125,-160)};
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.controls.update();
-    this.chunks=[];this.markers=[];this.crumble=0;this.crumbleTarget=0;this.active=null;
+    this.markers=[];this.crumble=0;this.crumbleTarget=0;this.active=null;
     this.rivers=new THREE.Group();this.scene.add(this.rivers);this.riverMarkers=[];
     this.highways=new THREE.Group();this.scene.add(this.highways);this.highwayMarkers=[];
     this.overviewRoute=new THREE.Group();this.scene.add(this.overviewRoute);
@@ -64,8 +66,13 @@ export class Diorama {
       fetch('/terrain/adventure-water.json').then(r=>{if(!r.ok)throw Error('Adventure shorelines unavailable');return r.json();}).catch(error=>{console.warn(error);return [];})]);
     this.lakeWater.push(...this.adventureWater);
     const rb=this.region.bbox;const center=world((rb.west+rb.east)/2,(rb.south+rb.north)/2,1400);this.home.target.copy(center);this.home.position.copy(center).add(new THREE.Vector3(-75,105,-135).multiplyScalar(Math.max((rb.north-rb.south)*Z,(rb.east-rb.west)*X)/111.32));this.camera.position.copy(this.home.position);this.controls.target.copy(center);
-    this.overviewTerrain=this.buildTerrain(this.region,16,false);
-    this.detailTerrain=this.buildTerrain(this.beck,Math.max(this.beck.width,this.beck.height),true);this.detailTerrain.visible=false;
+    this.lakeMask=this.buildLakeMask(this.region);
+    this.crumbleUniforms=crumbleUniforms();
+    const materials=crumbleMaterials(this.crumbleUniforms,this.lakeMask,this.topMat.uniforms.uLightDir.value,BASE);
+    this.overviewTerrain={top:new THREE.Mesh(new THREE.BufferGeometry(),materials.top),side:new THREE.Mesh(new THREE.BufferGeometry(),materials.side)};
+    for(const mesh of Object.values(this.overviewTerrain)){mesh.frustumCulled=false;this.scene.add(mesh);}
+    this.setCrumbleFocus(null);
+    this.detailTerrain=this.buildTerrain(this.beck,Math.max(this.beck.width,this.beck.height));this.detailTerrain.visible=false;
     if(savedHome)this.setHome(savedHome);
     this.camera.position.copy(this.home.position);this.controls.target.copy(this.home.target);this.camera.zoom=this.home.zoom||1;this.controls.update();this.projection();
     this.setEntries(entries);
@@ -182,7 +189,7 @@ export class Diorama {
     const point=hit.pointOnLine||hit.point;
     // Match terrain occlusion: a route behind a mountain cannot trigger a popup.
     const projected=point.clone().project(this.camera);raycaster.setFromCamera(new THREE.Vector2(projected.x,projected.y),this.camera);
-    const ground=raycaster.intersectObject(this.overviewTerrain,true)[0];
+    const ground=raycaster.intersectObject(this.overviewTerrain.top,false)[0];
     if(ground&&ground.distance+.025<point.clone().sub(raycaster.ray.origin).dot(raycaster.ray.direction))return null;
     return hit.object.parent.userData;
   }
@@ -233,29 +240,33 @@ export class Diorama {
     }catch(error){console.warn(`Could not show ${entry.name} on the overview:`,error);}
   }
   elevation(lon,lat){const b=this.beck.bbox;return sample(lon>=b.west&&lon<=b.east&&lat>=b.south&&lat<=b.north?this.beck:this.region,lon,lat);}
-  buildTerrain(d,step,detail){
-    const parent=new THREE.Group();this.scene.add(parent);
-    const topMaterial=detail?this.topMat:this.topMat.clone();
-    if(!detail){
-      // Paint the mapped shoreline directly into the terrain so water follows
-      // the same occlusion and crumble animation, including its island holes.
-      const canvas=document.createElement('canvas');canvas.width=canvas.height=2048;
-      const ctx=canvas.getContext('2d');ctx.fillStyle='rgb(0,0,255)';ctx.fillRect(0,0,2048,2048);
-      ctx.fillStyle='rgb(255,110,255)';
-      for(const lake of this.lakeWater||[]){
-        ctx.beginPath();
-        for(const ring of lake.rings){
-          ring.forEach(([lon,lat],i)=>{
-            const x=(lon-d.bbox.west)/(d.bbox.east-d.bbox.west)*2048,y=(d.bbox.north-lat)/(d.bbox.north-d.bbox.south)*2048;
-            if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-          });ctx.closePath();
-        }
-        ctx.fill('evenodd');
+  buildLakeMask(d){
+    // Paint the mapped shoreline directly into the terrain so water follows
+    // the same occlusion and crumble animation, including its island holes.
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=2048;
+    const ctx=canvas.getContext('2d');ctx.fillStyle='rgb(0,0,255)';ctx.fillRect(0,0,2048,2048);
+    ctx.fillStyle='rgb(255,110,255)';
+    for(const lake of this.lakeWater||[]){
+      ctx.beginPath();
+      for(const ring of lake.rings){
+        ring.forEach(([lon,lat],i)=>{
+          const x=(lon-d.bbox.west)/(d.bbox.east-d.bbox.west)*2048,y=(d.bbox.north-lat)/(d.bbox.north-d.bbox.south)*2048;
+          if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        });ctx.closePath();
       }
-      const mask=new THREE.CanvasTexture(canvas);
-      topMaterial.uniforms.uMask.value=mask;
+      ctx.fill('evenodd');
     }
-    const minBase=(detail?1350:150)/1000*EX;
+    return new THREE.CanvasTexture(canvas);
+  }
+  // Break the regional landscape around a focus (see crumble-terrain.js).
+  setCrumbleFocus(focus){
+    const key=JSON.stringify(focus);if(key===this.crumbleKey)return;this.crumbleKey=key;
+    applyCrumble(this.crumbleUniforms,this.overviewTerrain,buildCrumble(this.region,{X,Z,EX,base:BASE,focus}));
+  }
+  buildTerrain(d,step){
+    const parent=new THREE.Group();this.scene.add(parent);
+    const topMaterial=this.topMat;
+    const minBase=1350/1000*EX;
     const wallMaterial=new THREE.ShaderMaterial({vertexShader:SIDE_VERT,fragmentShader:SIDE_FRAG,side:THREE.DoubleSide,uniforms:{uBase:{value:minBase*10},uLightDir:{value:new THREE.Vector3(-.55,.9,-.45).normalize()},uFocus:{value:0}}});
     const dx=(d.bbox.east-d.bbox.west)/(d.width-1)*X,dz=(d.bbox.north-d.bbox.south)/(d.height-1)*Z;
     const get=(i,j)=>d.data[clamp(j,0,d.height-1)*d.width+clamp(i,0,d.width-1)]/d.scale;
@@ -277,7 +288,6 @@ export class Diorama {
       function edge(a,b){const p=new THREE.Vector3(...positions.slice(a*3,a*3+3)),q=new THREE.Vector3(...positions.slice(b*3,b*3+3));const vertices=[p,q,new THREE.Vector3(p.x,minBase,p.z),q,new THREE.Vector3(q.x,minBase,q.z),new THREE.Vector3(p.x,minBase,p.z)];for(const v of vertices){sides.push(...v);tops.push(Math.max(p.y,q.y));}}
       for(let i=0;i<w-1;i++){edge(i+1,i);edge((h-1)*w+i,(h-1)*w+i+1);}for(let j=0;j<h-1;j++){edge(j*w,(j+1)*w);edge((j+1)*w+w-1,j*w+w-1);}
       const wall=new THREE.BufferGeometry();wall.setAttribute('position',new THREE.Float32BufferAttribute(sides,3));wall.setAttribute('aTop',new THREE.Float32BufferAttribute(tops,1));wall.computeVertexNormals();const side=new THREE.Mesh(wall,wallMaterial);g.add(side);
-      if(!detail)this.chunks.push({group:g,home:center.clone(),phase:Math.abs(Math.sin(i0*27.1+j0*19.8)),keep:false});
     }
     return parent;
   }
@@ -352,43 +362,29 @@ export class Diorama {
     const convert=point=>point.clone().add(shift).sub(anchor).multiplyScalar(10).toArray();
     return {position:convert(this.camera.position),target:convert(this.controls.target),zoom:58*viewScale*this.camera.zoom/((this.camera.top-this.camera.bottom)*10)};
   }
-  rideContext(map){
-    // Borrow regional geometry in the shared ride scene. Both landscapes are
-    // now projected by one camera, so the crumble cannot drift behind a fade.
-    const anchor=this.rideAnchor(map),group=new THREE.Group(),materials=[];let disposed=false;
+  rideContext(map,{rebuild=false}={}){
+    // Borrow the regional landscape in the shared ride scene, cut exactly at
+    // the ride's terrain. Both landscapes are projected by one camera.
+    const anchor=this.rideAnchor(map),group=new THREE.Group();
     group.scale.setScalar(10);group.position.copy(anchor).multiplyScalar(-10);
-    const pieces=this.chunks.map(chunk=>{
-      const copy=chunk.group.clone(true);group.add(copy);
-      const fade={value:1};
-      copy.traverse(mesh=>{
-        if(!mesh.isMesh)return;
-        const source=mesh.material,material=source.clone();materials.push(material);mesh.material=material;
-        if(source.uniforms.uMask)material.uniforms.uMask.value=source.uniforms.uMask.value;
-        // Keep the regional watercolor texture fixed when changing origins.
-        material.uniforms.uRideAnchor={value:anchor.clone().multiplyScalar(10)};
-        material.vertexShader='uniform vec3 uRideAnchor;\n'+material.vertexShader.replace('vWorld = world.xyz * 10.0;','vWorld = world.xyz + uRideAnchor;');
-        material.uniforms.uDeparture=fade;
-        material.fragmentShader='uniform float uDeparture;\n'+material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uDeparture;\n}');
-        // Fading geometry must never punch invisible holes in the arriving
-        // landscape. Composite it behind the detail, without retaining depth.
-        mesh.renderOrder=-20;material.transparent=true;material.depthWrite=false;
-      });
-      const bounds=new THREE.Box3().setFromObject(chunk.group);
-      const a=world(map.bbox.west,map.bbox.north),b=world(map.bbox.east,map.bbox.south);
-      const overlaps=bounds.max.x>=a.x&&bounds.min.x<=b.x&&bounds.max.z>=a.z&&bounds.min.z<=b.z;
-      return {copy,fade,overlaps,home:copy.position.clone(),phase:chunk.phase};
-    });
+    const a=world(map.bbox.west,map.bbox.north),b=world(map.bbox.east,map.bbox.south);
+    // Entering and leaving a ride break the same ground; build it once.
+    const focus={rect:{minX:a.x,minZ:a.z,maxX:b.x,maxZ:b.z}},key=JSON.stringify(focus);
+    if(this.rideCrumble?.key!==key)this.rideCrumble={key,built:buildCrumble(this.region,{X,Z,EX,base:BASE,focus})};
+    const built=this.rideCrumble.built;
+    const uniforms=crumbleUniforms(),materials=crumbleMaterials(uniforms,this.lakeMask,this.topMat.uniforms.uLightDir.value,BASE);
+    const meshes={top:new THREE.Mesh(new THREE.BufferGeometry(),materials.top),side:new THREE.Mesh(new THREE.BufferGeometry(),materials.side)};
+    applyCrumble(uniforms,meshes,built);
+    for(const mesh of Object.values(meshes)){mesh.frustumCulled=false;group.add(mesh);}
+    let disposed=false,first=true;
     return {group,
       update(progress){
-        // Local chunks dissolve in place into detailed terrain; only the
-        // surrounding landscape drops. No falling block cuts through the ride.
-        for(const p of pieces){
-          const t=ease(clamp((progress-(p.overlaps?0:p.phase*.12))/(p.overlaps?.22:.62)));
-          p.fade.value=1-t;p.copy.visible=t<1;
-          if(!p.overlaps){p.copy.position.y=p.home.y-t*(12+p.phase*8);p.copy.rotation.x=t*.12*(p.phase-.5);}
-        }
+        // The surrounding land breaks away from the ride; rebuilding starts
+        // beside it. A return that interrupts the entry replays it backward.
+        if(first){uniforms.uRebuild.value=rebuild&&progress>=.999?1:0;first=false;}
+        uniforms.uProgress.value=progress;uniforms.uArrival.value=arrivalAt(progress);
       },
-      dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const material of materials)material.dispose();},
+      dispose(){if(disposed)return;disposed=true;group.removeFromParent();for(const mesh of Object.values(meshes)){mesh.geometry.dispose();mesh.material.dispose();}},
     };
   }
   async select(entry,track,animate=true){
@@ -411,13 +407,16 @@ export class Diorama {
     this.focusCenter=center;this.focusSpan=span;
     this.detailTerrain.visible=this.useDetail;
     this.detailTerrain.scale.setScalar(1);
-    for(const c of this.chunks)c.keep=!this.useDetail&&Math.hypot(c.home.x-center.x,c.home.z-center.z)<Math.max(span*.72,11);
+    // Keep an island of whole pieces around the place, or swap in the detailed cutout.
+    if(this.useDetail){const a=world(this.beck.bbox.west,this.beck.bbox.north),b=world(this.beck.bbox.east,this.beck.bbox.south);this.setCrumbleFocus({rect:{minX:a.x,minZ:a.z,maxX:b.x,maxZ:b.z}});}
+    else this.setCrumbleFocus({circle:{x:center.x,z:center.z,radius:Math.max(span*.72,11)}});
+    this.crumbleUniforms.uArrival.value=this.useDetail?1:0;
     this.crumbleTarget=1;
     const distance=this.useDetail?span*1.6:entry.kind==='adventure'?Math.max(span*1.65,7):Math.max(span*1.65,26);
     this.focusPose={target:center.clone(),position:center.clone().add(new THREE.Vector3(-distance*.45,distance*(entry.kind==='adventure'?.9:.48),-distance))};
     if(animate)this.move(this.focusPose.target,this.focusPose.position,2.7);
     else{
-      this.tween=null;this.crumble=1;this.camera.zoom=1;
+      this.tween=null;this.crumble=1;this.crumbleUniforms.uRebuild.value=0;this.camera.zoom=1;
       this.camera.position.copy(this.focusPose.position);this.controls.target.copy(this.focusPose.target);
       this.controls.update();this.projection();
     }
@@ -456,7 +455,7 @@ export class Diorama {
     // Prepare an exact home frame underneath the ride's return animation.
     this.tween=null;this.crumble=0;this.held=null;
     this.camera.position.copy(pose.position);this.controls.target.copy(pose.target);this.camera.zoom=pose.zoom||1;
-    for(const chunk of this.chunks){chunk.group.visible=true;chunk.group.position.copy(chunk.home);chunk.group.rotation.set(0,0,0);chunk.group.scale.setScalar(1);}
+    this.crumbleUniforms.uProgress.value=0;
     this.detailTerrain.visible=false;this.highways.visible=true;this.rivers.visible=true;this.overviewRoute.visible=true;
     this.overviewNetwork.group.visible=true;
     for(const group of this.overviewRoute.children)group.visible=this.entries?.some(entry=>entry.id===group.userData.entry.id);
@@ -466,14 +465,17 @@ export class Diorama {
   control(action,dt){this.tween=null;const offset=this.camera.position.clone().sub(this.controls.target);if(action==='left'||action==='right')offset.applyAxisAngle(new THREE.Vector3(0,1,0),(action==='left'?1:-1)*dt*.8);else{const spherical=new THREE.Spherical().setFromVector3(offset);spherical.phi=clamp(spherical.phi+(action==='up'?-1:1)*dt*.6,.55,1.35);offset.setFromSpherical(spherical);}this.camera.position.copy(this.controls.target).add(offset);}
   frame(now){requestAnimationFrame(this.frame);const dt=Math.min((now-this.last)/1000,.05);this.last=now;
     if(this.suspended){this.hideRoutePopup();return;}
-    const speed=this.reduced?8:.57;this.crumble+=Math.sign(this.crumbleTarget-this.crumble)*Math.min(Math.abs(this.crumbleTarget-this.crumble),dt*speed);
+    const speed=this.reduced?8:.5,before=this.crumble;this.crumble+=Math.sign(this.crumbleTarget-this.crumble)*Math.min(Math.abs(this.crumbleTarget-this.crumble),dt*speed);
+    // Breaking starts at the place; rebuilding starts there too. Reversing
+    // mid-way plays the current motion backward, so nothing jumps.
+    if(this.crumble!==before&&(before===0||before===1))this.crumbleUniforms.uRebuild.value=this.crumble<before?1:0;
     this.highways.visible=!this.active&&this.crumble<.02;this.rivers.visible=this.highways.visible;
     this.overviewRoute.visible=!this.active&&this.crumble<.02;
     this.overviewNetwork.group.visible=this.overviewRoute.visible;
     for(const group of this.overviewRoute.children)group.visible=this.entries?.some(entry=>entry.id===group.userData.entry.id);
     if(!this.routePopup.hidden&&!this.entries?.some(entry=>entry.id===this.overviewRouteEntry))this.hideRoutePopup();
     if(this.region){
-      for(const c of this.chunks){const a=c.keep?0:ease(clamp((this.crumble-c.phase*.22)/.78));c.group.visible=a<.995;c.group.position.copy(c.home);c.group.position.y=-a*(85+c.phase*40);c.group.rotation.set(a*.3*(c.phase-.5),a*.12,a*.3*(.5-c.phase));c.group.scale.setScalar(1-a*.75);}
+      this.crumbleUniforms.uProgress.value=this.crumble;
       if(!this.active&&this.crumble<.02)this.detailTerrain.visible=false;
     }
     if(this.held)this.control(this.held,dt);

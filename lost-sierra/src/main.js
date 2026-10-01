@@ -436,7 +436,7 @@ async function openRide(entry,rideTrack,token,animate=true,transition=null){
         controls.inert=true;
         map.reset(false);
         const destination=map.rideEntryView(options.data.map,options.scale);
-        return viewer.returnToOverview(destination,map.rideContext(options.data.map),onProgress);
+        return viewer.returnToOverview(destination,map.rideContext(options.data.map,{rebuild:true}),onProgress);
       };
       if(!options.entryView)enableRide();
       finishResize();

@@ -4,6 +4,7 @@ import { frameApproachTarget } from './ride-approach';
 import { fitRideHome } from './ride-home-framing';
 import { flagClearanceHeight } from './flag-clearance';
 import { buildRideContext } from './ride-context';
+import { ARRIVAL_BLOOM, arrivalAt } from './arrival-bloom';
 import type { ContextFeature } from './ride-context-data';
 import { SURFACE_COLORS, type RouteSurface } from './route-surfaces';
 import * as THREE from 'three';
@@ -60,14 +61,13 @@ export async function mountRideViewer(options: RideViewerOptions) {
   const rideContext = buildRideContext(terrain, options.contextFeatures ?? []);
   scene.add(rideContext.group);
   let contextExclusions: DOMRect[] = [];
-  // Reveal the detailed ground at the same location as the departing regional
-  // surface, without dissolving the entire canvas into an empty background.
+  // The detailed ground blooms in through the departing regional surface.
+  // Both stay opaque; each pixel shows exactly one of them (ARRIVAL_BLOOM).
   const groundMaterials = landscape.group.children.map(child => (child as THREE.Mesh).material as THREE.ShaderMaterial);
   for (const material of groundMaterials) {
     material.uniforms.uArrival = { value: options.entryContext ? 0 : 1 };
-    material.fragmentShader = 'uniform float uArrival;\n' + material.fragmentShader.replace(/}\s*$/, 'gl_FragColor.a *= uArrival;\n}');
-    material.transparent = !!options.entryContext;
-    material.depthWrite = !options.entryContext;
+    material.fragmentShader = ARRIVAL_BLOOM + material.fragmentShader.replace(/}\s*$/,
+      'if (!arrived(vWorld)) discard;\ngl_FragColor.rgb *= 1.0 - 0.16 * arrivalEdge(vWorld);\n}');
   }
   const pois = buildPOIs(map, terrain, options.pointsOfInterest, options.baseElevation);
   scene.add(pois.group);
@@ -641,18 +641,14 @@ export async function mountRideViewer(options: RideViewerOptions) {
       entryElapsed = Math.min(entryDuration, entryElapsed + dt);
       const progress = entryElapsed / entryDuration;
       options.entryContext?.update(progress);
-      if (options.entryContext) for (const material of groundMaterials) {
-        material.uniforms.uArrival.value = THREE.MathUtils.smootherstep(progress, 0, 0.22);
-        material.transparent = progress < 0.22;
-        material.depthWrite = progress >= 0.22;
-      }
+      if (options.entryContext) for (const material of groundMaterials) material.uniforms.uArrival.value = arrivalAt(progress);
     }
     const transitioning = cameraTransition !== null;
     if (transitioning) advanceCameraTransition(dt);
     if (entering && entryElapsed >= entryDuration) {
       entering = false; controls.enabled = true;
       options.entryContext?.dispose();
-      if (options.entryContext) for (const material of groundMaterials) material.transparent = false;
+      for (const material of groundMaterials) material.uniforms.uArrival.value = 1;
       options.onEntryComplete?.();
     }
     if (playing && !transitioning) {
@@ -763,7 +759,7 @@ export async function mountRideViewer(options: RideViewerOptions) {
       exiting.onProgress?.(progress);
       const regionalProgress = exiting.startProgress * (1 - progress);
       exiting.context.update(regionalProgress);
-      for (const material of groundMaterials) material.uniforms.uArrival.value = THREE.MathUtils.smootherstep(regionalProgress, 0, 0.22);
+      for (const material of groundMaterials) material.uniforms.uArrival.value = arrivalAt(regionalProgress);
       const opacity = 1 - THREE.MathUtils.smootherstep(progress, 0.08, 0.55);
       for (const [material, originalOpacity] of exiting.materials) material.opacity = originalOpacity * opacity;
       rider.visible = false;
@@ -804,7 +800,6 @@ export async function mountRideViewer(options: RideViewerOptions) {
       entering = false;options.entryContext?.dispose();
       controls.enabled = false;controls.minZoom = Math.min(controls.minZoom, view.zoom);
       context.update(startProgress);scene.add(context.group);
-      for (const material of groundMaterials) {material.transparent = true;material.depthWrite = false;}
       const materials = new Map<THREE.Material, number>();
       for (const object of [pois.group, rideContext.group, preview, previewCore, activeHalo, active, overlap]) object.traverse(child => {
         const material = (child as THREE.Mesh).material;
